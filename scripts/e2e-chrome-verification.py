@@ -1,3 +1,4 @@
+import base64
 import http.server
 import json
 import os
@@ -257,11 +258,11 @@ class CDPClient:
         except Exception:
             pass
 
-def save_error_audit(audit_data, phase_name, filepath, addon_id):
+def save_error_audit(audit_data, phase_name, filepath, addon_id, browser_target):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     payload = {
         "phase": phase_name,
-        "browserTarget": "Google Chrome 156.0.8078.48 (x64 Windows)",
+        "browserTarget": browser_target,
         "addonId": addon_id,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "totalEventsEvaluated": audit_data["totalEvents"],
@@ -273,6 +274,88 @@ def save_error_audit(audit_data, phase_name, filepath, addon_id):
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     print(f"  [SAVED] {phase_name} audit artifact written to: {filepath}")
+
+def dispatch_cdp_key(cdp, session_id, key, code, windows_vk, modifiers=0, text=None):
+    base_params = {
+        "key": key,
+        "code": code,
+        "windowsVirtualKeyCode": windows_vk,
+        "nativeVirtualKeyCode": windows_vk,
+        "modifiers": modifiers,
+    }
+    if text is not None:
+        base_params["text"] = text
+        base_params["unmodifiedText"] = text
+    cdp.send_cmd("Input.dispatchKeyEvent", {"type": "keyDown", **base_params}, session_id=session_id)
+    time.sleep(0.03)
+    cdp.send_cmd("Input.dispatchKeyEvent", {"type": "keyUp", **base_params}, session_id=session_id)
+    time.sleep(0.05)
+
+def verify_responsive_and_capture(cdp, session_id, width, height, mode, screenshot_path):
+    cdp.send_cmd("Emulation.setDeviceMetricsOverride", {
+        "width": width,
+        "height": height,
+        "deviceScaleFactor": 1,
+        "mobile": False
+    }, session_id=session_id)
+    time.sleep(0.35)
+    if mode == "detail":
+        cdp.evaluate(session_id, "document.getElementById('zoom-reset').click()")
+        time.sleep(0.25)
+
+    metrics = cdp.evaluate(session_id, f"""
+    (() => {{
+        const iw = window.innerWidth;
+        const ih = window.innerHeight;
+        const sw = document.documentElement.scrollWidth;
+        const boxInfo = (sel) => {{
+            const el = document.querySelector(sel);
+            if (!el || el.hidden) return null;
+            const cs = getComputedStyle(el);
+            if (cs.display === 'none' || cs.visibility === 'hidden') return null;
+            const r = el.getBoundingClientRect();
+            return {{ left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), bottom: Math.round(r.bottom), width: Math.round(r.width), height: Math.round(r.height) }};
+        }};
+        const checks = {{
+            search: boxInfo('#search-input'),
+            timeFilter: boxInfo('#time-filter'),
+            clearBtn: boxInfo('#clear-map-btn')
+        }};
+        if ("{mode}" === "overview") {{
+            checks.overviewView = boxInfo('#overview-view');
+            checks.firstCard = boxInfo('#trees-grid .tree-card');
+            checks.firstOpenBtn = boxInfo('#trees-grid .tree-open-btn');
+            checks.unattributedSection = boxInfo('#unattributed-section');
+            checks.allCardsFit = Array.from(document.querySelectorAll('#trees-grid .tree-card')).every(el => {{
+                const r = el.getBoundingClientRect();
+                return r.width > 0 && r.height > 0 && r.left >= -1 && r.right <= iw + 1;
+            }});
+        }} else {{
+            checks.detailView = boxInfo('#detail-view');
+            checks.backBtn = boxInfo('#back-to-overview-btn');
+            checks.zoomControls = boxInfo('#zoom-controls');
+            checks.mapContainer = boxInfo('#map-container');
+            checks.detailsPanel = boxInfo('#details-panel');
+        }}
+        return {{ iw, ih, sw, overflowX: sw > iw + 1, checks }};
+    }})()
+    """)
+    print(f"  [Responsive {mode} {width}x{height}] inner={metrics['iw']}x{metrics['ih']}, scrollWidth={metrics['sw']}, overflowX={metrics['overflowX']}")
+    assert metrics["overflowX"] is False, f"Horizontal overflow detected at {width}x{height} ({mode}): scrollWidth={metrics['sw']} > innerWidth={metrics['iw']}"
+    for name, rect in metrics["checks"].items():
+        if isinstance(rect, bool):
+            assert rect is True, f"All overview cards must fit without clipping at {width}x{height}"
+            continue
+        assert rect is not None, f"Control '{name}' must be visible in {mode} at {width}x{height}"
+        assert rect["width"] > 0 and rect["height"] > 0, f"Control '{name}' must have positive size at {width}x{height}: {rect}"
+        assert rect["left"] >= -1 and rect["right"] <= metrics["iw"] + 2, f"Control '{name}' horizontally clipped at {width}x{height}: {rect} (iw={metrics['iw']})"
+
+    shot = cdp.send_cmd("Page.captureScreenshot", {"format": "png"}, session_id=session_id)
+    os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
+    with open(screenshot_path, "wb") as f:
+        f.write(base64.b64decode(shot["data"]))
+    print(f"  [SCREENSHOT] Saved {mode} ({width}x{height}) screenshot to: {screenshot_path}")
+    return metrics
 
 def filter_extension_errors(raw_errors, addon_id):
     filtered = []
@@ -330,9 +413,17 @@ Add-Type -AssemblyName System.Windows.Forms
 
 $sig = @'
 [DllImport("user32.dll")]
+public static extern bool SetProcessDPIAware();
+[DllImport("user32.dll")]
+public static extern int GetDpiForWindow(IntPtr hWnd);
+[DllImport("user32.dll")]
 public static extern bool SetForegroundWindow(IntPtr hWnd);
 [DllImport("user32.dll")]
+public static extern bool BringWindowToTop(IntPtr hWnd);
+[DllImport("user32.dll")]
 public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+[DllImport("user32.dll")]
+public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 [DllImport("user32.dll")]
 public static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
 [DllImport("user32.dll")]
@@ -341,64 +432,108 @@ public static extern bool SetCursorPos(int x, int y);
 public static extern int AccessibleObjectFromPoint(System.Drawing.Point pt, [Out, MarshalAs(UnmanagedType.IDispatch)] out object ppvObject, [Out] out object pvarChild);
 '@
 $user32 = Add-Type -MemberDefinition $sig -Name ("User32_" + [System.Guid]::NewGuid().ToString("N")) -Namespace "Win32" -ReferencedAssemblies "System.Drawing" -PassThru
+$dpiSet = $user32::SetProcessDPIAware()
 
 $root = [System.Windows.Automation.AutomationElement]::RootElement
 $chromeCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, "Chrome_WidgetWin_1")
 $processCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, __PROCESS_ID__)
 $windowCondition = New-Object System.Windows.Automation.AndCondition($chromeCondition, $processCondition)
-$win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $windowCondition)
+
+$win = $null
+for ($i = 0; $i -lt 15; $i++) {
+    $wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $windowCondition)
+    foreach ($candidate in $wins) {
+        $wr = $candidate.Current.BoundingRectangle
+        if ($wr.Width -gt 100 -and $wr.Height -gt 100 -and -not $candidate.Current.IsOffscreen) {
+            $win = $candidate
+            break
+        }
+    }
+    if ($win) { break }
+    Start-Sleep -Milliseconds 250
+}
 if (-not $win) {
-    Write-Error "Chrome_WidgetWin_1 window not found"
+    Write-Error "Chrome_WidgetWin_1 window not found for pid=__PROCESS_ID__ (dpiSet=$dpiSet)"
     exit 1
 }
 
 $hwnd = [IntPtr]$win.Current.NativeWindowHandle
-$user32::ShowWindow($hwnd, 9)
-$user32::SetForegroundWindow($hwnd)
-Start-Sleep -Milliseconds 400
+$winDpi = $user32::GetDpiForWindow($hwnd)
+$user32::ShowWindow($hwnd, 9) | Out-Null
+# Toggle topmost briefly so Chrome is guaranteed at top of z-order even under Windows foreground lock
+$user32::SetWindowPos($hwnd, [IntPtr](-1), 0, 0, 0, 0, 0x0043) | Out-Null
+$user32::SetWindowPos($hwnd, [IntPtr](-2), 0, 0, 0, 0, 0x0043) | Out-Null
+$user32::BringWindowToTop($hwnd) | Out-Null
+$fgOk = $user32::SetForegroundWindow($hwnd)
+Start-Sleep -Milliseconds 350
 
-$btn = $win.FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "Spatial Browser History")))
-if ($btn) {
-    $invoked = $false
-    try {
-        $inv = $null
-        if ($btn.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$inv)) {
-            $inv.Invoke()
-            $invoked = $true
-        }
-    } catch {}
+$toolbarBtnCond = New-Object System.Windows.Automation.AndCondition(
+    (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, "ToolbarActionView")),
+    (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "Spatial Browser History"))
+)
 
-    if (-not $invoked) {
-        $r = $btn.Current.BoundingRectangle
-        $cx = [int]($r.X + $r.Width / 2)
-        $cy = [int]($r.Y + $r.Height / 2)
-
-        $pt = New-Object System.Drawing.Point($cx, $cy)
-        $accObj = $null
-        $varChild = $null
-        $hr = $user32::AccessibleObjectFromPoint($pt, [ref]$accObj, [ref]$varChild)
-        if ($accObj) {
-            try {
-                $accObj.GetType().InvokeMember("accDoDefaultAction", [System.Reflection.BindingFlags]::InvokeMethod, $null, $accObj, @($varChild))
-            } catch {}
-        }
-
-        $user32::SetCursorPos($cx, $cy)
-        Start-Sleep -Milliseconds 50
-        $user32::mouse_event(0x0002, 0, 0, 0, 0)
-        Start-Sleep -Milliseconds 50
-        $user32::mouse_event(0x0004, 0, 0, 0, 0)
+$btn = $null
+for ($j = 0; $j -lt 15; $j++) {
+    $btn = $win.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $toolbarBtnCond)
+    if ($btn -and -not $btn.Current.IsOffscreen -and $btn.Current.BoundingRectangle.Width -gt 0) {
+        break
     }
-    Write-Output "CLICK_SUCCESS"
-} else {
-    Write-Error "Spatial Browser History button not found"
+    Start-Sleep -Milliseconds 250
+}
+
+if (-not $btn) {
+    $allToolbarBtns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, "ToolbarActionView")))
+    $names = @()
+    foreach ($tb in $allToolbarBtns) {
+        $names += ($tb.Current.Name + "@" + $tb.Current.BoundingRectangle.ToString())
+    }
+    Write-Error ("ToolbarActionView 'Spatial Browser History' not found (winRect=" + $win.Current.BoundingRectangle.ToString() + ", visibleToolbarActions=[" + ($names -join "; ") + "])")
     exit 1
 }
-""".replace("__PROCESS_ID__", str(process_id))
+
+$r = $btn.Current.BoundingRectangle
+$cx = [int]($r.X + $r.Width / 2)
+$cy = [int]($r.Y + $r.Height / 2)
+$methodUsed = "none"
+$accOk = $false
+$hr = -1
+
+$pt = New-Object System.Drawing.Point($cx, $cy)
+$accObj = $null
+$varChild = $null
+$accName = ""
+$hr = $user32::AccessibleObjectFromPoint($pt, [ref]$accObj, [ref]$varChild)
+if ($hr -eq 0 -and $accObj) {
+    try {
+        $accName = $accObj.GetType().InvokeMember("accName", [System.Reflection.BindingFlags]::GetProperty, $null, $accObj, @($varChild))
+    } catch {}
+    if ([string]$accName -like "*Spatial Browser History*") {
+        try {
+            $accObj.GetType().InvokeMember("accDoDefaultAction", [System.Reflection.BindingFlags]::InvokeMethod, $null, $accObj, @($varChild)) | Out-Null
+            $accOk = $true
+            $methodUsed = "accDoDefaultAction"
+        } catch {
+            $accOk = $false
+        }
+    }
+}
+
+if (-not $accOk) {
+    $user32::SetCursorPos($cx, $cy) | Out-Null
+    Start-Sleep -Milliseconds 60
+    $user32::mouse_event(0x0002, 0, 0, 0, 0)
+    Start-Sleep -Milliseconds 60
+    $user32::mouse_event(0x0004, 0, 0, 0, 0)
+    $methodUsed = "mouse_event"
+}
+
+Write-Output ("CLICK_SUCCESS|dpiSet=" + $dpiSet + "|winDpi=" + $winDpi + "|fgOk=" + $fgOk + "|btnRect=" + $r.ToString() + "|center=" + $cx + "," + $cy + "|hr=" + $hr + "|accName=" + $accName + "|accOk=" + $accOk + "|method=" + $methodUsed)
+""" .replace("__PROCESS_ID__", str(process_id))
     res = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script], capture_output=True, text=True)
     if res.returncode != 0 or "CLICK_SUCCESS" not in res.stdout:
-        raise RuntimeError(f"Failed to click Chrome toolbar action: {res.stdout} {res.stderr}")
-    return True
+        raise RuntimeError(f"Failed to click Chrome toolbar action: stdout={res.stdout.strip()} stderr={res.stderr.strip()}")
+    diag_line = next((ln.strip() for ln in res.stdout.splitlines() if "CLICK_SUCCESS" in ln), res.stdout.strip())
+    return diag_line
 
 class DualStackTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     address_family = socket.AF_INET6
@@ -426,10 +561,10 @@ def run_tests():
     sys.stdout = tee
 
     print("=" * 76)
-    print("TASK 6: GOOGLE CHROME 156.0.8078.48 RUNTIME ACCEPTANCE RUN")
+    print("TASK 12: GOOGLE CHROME RUNTIME ACCEPTANCE RUN")
     print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Browser Target: Google Chrome 156.0.8078.48 (x64 Windows)")
     print(f"Extension Path: {EXT_DIR}")
+    print(f"Declared Manifest Minimum Floor: Chrome {MANIFEST_MIN_VERSION if 'MANIFEST_MIN_VERSION' in globals() else '109+'}")
     print("=" * 76)
 
     # 1. Start Local HTTP Server on dynamic port (dual-stack so both 127.0.0.1 and localhost work)
@@ -495,7 +630,11 @@ def run_tests():
         assert ws_url is not None, "Could not obtain Chrome browser WebSocket debugger URL"
 
         cdp = CDPClient(ws_url)
-        print(f"[INIT] Connected to Chrome 156.0.8078.48 via CDP: {ws_url}")
+        ver_info = cdp.send_cmd("Browser.getVersion")
+        actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "")
+        print(f"[INIT] Connected to Google Chrome {actual_chrome_version} (x64 Windows) via CDP: {ws_url}")
+        print(f"       User-Agent: {ver_info.get('userAgent', '')}")
+        print("       Declared Support Floor: Chrome 109+")
 
         # Enable target discovery
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
@@ -508,9 +647,13 @@ def run_tests():
         print(f"[PASS] Unpacked extension loaded successfully from {EXT_DIR}")
         print(f"       Extension ID: {ext_id}")
 
-        # Chrome only applies pinned extension actions when it reads the
-        # pinned_extensions preference at browser startup. Persist the actual
-        # discovered ID, then relaunch this temporary profile before the UI test.
+        # Kill Chrome BEFORE modifying Default/Preferences so Chrome cannot overwrite
+        # pinned_extensions on shutdown or background flush.
+        cdp.close()
+        cdp = None
+        proc.kill()
+        proc.wait()
+
         preferences_path = os.path.join(default_profile_dir, "Preferences")
         with open(preferences_path, "r", encoding="utf-8") as f:
             chrome_preferences = json.load(f)
@@ -518,10 +661,7 @@ def run_tests():
         chrome_preferences["extensions"]["pinned_extensions"] = [ext_id]
         with open(preferences_path, "w", encoding="utf-8") as f:
             json.dump(chrome_preferences, f)
-        cdp.close()
-        cdp = None
-        proc.kill()
-        proc.wait()
+
         proc = subprocess.Popen(chrome_cmd)
         ws_url = None
         for _ in range(25):
@@ -534,6 +674,8 @@ def run_tests():
                 time.sleep(0.3)
         assert ws_url is not None, "Could not reconnect to Chrome after pinning the extension action"
         cdp = CDPClient(ws_url)
+        ver_info = cdp.send_cmd("Browser.getVersion")
+        actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "")
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
         cdp.send_cmd("Browser.setDownloadBehavior", {
             "behavior": "allow",
@@ -543,7 +685,7 @@ def run_tests():
         time.sleep(0.5)
         load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
         assert load_res.get("id") == ext_id, "Chrome extension ID must remain stable after pinning and restart"
-        print("[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome.")
+        print(f"[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome {actual_chrome_version}.")
 
         # Wait for service worker target registration and attach reliably (preferring auto-attached session)
         sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
@@ -566,11 +708,18 @@ def run_tests():
 
         # --- STEP 2: TOOLBAR ACTION BROWSER INPUT & REPEAT FOCUS ---
         print("\n--- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---")
-        initial_tabs_count = len([t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"])
+        initial_pages = [t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"]
+        initial_tabs_count = len(initial_pages)
         print(f"  Pages before Action 1: {initial_tabs_count}")
+        if initial_pages:
+            cdp.send_cmd("Target.activateTarget", {"targetId": initial_pages[0]["targetId"]})
+            init_sid = cdp.attach_target(initial_pages[0]["targetId"])
+            cdp.send_cmd("Page.bringToFront", session_id=init_sid)
+            time.sleep(0.25)
         
         # Action 1: First browser click on toolbar action button opens extension map in a new tab
-        click_chrome_toolbar_action(proc.pid)
+        diag1 = click_chrome_toolbar_action(proc.pid)
+        print(f"  Toolbar Action Click 1 diagnostics: {diag1}")
         map_target = None
         page_targets1 = []
         for _ in range(20):
@@ -579,7 +728,7 @@ def run_tests():
             map_target = next((t for t in page_targets1 if f"chrome-extension://{ext_id}/index.html" in t.get("url", "")), None)
             if map_target:
                 break
-        assert map_target is not None, "First toolbar action click must open extension index.html tab"
+        assert map_target is not None, f"First toolbar action click must open extension index.html tab (diag={diag1}, sw_ready={sw_ready}, pages={page_targets1}, cdp_errors={cdp.errors})"
         assert len(page_targets1) == initial_tabs_count + 1, f"First toolbar click must open exactly 1 new tab (got {len(page_targets1)} vs {initial_tabs_count})"
         print(f"[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab {map_target['targetId']}, total pages={len(page_targets1)} (was {initial_tabs_count})")
 
@@ -599,7 +748,8 @@ def run_tests():
         pages_before_action2 = len([t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"])
         print(f"  Switched focus to blank tab {blank_target_id}. Pages before Action 2: {pages_before_action2}")
         
-        click_chrome_toolbar_action(proc.pid)
+        diag2 = click_chrome_toolbar_action(proc.pid)
+        print(f"  Toolbar Action Click 2 diagnostics: {diag2}")
         time.sleep(2)
 
         pages_after_action2 = [t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"]
@@ -608,12 +758,21 @@ def run_tests():
         assert len(pages_after_action2) == pages_before_action2, f"Total page count must remain {pages_before_action2}, got {len(pages_after_action2)}"
 
         # Verify which tab is active in the extension page via chrome.tabs.query (extension tab is never suspended)
-        active_tab_info = cdp.evaluate(map_sid, """
+        tab_audit2 = cdp.evaluate(map_sid, """
         (async () => {
-            const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-            return tabs[0] ? { id: tabs[0].id, url: tabs[0].url || tabs[0].pendingUrl || '' } : null;
+            const activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            const allTabs = await chrome.tabs.query({});
+            return {
+                activeTab: activeTabs[0] ? { id: activeTabs[0].id, url: activeTabs[0].url || activeTabs[0].pendingUrl || '' } : null,
+                allTabs: allTabs.map(t => ({ id: t.id, active: t.active, winId: t.windowId, url: t.url || t.pendingUrl || '' }))
+            };
         })()
         """, await_promise=True)
+        active_tab_info = tab_audit2.get("activeTab")
+        print(f"  All tabs after Action 2: {tab_audit2.get('allTabs')}")
+        assert active_tab_info and f"chrome-extension://{ext_id}/index.html" in active_tab_info.get("url", ""), (
+            f"Second toolbar action click must focus existing index.html tab (got active={active_tab_info}, allTabs={tab_audit2.get('allTabs')}, diag2={diag2})"
+        )
         print(f"[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {active_tab_info}) without opening duplicate tab")
 
         # --- STEP 3: REAL BROWSING NAVIGATION CAPTURE & PARENT RELATIONSHIPS ---
@@ -906,19 +1065,28 @@ def run_tests():
         print(f"  [Overview Search 'target'] Badge: '{ov_search_badge}', matching tree cards: {ov_search_cards}")
         assert ov_search_cards == 1, f"Expected 1 matching tree card on Overview for 'target', got {ov_search_cards}"
 
-        # Verify Overview scroll/filter/focus preservation when opening Detail View and pressing Back
-        cdp.evaluate(map_sid, f"""
+        # Verify Overview scroll/filter/focus preservation when opening Detail View and pressing Back via real CDP Enter key
+        cdp.send_cmd("Target.activateTarget", {"targetId": map_target["targetId"]})
+        cdp.send_cmd("Page.bringToFront", session_id=map_sid)
+        time.sleep(0.15)
+        focused_open_btn = cdp.evaluate(map_sid, f"""
         (() => {{
             let btn = document.querySelector('.tree-open-btn[data-tree-id="{main_tree_id}"]');
-            if (btn) btn.focus();
-            if (btn) btn.click();
+            if (!btn) return false;
+            btn.focus();
+            return document.activeElement === btn;
         }})()
         """)
+        assert focused_open_btn is True, f"Could not focus tree-open-btn for {main_tree_id}"
+        dispatch_cdp_key(cdp, map_sid, "Enter", "Enter", 13, text="\r")
         time.sleep(0.4)
+        assert cdp.evaluate(map_sid, "!document.getElementById('detail-view').hidden"), "Real CDP Enter key on overview card button must open Tree Detail View"
         assert cdp.evaluate(map_sid, "document.getElementById('search-input').value") == "", "Tree Detail View must start with independent clean tree-local search input"
-        cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
+        cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').focus()")
+        dispatch_cdp_key(cdp, map_sid, "Enter", "Enter", 13, text="\r")
         time.sleep(0.3)
-        restored_ov = cdp.evaluate(map_sid, f"({{ query: document.getElementById('search-input').value, focusedTree: document.activeElement ? document.activeElement.getAttribute('data-tree-id') : null }})")
+        restored_ov = cdp.evaluate(map_sid, f"({{ overviewVisible: !document.getElementById('overview-view').hidden, query: document.getElementById('search-input').value, focusedTree: document.activeElement ? document.activeElement.getAttribute('data-tree-id') : null }})")
+        assert restored_ov["overviewVisible"] is True, "Real CDP Enter key on Back-to-Overview must return to Overview"
         assert restored_ov["query"] == "target", f"Back-to-Overview must restore prior overview query 'target', got '{restored_ov['query']}'"
         assert restored_ov["focusedTree"] == main_tree_id, f"Back-to-Overview must restore focus to last opened tree button '{main_tree_id}', got '{restored_ov['focusedTree']}'"
 
@@ -1065,18 +1233,24 @@ def run_tests():
         print(f"  [Pointer Pan] before: {vt_before} -> after: {vt_after}")
         assert vt_before != vt_after, "Pointer drag must update viewport transform"
 
-        # Keyboard arrow pan
-        cdp.evaluate(map_sid, """
+        # Keyboard arrow pan using real CDP Input.dispatchKeyEvent
+        cdp.send_cmd("Target.activateTarget", {"targetId": map_target["targetId"]})
+        cdp.send_cmd("Page.bringToFront", session_id=map_sid)
+        time.sleep(0.15)
+        mc_focused = cdp.evaluate(map_sid, """
         (() => {
             let mc = document.getElementById('map-container');
             mc.focus();
-            mc.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', bubbles: true }));
-            mc.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', bubbles: true }));
+            return document.activeElement === mc;
         })()
         """)
+        assert mc_focused is True, "map-container must receive focus before arrow key pan"
+        dispatch_cdp_key(cdp, map_sid, "ArrowRight", "ArrowRight", 39)
+        dispatch_cdp_key(cdp, map_sid, "ArrowDown", "ArrowDown", 40)
         time.sleep(0.3)
         vt_key = cdp.evaluate(map_sid, "document.getElementById('map-viewport').getAttribute('transform')")
-        assert vt_after != vt_key, "Keyboard arrow keys must pan viewport"
+        print(f"  [Real CDP Keyboard Arrow Pan] after pointer: {vt_after} -> after arrows: {vt_key}")
+        assert vt_after != vt_key, "Real CDP keyboard arrow keys must pan viewport"
 
         # 6b. Zoom controls
         cdp.evaluate(map_sid, "document.getElementById('zoom-in').click()")
@@ -1088,15 +1262,17 @@ def run_tests():
         print(f"  [Zoom Controls] zoomIn={zoom_in_t}, zoomOut={zoom_out_t}, fit={fit_t}")
         assert zoom_in_t != zoom_out_t, "Zoom in and out must produce different transforms"
 
-        # 6c. Keyboard node navigation (Enter key)
-        cdp.evaluate(map_sid, """
+        # 6c. Keyboard node navigation (real CDP Enter and Space keys)
+        node_focused = cdp.evaluate(map_sid, """
         (() => {
             if (!document.getElementById('details-panel').hidden) document.getElementById('details-close-btn').click();
             let node = document.querySelector('.map-node');
             node.focus();
-            node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+            return document.activeElement === node;
         })()
         """)
+        assert node_focused is True, "First .map-node must receive focus"
+        dispatch_cdp_key(cdp, map_sid, "Enter", "Enter", 13, text="\r")
         time.sleep(0.3)
         key_nav_state = cdp.evaluate(map_sid, """
         ({
@@ -1104,12 +1280,34 @@ def run_tests():
             panelHidden: document.getElementById('details-panel').hidden
         })
         """)
-        print(f"  [Keyboard Enter Key Selection] isSelected={key_nav_state['isSelected']}, panelHidden={key_nav_state['panelHidden']}")
-        assert key_nav_state["isSelected"] is True, "Enter key must select node"
-        assert key_nav_state["panelHidden"] is False, "Enter key must open details drawer"
+        print(f"  [Real CDP Keyboard Enter Selection] isSelected={key_nav_state['isSelected']}, panelHidden={key_nav_state['panelHidden']}")
+        assert key_nav_state["isSelected"] is True, "Real CDP Enter key must select node"
+        assert key_nav_state["panelHidden"] is False, "Real CDP Enter key must open details drawer"
 
-        # 6d. Clear Modal Focus Trap & Cancel/Confirm Actions
-        print("  Testing Clear Dialog focus trapping with Tab and Shift+Tab keys...")
+        # Close details drawer, refocus node, and verify Space key activation too
+        node_refocused = cdp.evaluate(map_sid, """
+        (() => {
+            document.getElementById('details-close-btn').click();
+            let node = document.querySelector('.map-node');
+            node.focus();
+            return document.activeElement === node;
+        })()
+        """)
+        assert node_refocused is True, "First .map-node must refocus after closing drawer"
+        dispatch_cdp_key(cdp, map_sid, " ", "Space", 32, text=" ")
+        time.sleep(0.3)
+        space_nav_state = cdp.evaluate(map_sid, """
+        ({
+            isSelected: document.querySelector('.map-node').classList.contains('is-selected'),
+            panelHidden: document.getElementById('details-panel').hidden
+        })
+        """)
+        print(f"  [Real CDP Keyboard Space Selection] isSelected={space_nav_state['isSelected']}, panelHidden={space_nav_state['panelHidden']}")
+        assert space_nav_state["isSelected"] is True, "Real CDP Space key must select node"
+        assert space_nav_state["panelHidden"] is False, "Real CDP Space key must open details drawer"
+
+        # 6d. Clear Modal Focus Trap & Cancel/Confirm Actions via real CDP Tab / Shift+Tab
+        print("  Testing Clear Dialog focus trapping with real CDP Tab and Shift+Tab keys...")
         cdp.evaluate(map_sid, "document.getElementById('clear-map-btn').click()")
         time.sleep(0.3)
 
@@ -1119,23 +1317,19 @@ def run_tests():
         assert modal_open is True, "Clear modal must open"
         assert initial_focus == "cancel-clear-btn", "Initial focus must default to cancel button"
 
-        # Send Tab key: wraps forward from cancel-clear-btn to confirm-clear-btn
-        cdp.evaluate(map_sid, """
-        document.getElementById('clear-modal').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', bubbles: true }));
-        """)
+        # Send real CDP Tab key: wraps forward from cancel-clear-btn to confirm-clear-btn
+        dispatch_cdp_key(cdp, map_sid, "Tab", "Tab", 9)
         time.sleep(0.2)
         after_tab_focus = cdp.evaluate(map_sid, "document.activeElement ? document.activeElement.id : null")
-        print(f"  [Tab Key Action] focus wrapped to: '{after_tab_focus}'")
-        assert after_tab_focus == "confirm-clear-btn", f"Tab key must wrap to confirm button, got '{after_tab_focus}'"
+        print(f"  [Real CDP Tab Key] focus wrapped to: '{after_tab_focus}'")
+        assert after_tab_focus == "confirm-clear-btn", f"Real CDP Tab key must wrap to confirm button, got '{after_tab_focus}'"
 
-        # Send Shift+Tab key: wraps backward from confirm-clear-btn to cancel-clear-btn
-        cdp.evaluate(map_sid, """
-        document.getElementById('clear-modal').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', shiftKey: true, bubbles: true }));
-        """)
+        # Send real CDP Shift+Tab key: wraps backward from confirm-clear-btn to cancel-clear-btn
+        dispatch_cdp_key(cdp, map_sid, "Tab", "Tab", 9, modifiers=8)
         time.sleep(0.2)
         after_shift_tab_focus = cdp.evaluate(map_sid, "document.activeElement ? document.activeElement.id : null")
-        print(f"  [Shift+Tab Key Action] focus wrapped to: '{after_shift_tab_focus}'")
-        assert after_shift_tab_focus == "cancel-clear-btn", f"Shift+Tab must wrap to cancel button, got '{after_shift_tab_focus}'"
+        print(f"  [Real CDP Shift+Tab Key] focus wrapped to: '{after_shift_tab_focus}'")
+        assert after_shift_tab_focus == "cancel-clear-btn", f"Real CDP Shift+Tab must wrap to cancel button, got '{after_shift_tab_focus}'"
 
         # Click cancel button: preserves data
         cdp.evaluate(map_sid, "document.getElementById('cancel-clear-btn').click()")
@@ -1385,9 +1579,38 @@ def run_tests():
         assert dl_ui["sourceText"] == "Downloaded from localhost", f"Drawer source must be 'Downloaded from localhost', got '{dl_ui['sourceText']}'"
         assert dl_ui["urlHidden"] is True and dl_ui["actionsHidden"] is True, "Raw URL field and Reopen action must remain hidden for download nodes"
 
+        # 6.5f. Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots
+        print("\n--- STEP 6.5f: Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots ---")
+        cdp.send_cmd("Target.activateTarget", {"targetId": map_target["targetId"]})
+        cdp.send_cmd("Page.bringToFront", session_id=map_sid)
+        time.sleep(0.2)
+        results_dir = os.path.dirname(LOG_FILE_PATH)
+        detail_desktop_metrics = verify_responsive_and_capture(
+            cdp, map_sid, 1280, 800, "detail",
+            os.path.join(results_dir, "chrome-detail-desktop.png")
+        )
+        print(f"  [Responsive Detail 1280x800] {detail_desktop_metrics}")
+        detail_narrow_metrics = verify_responsive_and_capture(
+            cdp, map_sid, 420, 800, "detail",
+            os.path.join(results_dir, "chrome-detail-narrow.png")
+        )
+        print(f"  [Responsive Detail 420x800] {detail_narrow_metrics}")
+        cdp.send_cmd("Emulation.clearDeviceMetricsOverride", {}, session_id=map_sid)
+
         cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
-        time.sleep(0.3)
-        print("[PASS] Verified Task 12 UI Explorer across live extension storage, sibling geometry, attributed downloads, and unattributed shelf.")
+        time.sleep(0.4)
+        overview_desktop_metrics = verify_responsive_and_capture(
+            cdp, map_sid, 1280, 800, "overview",
+            os.path.join(results_dir, "chrome-overview-desktop.png")
+        )
+        print(f"  [Responsive Overview 1280x800] {overview_desktop_metrics}")
+        overview_narrow_metrics = verify_responsive_and_capture(
+            cdp, map_sid, 420, 800, "overview",
+            os.path.join(results_dir, "chrome-overview-narrow.png")
+        )
+        print(f"  [Responsive Overview 420x800] {overview_narrow_metrics}")
+        cdp.send_cmd("Emulation.clearDeviceMetricsOverride", {}, session_id=map_sid)
+        print("[PASS] Verified Task 12 UI Explorer across live extension storage, sibling geometry, attributed downloads, unattributed shelf, and responsive 1280x800 / 420x800 viewports.")
 
         # --- STEP 7: ERROR LOG AUDIT PRE-RESTART ---
         print("\n--- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---")
@@ -1398,7 +1621,13 @@ def run_tests():
             "extensionErrors": pre_ext_errors,
             "extensionWarnings": pre_ext_warnings
         }
-        save_error_audit(pre_audit_data, "Pre-Restart Phase", PRE_RESTART_ERRORS_PATH, ext_id)
+        save_error_audit(
+            pre_audit_data,
+            "Pre-Restart Phase",
+            PRE_RESTART_ERRORS_PATH,
+            ext_id,
+            browser_target=f"Google Chrome {actual_chrome_version} (x64 Windows)"
+        )
         print(f"  Evaluated {len(cdp.events)} CDP event records prior to restart.")
         print(f"  Extension Errors: {len(pre_ext_errors)}, Warnings: {len(pre_ext_warnings)}")
         for err in pre_ext_errors:
@@ -1502,7 +1731,9 @@ def run_tests():
         assert ws_url2 is not None, "Could not reconnect to restarted Chrome"
 
         cdp2 = CDPClient(ws_url2)
-        print(f"  Reconnected to restarted Chrome: {ws_url2}")
+        ver_info2 = cdp2.send_cmd("Browser.getVersion")
+        actual_chrome_version2 = ver_info2.get("product", f"Chrome/{actual_chrome_version}").replace("Chrome/", "")
+        print(f"  Reconnected to restarted Google Chrome {actual_chrome_version2}: {ws_url2}")
         cdp2.send_cmd("Target.setDiscoverTargets", {"discover": True})
         time.sleep(0.5)
 
@@ -1575,7 +1806,13 @@ def run_tests():
             "extensionErrors": post_ext_errors,
             "extensionWarnings": post_ext_warnings
         }
-        save_error_audit(post_audit_data, "Post-Restart Phase", POST_RESTART_ERRORS_PATH, ext_id2)
+        save_error_audit(
+            post_audit_data,
+            "Post-Restart Phase",
+            POST_RESTART_ERRORS_PATH,
+            ext_id2,
+            browser_target=f"Google Chrome {actual_chrome_version2} (x64 Windows)"
+        )
         print(f"  Evaluated {len(cdp2.events)} CDP event records in restarted session.")
         print(f"  Post-Restart Extension Errors: {len(post_ext_errors)}, Warnings: {len(post_ext_warnings)}")
         assert len(post_ext_errors) == 0, f"Detected unexpected post-restart extension errors: {post_ext_errors}"
@@ -1584,9 +1821,9 @@ def run_tests():
 
         # --- STEP 10: CROSS-BROWSER BEHAVIOR COMPARISON & EVALUATION ---
         print("\n--- STEP 10: Cross-Browser Comparison & Evaluation ---")
-        print("  [CHROME VS FIREFOX RUNTIME COMPARISON]")
-        print("  - Extension Loading: Validated via Extensions.loadUnpacked in Chrome 156.0.8078.48.")
-        print("  - Toolbar Action Open-or-Focus: Exact parity; first browser UI click opens map tab, repeat click focuses existing map without duplication.")
+        print(f"  [CHROME {actual_chrome_version} RUNTIME EVALUATION (Minimum Supported Floor: Chrome 109+)]")
+        print(f"  - Extension Loading: Validated via Extensions.loadUnpacked in Google Chrome {actual_chrome_version}.")
+        print("  - Toolbar Action Open-or-Focus: Exact parity; first DPI-aware UI click opens map tab, repeat click focuses existing map without duplication.")
         print("  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,")
         print("    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).")
         print("  - Reload Deduplication: Exact parity; exactly 1 node stored for /target despite reload.")
@@ -1594,7 +1831,9 @@ def run_tests():
         print("  - Search & Time Filtering: Exact parity; Overview filters tree cards; Detail keeps non-matching context ancestors dimmed while matching descendants stay attached.")
         print("  - Task 12 Explorer UI: Exact parity; Overview tree-card grouping, Unattributed Downloads shelf ('Source unavailable'), sibling fan geometry,")
         print("    attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.")
-        print("  - UI Controls & Focus Trapping: Exact parity; pan, zoom, fit, Enter node selection, Tab/Shift+Tab wrap.")
+        print("  - Real CDP Keyboard Navigation & Focus Trapping: Pan (ArrowRight/ArrowDown), zoom, fit, node Enter & Space selection,")
+        print("    Overview card Enter activation & Back Enter focus return, and Clear Modal Tab / Shift+Tab wrap.")
+        print("  - Responsive Viewport Checks: Desktop (1280x800) and Narrow (420x800) Overview & Detail screenshots verified with zero clipping/horizontal overflow.")
         print("  - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.")
         print("  - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.")
         print("  - Task 11 Download Provenance: Exact parity; completed download from 127.0.0.1 CDN host attributes strictly to source page hostname (localhost).")
@@ -1607,7 +1846,7 @@ def run_tests():
         proc2.wait()
 
         print("\n" + "=" * 76)
-        print("ALL EXECUTED CHROME 156.0.8078.48 CDP CHECKS PASSED (0 FAILURES)")
+        print(f"ALL EXECUTED GOOGLE CHROME {actual_chrome_version} CDP CHECKS PASSED (0 FAILURES)")
         print("ALL ACCEPTANCE CRITERIA SATISFIED ACROSS LIVE RUNTIME VERIFICATION.")
         print("=" * 76)
 

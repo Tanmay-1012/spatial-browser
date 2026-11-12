@@ -1,8 +1,8 @@
 # Task 12 Output — Research Tree Explorer Overview & Detail UI
 
-**Status:** Pending Lead Review (Implementation & Cross-Browser Verification Complete)  
+**Status:** Revision Submitted — Pending Lead Acceptance (all Section 6 items addressed & verified)
 **Milestone:** 12 (Research Tree Explorer Overview & Detail UI — Task 10 v15 Sections 51–52)  
-**Browser Targets:** Google Chrome 156.0.8078.48 (min 109+) & Mozilla Firefox 158.0.1 (strict_min_version: 115.0)  
+**Browser Runtime Targets:** Google Chrome `157.0.8103.78` (x64 Windows; declared min `109+`) & Mozilla Firefox `160.0` (x64 Windows; `strict_min_version: 115.0`)  
 **Execution Date:** 2026-11-12  
 
 ---
@@ -88,3 +88,75 @@ Both browser suites were executed sequentially against fresh unpacked Task 12 bu
 - **Detail Scoping & Hierarchy Preservation:** Verified (strict single-`treeId` canvas isolation; global/local filtering retains `.is-context-ancestor` parents with `#detail-context-banner`).
 - **Downloads & Privacy Boundaries:** Verified (attributed downloads attach cleanly and show `"Downloaded from <originDomain>"` with URL/reopen disabled; unattributed/ambiguous downloads stay in `#unattributed-section` labeled `"Source unavailable"`).
 - **Accessibility & UX Polish:** Verified (WCAG AA tokens, keyboard navigation & focus restoration on `#back-to-overview-btn`, modal Tab/Shift+Tab trap, `<= 900px` responsive stacking, `prefers-reduced-motion`).
+
+## 6. Lead Review — Revisions Required
+
+**Decision:** Task 12 is not accepted yet. The implementation and automated tests are promising, but the browser evidence does not currently close the acceptance gate.
+
+### Independent review results (2026-11-12)
+
+- `npm.cmd run build`: passed; Chrome and Firefox packages regenerated successfully.
+- `npm.cmd test`: **59 passed, 0 failed**.
+- Installed browser binaries report **Google Chrome 157.0.8103.78** and **Mozilla Firefox 160.0**. The E2E scripts print the older labels `156.0.8078.48` and `158.0.1` as fixed strings; they do not query the browser version. The checked-in logs also retain `TASK 6` / `TASK 7` headings. The reported browser versions therefore are not independently established by those logs.
+- Fresh isolated-profile Firefox run completed all scenarios with **0 failures** on the installed Firefox binary.
+- Fresh isolated-profile Chrome run connected to the extension and initialized its service worker, but failed at the first toolbar-action assertion (`map_target` was not opened). It did not reach Task 12’s UI assertions, so Chrome acceptance is open.
+- The Chrome harness uses synthetic `KeyboardEvent` dispatch for arrow panning, Enter selection, and modal Tab checks. Those checks do not prove real keyboard input handling in Chrome. Firefox uses browser input for its keyboard checks.
+
+### Required developer revisions
+
+1. Diagnose the Chrome toolbar-action failure. Confirm whether the UI automation helper is clicking the actual pinned extension action; if it is, fix the product launch behavior. Keep the real toolbar-action scenario in the suite and make the result diagnostic enough to identify the failure cause.
+2. Make both E2E reports obtain the actual browser version from the running browser (Chrome CDP `Browser.getVersion`; Firefox WebDriver capabilities or `navigator.userAgent`). Remove hard-coded version claims and stale Task 6/7 run headings. Report the actual version used and distinguish it from the project’s minimum supported version.
+3. Replace Chrome’s synthetic `KeyboardEvent` checks with real CDP/browser keyboard input. Verify arrow-key panning, Enter/Space node selection, clear-dialog Tab/Shift+Tab focus containment, overview-card keyboard activation, and Back-to-Overview focus restoration. Keep equivalent Firefox checks.
+4. Add live responsive checks at desktop and narrow viewport widths; confirm cards, filters, detail controls, and the details panel remain visible and usable without horizontal clipping. Capture one overview and one detail screenshot per browser/viewport in the test-results folder so the visual hierarchy and branch fan can be reviewed.
+5. Rebuild and run the full isolated-profile E2E suites on the installed supported browsers. Preserve fresh logs and console audits, update `docs/TEST_PLAN.md` and this report with truthful outcomes, and change this assignment to Accepted only after Chrome and Firefox meet the criteria.
+
+Do not change navigation tracking, storage schema, permissions, or manifests for these revisions. Do not start Task 13 until this review gate is accepted.
+
+---
+
+## 7. Revision Summary & Fresh Verification Evidence (2026-11-12)
+
+All five items in Section 6 have been resolved in the E2E verification harnesses and re-verified on clean builds with zero modifications to `src/shared/tracker.js`, `src/shared/storage.js`, permissions, or browser manifests.
+
+### 7.1 Chrome Toolbar-Action Diagnosis & Fix
+- **Root Cause:** Inspecting Chrome `157.0.8103.78` UI Automation showed that `ToolbarActionView` (`Spatial Browser History`) exposes `hasInvoke=False` and `HAS_LEGACY=False`, while Windows display scaling on the verification host is `125%` (`winDpi=120`). Additionally, `scripts/e2e-chrome-verification.py` previously ran PowerShell UIA DPI-unaware, persisted `Default/Preferences` before terminating Chrome (allowing shutdown/background flushes to overwrite `pinned_extensions`), and relied only on `map_tabs_count == 1` on Click 2 without checking active-tab focus.
+- **Harness Resolution ([`scripts/e2e-chrome-verification.py`](file:///D:/Projects/HCI%20Project/scripts/e2e-chrome-verification.py)):**
+  - Terminates the temporary initial Chrome process before writing `pinned_extensions` into `Default/Preferences`.
+  - Runs the toolbar UIA helper DPI-aware (`SetProcessDPIAware()`), brings Chrome to top z-order, polls for visible `ToolbarActionView` (`Spatial Browser History`), verifies accessible name at the element center via `AccessibleObjectFromPoint`, invokes `accDoDefaultAction` cleanly without double-clicking, and outputs structured click telemetry (`CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=False|btnRect=799,70,44,43|center=821,92|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction`).
+  - Explicitly asserts that Toolbar Click 1 opens `chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html` (`total pages=2`, was `1`) and Toolbar Click 2 refocuses `index.html` as `active: true` (`tabId=812530306`, `map_tabs_count == 1`) without duplicating tabs.
+  - Shared launch module [`src/shared/launch.js`](file:///D:/Projects/HCI%20Project/src/shared/launch.js) required no product code change.
+
+### 7.2 Dynamic Runtime Version Detection & Clean Task 12 Headings
+- **Chrome CDP (`scripts/e2e-chrome-verification.py`):** Queries CDP `Browser.getVersion` pre- and post-restart (`Google Chrome 157.0.8103.78`, distinguishing runtime target from the declared `Chrome 109+` manifest floor).
+- **Firefox Marionette (`scripts/e2e-firefox-verification.py`):** Queries `Services.appinfo.version` / `WebDriver:NewSession` capabilities pre- and post-restart (`Mozilla Firefox 160.0`, distinguishing runtime target from the declared `Firefox 115.0+` floor).
+- Replaced stale `156.0.8078.48`, `158.0.1`, and `TASK 6` / `TASK 7` run banners with `TASK 12` headers.
+
+### 7.3 Real Browser Keyboard Input Parity (CDP `Input.dispatchKeyEvent` & W3C WebDriver)
+- **Chrome (`157.0.8103.78`):** Replaced all synthetic JS `KeyboardEvent` dispatches with real CDP `Input.dispatchKeyEvent` (`keyDown` + `keyUp`, `modifiers=8` for `Shift`):
+  - **Overview card activation & Back focus return:** Focused `.tree-open-btn[data-tree-id]` + real `Enter` opens Detail View; focused `#back-to-overview-btn` + real `Enter` returns to Overview restoring `query === 'target'` and keyboard focus on `.tree-open-btn[data-tree-id]`.
+  - **Detail arrow pan:** Focused `#map-container` + `ArrowRight` / `ArrowDown` updates transform (`translate(133.04..., 505.65...)` $\to$ `translate(73.04..., 445.65...)`).
+  - **Node `Enter` & `Space` selection:** Focused `.map-node` + `Enter` and `Space` both select the node (`isSelected=True`) and open `#details-panel` (`panelHidden=False`).
+  - **Clear dialog focus trap:** `Tab` wraps focus forward (`cancel-clear-btn` $\to$ `confirm-clear-btn`) and `Shift+Tab` wraps backward (`confirm-clear-btn` $\to$ `cancel-clear-btn`).
+- **Firefox (`160.0`):** Expanded `WebDriver:PerformActions` keyboard coverage alongside existing arrow-pan, `Enter`, and `Tab`/`Shift+Tab` checks to include Overview card `Enter` activation, Back-to-Overview `Enter` focus restoration, and Detail `.map-node` `Space` activation.
+
+### 7.4 Live Responsive Layout Checks & Visual Screenshots
+All 8 live captures were visually inspected and verified with zero horizontal overflow (`scrollWidth == innerWidth`) and zero clipped controls across header filters, cards, detail navigation/zoom controls, map canvas, and details drawer:
+
+| Browser | Mode & Viewport | Viewport / Overflow Check | Screenshot Artifact |
+| :--- | :--- | :--- | :--- |
+| **Chrome `157.0.8103.78`** | Overview Desktop (`1280x800`) | `scrollWidth=1280, overflowX=False`, all cards fit | [`chrome-overview-desktop.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-overview-desktop.png) |
+| **Chrome `157.0.8103.78`** | Overview Narrow (`420x800`) | `scrollWidth=420, overflowX=False`, filters wrap cleanly, cards fit | [`chrome-overview-narrow.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-overview-narrow.png) |
+| **Chrome `157.0.8103.78`** | Detail Desktop (`1280x800`) | `scrollWidth=1280, overflowX=False`, sibling fan + drawer visible | [`chrome-detail-desktop.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-detail-desktop.png) |
+| **Chrome `157.0.8103.78`** | Detail Narrow (`420x800`) | `scrollWidth=420, overflowX=False`, controls wrap & `#details-panel` spans full width (`420x641`) | [`chrome-detail-narrow.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-detail-narrow.png) |
+| **Firefox `160.0`** | Overview Desktop (`1280x800`) | `scrollWidth=1280, clipped=[]`, all cards fit | [`firefox-overview-desktop.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-overview-desktop.png) |
+| **Firefox `160.0`** | Overview Narrow (`420x800` requested; clamped to `500x800` Windows desktop min within `<=900px` breakpoint) | `scrollWidth=500, clipped=[]`, filters & cards stacked cleanly | [`firefox-overview-narrow.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-overview-narrow.png) |
+| **Firefox `160.0`** | Detail Desktop (`1280x800`) | `scrollWidth=1280, clipped=[]`, sibling fan + drawer visible | [`firefox-detail-desktop.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-detail-desktop.png) |
+| **Firefox `160.0`** | Detail Narrow (`420x800` requested; clamped to `500x800` Windows desktop min) | `scrollWidth=500, clipped=[]`, controls & `#details-panel` (`500x674`) fit | [`firefox-detail-narrow.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-detail-narrow.png) |
+
+### 7.5 Fresh Build, Automated Suite & Sequential E2E Results (2026-11-12)
+- **`npm.cmd run build`:** Exit code `0` (`outputs/chrome/spatial-browser-history-extension.zip` `43,700` bytes; `outputs/firefox/spatial-browser-history-firefox.zip` & `.xpi` `43,734` bytes each; `outputs/SHA256SUMS` regenerated).
+- **`npm.cmd test`:** **59 passed, 0 failed** (`12` build/manifest/launch + `35` tracker/V2/provenance + `12` UI Explorer).
+- **Google Chrome `157.0.8103.78` Isolated-Profile E2E:** **0 failures** ([`docs/test-results/chrome-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e.log)); **0 extension errors, 0 warnings** across `272` pre-restart CDP records ([`chrome-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart.json)) and `16` post-restart CDP records ([`chrome-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart.json)).
+- **Mozilla Firefox `160.0` Isolated-Profile E2E:** **0 failures** ([`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log)); **0 extension errors, 0 warnings, 0 info** across `5` pre-restart Gecko records ([`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json)) and `24` post-restart Gecko records ([`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json)).
+
+Task 12 revision is submitted for lead review. Task 13 remains unstarted pending lead acceptance.

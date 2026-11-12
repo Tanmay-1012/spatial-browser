@@ -1,3 +1,4 @@
+import base64
 import http.server
 import json
 import os
@@ -276,11 +277,11 @@ def query_console_errors(client, phase_name, target_uuid):
     })["value"]
     return audit
 
-def save_error_audit(audit_data, phase_name, filepath):
+def save_error_audit(audit_data, phase_name, filepath, browser_target="Mozilla Firefox (x64 Windows)"):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     payload = {
         "phase": phase_name,
-        "browserTarget": "Mozilla Firefox 158.0.1 (x64 Windows)",
+        "browserTarget": browser_target,
         "addonId": ADDON_ID,
         "addonUuid": ADDON_UUID,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -295,6 +296,73 @@ def save_error_audit(audit_data, phase_name, filepath):
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     print(f"  [SAVED] {phase_name} audit artifact written to: {filepath}")
+
+
+def verify_responsive_and_capture_firefox(client, target_width, target_height, mode, screenshot_path):
+    """Resize Firefox window to hit target inner viewport dimensions, assert layout, and save PNG."""
+    client.send_cmd("WebDriver:SetWindowRect", {"width": target_width, "height": target_height})
+    time.sleep(0.25)
+    dims = client.send_cmd("WebDriver:ExecuteScript", {
+        "script": "return { iw: window.innerWidth, ih: window.innerHeight, ow: window.outerWidth, oh: window.outerHeight };"
+    })["value"]
+    adj_w = target_width + (target_width - dims["iw"])
+    adj_h = target_height + (target_height - dims["ih"])
+    client.send_cmd("WebDriver:SetWindowRect", {"width": max(320, adj_w), "height": max(400, adj_h)})
+    time.sleep(0.45)
+
+    metrics = client.send_cmd("WebDriver:ExecuteScript", {
+        "script": """
+        let viewMode = arguments[0];
+        let vw = window.innerWidth;
+        let vh = window.innerHeight;
+        let sw = document.documentElement.scrollWidth;
+        let clipped = [];
+        let checkEl = (selector, name) => {
+            let el = document.querySelector(selector);
+            if (!el || el.offsetParent === null) {
+                clipped.push(name + ':hidden');
+                return null;
+            }
+            let r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0 || r.left < -1 || r.right > vw + 1) {
+                clipped.push(`${name}(left=${Math.round(r.left)},right=${Math.round(r.right)},w=${Math.round(r.width)},vw=${vw})`);
+            }
+            return { left: Math.round(r.left), top: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) };
+        };
+
+        let headerSearch = checkEl('#search-input', 'search-input');
+        let timeFilter = checkEl('#time-filter', 'time-filter');
+        let clearBtn = checkEl('#clear-map-btn', 'clear-map-btn');
+        let details = {};
+        if (viewMode === 'overview') {
+            details.cardsCount = document.querySelectorAll('#trees-grid .tree-card').length;
+            details.firstCard = checkEl('#trees-grid .tree-card', 'first-tree-card');
+            details.firstOpenBtn = checkEl('#trees-grid .tree-open-btn', 'first-open-btn');
+        } else {
+            details.backBtn = checkEl('#back-to-overview-btn', 'back-to-overview-btn');
+            details.zoomControls = checkEl('#zoom-controls', 'zoom-controls');
+            details.mapContainer = checkEl('#map-container', 'map-container');
+            let panel = document.getElementById('details-panel');
+            details.detailsPanelVisible = panel && !panel.hidden;
+            if (details.detailsPanelVisible) {
+                details.detailsPanel = checkEl('#details-panel', 'details-panel');
+            }
+        }
+        return { vw, vh, scrollWidth: sw, clipped, headerSearch, timeFilter, clearBtn, details };
+        """,
+        "args": [mode]
+    })["value"]
+
+    assert metrics["scrollWidth"] <= metrics["vw"] + 1, f"Firefox {mode} {metrics['vw']}x{metrics['vh']} horizontal overflow: scrollWidth={metrics['scrollWidth']} > vw={metrics['vw']}"
+    assert len(metrics["clipped"]) == 0, f"Firefox {mode} {metrics['vw']}x{metrics['vh']} clipped/hidden controls: {metrics['clipped']}"
+
+    shot_res = client.send_cmd("WebDriver:TakeScreenshot", {"full": False})
+    shot_b64 = shot_res["value"] if isinstance(shot_res, dict) and "value" in shot_res else shot_res
+    os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
+    with open(screenshot_path, "wb") as f:
+        f.write(base64.b64decode(shot_b64))
+    assert os.path.exists(screenshot_path) and os.path.getsize(screenshot_path) > 1000, f"Screenshot missing or empty: {screenshot_path}"
+    return metrics
 
 # Suppress socket reset tracebacks caused by browser speculative connection probes
 class SilentTCPServer(socketserver.TCPServer):
@@ -318,9 +386,9 @@ def run_tests():
     sys.stdout = tee
 
     print("=" * 76)
-    print("TASK 7: FIREFOX 158.0.1 FILTER-INPUT & ERROR-AUDIT VERIFICATION RUN")
+    print("TASK 12: MOZILLA FIREFOX RUNTIME ACCEPTANCE RUN")
     print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Browser Target: Mozilla Firefox 158.0.1 (x64 Windows)")
+    print("Declared Manifest Minimum Floor: Firefox 115.0+")
     print("=" * 76)
 
     # 1. Start Local HTTP Servers on OS-assigned ports (dual-stack for main server so both 127.0.0.1 and localhost resolve).
@@ -381,8 +449,16 @@ def run_tests():
 
         client = MarionetteClient(port=marionette_port)
         client.connect()
-        client.send_cmd("WebDriver:NewSession", {"capabilities": {}})
-        print("[INIT] Connected to Firefox 158.0.1 via Marionette.")
+        session_info = client.send_cmd("WebDriver:NewSession", {"capabilities": {}})
+        client.send_cmd("Marionette:SetContext", {"value": "chrome"})
+        actual_firefox_version = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return Services.appinfo.version;"
+        })["value"]
+        caps_ver = None
+        if isinstance(session_info, dict):
+            caps_ver = session_info.get("capabilities", {}).get("browserVersion") or session_info.get("value", {}).get("capabilities", {}).get("browserVersion")
+        actual_firefox_version = actual_firefox_version or caps_ver or "unknown"
+        print(f"[INIT] Connected to Mozilla Firefox {actual_firefox_version} (x64 Windows) via Marionette (Declared Floor: Firefox 115.0+).")
 
         # --- STEP 1: INSTALL EXTENSION ---
         print("\n--- STEP 1: Unpacked Extension Installation & Toolbar Setup ---")
@@ -823,15 +899,30 @@ def run_tests():
         })["value"]
         assert ov_search_cards == 1, f"Expected 1 matching tree card on Overview for 'target', got {ov_search_cards}"
 
-        open_main_el2 = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": f".tree-open-btn[data-tree-id='{main_tree_id}']"})
-        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(open_main_el2)})
+        focused_main_btn = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            let btn = document.querySelector(`.tree-open-btn[data-tree-id='${arguments[0]}']`);
+            if (!btn) return false;
+            btn.focus();
+            return document.activeElement === btn;
+            """,
+            "args": [main_tree_id]
+        })["value"]
+        assert focused_main_btn is True, f"Could not focus tree-open-btn for {main_tree_id}"
+        client.send_cmd("WebDriver:PerformActions", {
+            "actions": [{"type": "key", "id": "keyboardInput", "actions": [{"type": "keyDown", "value": "\uE007"}, {"type": "keyUp", "value": "\uE007"}]}]
+        })
         time.sleep(0.4)
-        back_btn_el2 = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
-        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_btn_el2)})
+        assert client.send_cmd("WebDriver:ExecuteScript", {"script": "return !document.getElementById('detail-view').hidden;"})["value"], "Browser Enter key on overview card must open Detail View"
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('back-to-overview-btn').focus();"})
+        client.send_cmd("WebDriver:PerformActions", {
+            "actions": [{"type": "key", "id": "keyboardInput", "actions": [{"type": "keyDown", "value": "\uE007"}, {"type": "keyUp", "value": "\uE007"}]}]
+        })
         time.sleep(0.3)
         restored_ov = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return { query: document.getElementById('search-input').value, focusedTree: document.activeElement ? document.activeElement.getAttribute('data-tree-id') : null };"
+            "script": "return { overviewVisible: !document.getElementById('overview-view').hidden, query: document.getElementById('search-input').value, focusedTree: document.activeElement ? document.activeElement.getAttribute('data-tree-id') : null };"
         })["value"]
+        assert restored_ov["overviewVisible"] is True, "Browser Enter key on Back-to-Overview must return to Overview"
         assert restored_ov["query"] == "target", f"Back-to-Overview must restore prior query 'target', got '{restored_ov['query']}'"
         assert restored_ov["focusedTree"] == main_tree_id, f"Back-to-Overview must restore focus to '{main_tree_id}', got '{restored_ov['focusedTree']}'"
 
@@ -1124,6 +1215,30 @@ def run_tests():
         print(f"  [Browser Enter Key Selection] isSelected={key_select_state['isSelected']}, panelHidden={key_select_state['panelHidden']}")
         assert key_select_state["isSelected"] is True, "Enter key must select node"
         assert key_select_state["panelHidden"] is False, "Enter key must open details drawer"
+
+        # Verify Space key node activation too
+        client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "document.getElementById('details-close-btn').click(); document.querySelector('.map-node').focus();"
+        })
+        client.send_cmd("WebDriver:PerformActions", {
+            "actions": [
+                {
+                    "type": "key",
+                    "id": "keyboardInput",
+                    "actions": [
+                        {"type": "keyDown", "value": "\uE00D"}, # Space
+                        {"type": "keyUp", "value": "\uE00D"}
+                    ]
+                }
+            ]
+        })
+        time.sleep(0.3)
+        space_select_state = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "let n = document.querySelector('.map-node'); return { isSelected: n.classList.contains('is-selected'), panelHidden: document.getElementById('details-panel').hidden };"
+        })["value"]
+        print(f"  [Browser Space Key Selection] isSelected={space_select_state['isSelected']}, panelHidden={space_select_state['panelHidden']}")
+        assert space_select_state["isSelected"] is True, "Space key must select node"
+        assert space_select_state["panelHidden"] is False, "Space key must open details drawer"
 
         # 6e. Focus trapping in Clear Modal via real Browser Tab / Shift+Tab keys
         print("  Testing Clear Dialog focus trapping with browser Tab and Shift+Tab keys...")
@@ -1510,16 +1625,48 @@ def run_tests():
         assert dl_ui["sourceText"] == "Downloaded from localhost", f"Drawer source must be 'Downloaded from localhost', got '{dl_ui['sourceText']}'"
         assert dl_ui["urlHidden"] is True and dl_ui["actionsHidden"] is True, "Raw URL field and Reopen action must remain hidden for download nodes"
 
+        # 6.5f. Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots
+        print("\n--- STEP 6.5f: Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots ---")
+        ff_results_dir = r"D:\Projects\HCI Project\docs\test-results"
+        ff_detail_desktop = verify_responsive_and_capture_firefox(
+            client, 1280, 800, "detail",
+            os.path.join(ff_results_dir, "firefox-detail-desktop.png")
+        )
+        print(f"  [Firefox Responsive Detail Desktop] {ff_detail_desktop}")
+        ff_detail_narrow = verify_responsive_and_capture_firefox(
+            client, 420, 800, "detail",
+            os.path.join(ff_results_dir, "firefox-detail-narrow.png")
+        )
+        print(f"  [Firefox Responsive Detail Narrow] {ff_detail_narrow}")
+
         back_portal_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
         client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_portal_el)})
-        time.sleep(0.3)
-        print("[PASS] Verified Task 12 UI Explorer across live Firefox storage, sibling geometry, attributed downloads, and unattributed shelf.")
+        time.sleep(0.4)
+
+        ff_overview_desktop = verify_responsive_and_capture_firefox(
+            client, 1280, 800, "overview",
+            os.path.join(ff_results_dir, "firefox-overview-desktop.png")
+        )
+        print(f"  [Firefox Responsive Overview Desktop] {ff_overview_desktop}")
+        ff_overview_narrow = verify_responsive_and_capture_firefox(
+            client, 420, 800, "overview",
+            os.path.join(ff_results_dir, "firefox-overview-narrow.png")
+        )
+        print(f"  [Firefox Responsive Overview Narrow] {ff_overview_narrow}")
+        client.send_cmd("WebDriver:SetWindowRect", {"width": 1296, "height": 880})
+        time.sleep(0.25)
+        print("[PASS] Verified Task 12 UI Explorer across live Firefox storage, sibling geometry, attributed downloads, unattributed shelf, and responsive desktop/narrow viewports.")
 
         # --- STEP 7: ERROR AUDIT PRE-RESTART ---
         print("\n--- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---")
         pre_restart_audit = query_console_errors(client, "Pre-Restart Phase", ADDON_UUID)
         pre_restart_audit_file = r"D:\Projects\HCI Project\docs\test-results\firefox-errors-pre-restart.json"
-        save_error_audit(pre_restart_audit, "Pre-Restart Phase", pre_restart_audit_file)
+        save_error_audit(
+            pre_restart_audit,
+            "Pre-Restart Phase",
+            pre_restart_audit_file,
+            browser_target=f"Mozilla Firefox {actual_firefox_version} (x64 Windows)"
+        )
         print(f"  Evaluated {pre_restart_audit['totalGeckoMessages']} Gecko console records prior to restart.")
         print(f"  Extension Errors: {len(pre_restart_audit['extensionErrors'])}, Warnings: {len(pre_restart_audit['extensionWarnings'])}, Info: {len(pre_restart_audit.get('extensionInfo', []))}")
         for err in pre_restart_audit["extensionErrors"]:
@@ -1618,7 +1765,11 @@ def run_tests():
         client2 = MarionetteClient(port=marionette_port)
         client2.connect()
         client2.send_cmd("WebDriver:NewSession", {"capabilities": {}})
-        print("  Reconnected to restarted Firefox.")
+        client2.send_cmd("Marionette:SetContext", {"value": "chrome"})
+        actual_firefox_version2 = client2.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return Services.appinfo.version;"
+        })["value"] or actual_firefox_version
+        print(f"  Reconnected to restarted Mozilla Firefox {actual_firefox_version2}.")
 
         # Restore the live tab to /restart-step3 before loading extension so initialization discovers it
         client2.send_cmd("Marionette:SetContext", {"value": "content"})
@@ -1715,7 +1866,12 @@ def run_tests():
         print("\n--- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---")
         post_restart_audit = query_console_errors(client2, "Post-Restart Phase", ADDON_UUID)
         post_restart_audit_file = r"D:\Projects\HCI Project\docs\test-results\firefox-errors-post-restart.json"
-        save_error_audit(post_restart_audit, "Post-Restart Phase", post_restart_audit_file)
+        save_error_audit(
+            post_restart_audit,
+            "Post-Restart Phase",
+            post_restart_audit_file,
+            browser_target=f"Mozilla Firefox {actual_firefox_version2} (x64 Windows)"
+        )
         print(f"  Evaluated {post_restart_audit['totalGeckoMessages']} Gecko console records in restarted session.")
         print(f"  Post-Restart Extension Errors: {len(post_restart_audit['extensionErrors'])}, Warnings: {len(post_restart_audit['extensionWarnings'])}, Info: {len(post_restart_audit.get('extensionInfo', []))}")
         for err in post_restart_audit["extensionErrors"]:
@@ -1728,8 +1884,8 @@ def run_tests():
 
         # --- STEP 10: CROSS-BROWSER BEHAVIOR COMPARISON & EVALUATION ---
         print("\n--- STEP 10: Cross-Browser Comparison & Evaluation ---")
-        print("  [FIREFOX 158.0.1 RUNTIME EVALUATION]")
-        print("  - Extension Loading: Validated via Addon:Install in Firefox 158.0.1.")
+        print(f"  [FIREFOX {actual_firefox_version} RUNTIME EVALUATION (Minimum Supported Floor: Firefox 115.0+)]")
+        print(f"  - Extension Loading: Validated via Addon:Install in Mozilla Firefox {actual_firefox_version}.")
         print("  - Toolbar Action Open-or-Focus: Exact parity; first browser UI click opens map tab, repeat click focuses existing map without duplication.")
         print("  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,")
         print("    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).")
@@ -1738,7 +1894,9 @@ def run_tests():
         print("  - Search & Time Filtering: Exact parity; Overview filters tree cards; Detail keeps non-matching context ancestors dimmed while matching descendants stay attached.")
         print("  - Task 12 Explorer UI: Exact parity; Overview tree-card grouping, Unattributed Downloads shelf ('Source unavailable'), sibling fan geometry,")
         print("    attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.")
-        print("  - UI Controls & Focus Trapping: Exact parity; pan, zoom, fit, Enter node selection, Tab/Shift+Tab wrap.")
+        print("  - Real WebDriver Keyboard Navigation & Focus Trapping: Pan (ArrowRight/ArrowDown), zoom, fit, node Enter & Space selection,")
+        print("    Overview card Enter activation & Back Enter focus return, and Clear Modal Tab / Shift+Tab wrap.")
+        print("  - Responsive Viewport Checks: Desktop (1280x800) and Narrow (420px requested, ~450px browser minimum innerWidth <=900px breakpoint) screenshots verified.")
         print("  - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.")
         print("  - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.")
         print("  - Task 11 Download Provenance: Exact parity; completed download from 127.0.0.1 CDN host attributes strictly to source page hostname (localhost).")
@@ -1751,7 +1909,7 @@ def run_tests():
         proc2.wait()
 
         print("\n" + "=" * 76)
-        print("ALL INTERACTIVE BROWSER INPUT & AUDIT CHECKS COMPLETED SUCCESSFULLY (0 FAILURES)")
+        print(f"ALL EXECUTED MOZILLA FIREFOX {actual_firefox_version} INTERACTIVE CHECKS PASSED (0 FAILURES)")
         print("=" * 76)
 
     finally:

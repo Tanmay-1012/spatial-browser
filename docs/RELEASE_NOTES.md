@@ -11,8 +11,8 @@
 
 | Browser | Minimum Version Declared | Runtime Verification Target | Status |
 | :--- | :--- | :--- | :--- |
-| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome 156.0.8078.48 (x64 Windows) | **Verified (0 errors, 0 warnings)** |
-| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox 158.0.1 (x64 Windows) | **Verified (0 errors, 0 warnings)** |
+| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome `157.0.8103.78` (`main`; `156.0.8078.48` at `v0.1.0` tag) | **Verified (0 errors, 0 warnings)** |
+| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox `160.0` (`main`; `158.0.1` at `v0.1.0` tag) | **Verified (0 errors, 0 warnings)** |
 
 ---
 
@@ -109,13 +109,15 @@ Result: **59 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
 - Research Tree Explorer UI, Forest Layout, Contrast, and Security: **12 tests passed**
 
 ### Cross-Browser End-to-End Test Records
-Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), Section 56 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) (Task 11 accepted), and [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md) (Task 12 Explorer UI submitted for lead review on `2026-11-12`).
+Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), Section 56–57 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) (Task 11 accepted), and Section 7 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md#7-revision-summary--fresh-verification-evidence-2026-11-12) (Task 12 Explorer UI revision submitted for lead review on `2026-11-12`).
 
-- **Google Chrome 156.0.8078.48 (x64 Windows):**
+- **Google Chrome `157.0.8103.78` (x64 Windows; declared floor `Chrome 109+`):**
   - Full E2E Execution Log: [`docs/test-results/chrome-e2e.log`](test-results/chrome-e2e.log)
-  - Pre-Restart Console Audit: [`docs/test-results/chrome-errors-pre-restart.json`](test-results/chrome-errors-pre-restart.json) — **0 errors, 0 warnings**
-  - Post-Restart Console Audit: [`docs/test-results/chrome-errors-post-restart.json`](test-results/chrome-errors-post-restart.json) — **0 errors, 0 warnings**
-- **Mozilla Firefox 158.0.1 (x64 Windows):**
+  - Pre-Restart Console Audit: [`docs/test-results/chrome-errors-pre-restart.json`](test-results/chrome-errors-pre-restart.json) — **0 errors, 0 warnings** (`272` CDP records)
+  - Post-Restart Console Audit: [`docs/test-results/chrome-errors-post-restart.json`](test-results/chrome-errors-post-restart.json) — **0 errors, 0 warnings** (`16` CDP records)
+  - Responsive Viewport Captures (`1280x800` & `420x800`): [`chrome-overview-desktop.png`](test-results/chrome-overview-desktop.png), [`chrome-overview-narrow.png`](test-results/chrome-overview-narrow.png), [`chrome-detail-desktop.png`](test-results/chrome-detail-desktop.png), [`chrome-detail-narrow.png`](test-results/chrome-detail-narrow.png)
+- **Mozilla Firefox `160.0` (x64 Windows; declared floor `Firefox 115.0+`):**
   - Full E2E Execution Log: [`docs/test-results/firefox-e2e.log`](test-results/firefox-e2e.log)
-  - Pre-Restart Console Audit: [`docs/test-results/firefox-errors-pre-restart.json`](test-results/firefox-errors-pre-restart.json) — **0 errors, 0 warnings**
-  - Post-Restart Console Audit: [`docs/test-results/firefox-errors-post-restart.json`](test-results/firefox-errors-post-restart.json) — **0 errors, 0 warnings**
+  - Pre-Restart Console Audit: [`docs/test-results/firefox-errors-pre-restart.json`](test-results/firefox-errors-pre-restart.json) — **0 errors, 0 warnings** (`5` Gecko records)
+  - Post-Restart Console Audit: [`docs/test-results/firefox-errors-post-restart.json`](test-results/firefox-errors-post-restart.json) — **0 errors, 0 warnings** (`24` Gecko records)
+  - Responsive Viewport Captures (`1280x800` & `500x800` Windows min): [`firefox-overview-desktop.png`](test-results/firefox-overview-desktop.png), [`firefox-overview-narrow.png`](test-results/firefox-overview-narrow.png), [`firefox-detail-desktop.png`](test-results/firefox-detail-desktop.png), [`firefox-detail-narrow.png`](test-results/firefox-detail-narrow.png)

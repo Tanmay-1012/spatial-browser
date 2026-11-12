@@ -6,7 +6,7 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 
 - [Task 12 — Research Tree Explorer Overview & Detail UI](task-12.md) ([Report: `task-12-output.md`](../task-12-output.md))
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 implementation and cross-browser E2E verification are submitted in `task-12-output.md`; wait for lead review before beginning another task.
+Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 Section 6 revisions have been completed and submitted in Section 7 of `task-12-output.md`; await lead acceptance before beginning another task.
 
 ## Reporting workflow
 

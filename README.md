@@ -2,8 +2,8 @@
 
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
-> **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Task 11 is accepted (Section 57); Task 12 Research Tree Explorer UI is implemented, verified (`59/59` unit tests + Chrome 156 & Firefox 158 E2E), and awaiting lead review.
+> **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
+> **Active Branch Status (main):** Task 11 is accepted (Section 57). Task 12 Section 6 revisions (Chrome toolbar UIA click + focus check, dynamic version reporting, real Chrome CDP keyboard input, and desktop/narrow responsive screenshots across Google Chrome `157.0.8103.78` and Mozilla Firefox `160.0`) pass build, 59 unit checks, and both sequential E2E runs (**0 failures, 0 errors, 0 warnings**) — pending lead acceptance ([Task 12 report](task%20output%20overview/task-12-output.md#7-revision-summary--fresh-verification-evidence-2026-11-12)).
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -12,7 +12,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
 - **Working Towards `v2.0` (Active Development on `main`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
-  - **Submitted for Lead Review (Milestone 12 / Task 12):** Two-level Research Tree Explorer overview cards, Unattributed Downloads shelf (`Source unavailable`), per-tree Detail View with context-ancestor filtering and sibling fan geometry, attributed-download provenance drawer, and Back-to-Overview focus/filter restoration (`npm test`: `59 passed, 0 failed`; Chrome 156 & Firefox 158 E2E passed with 0 errors/warnings). See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md).
+  - **Pending Lead Acceptance (Milestone 12 / Task 12):** The Explorer UI, 59 automated checks, and fresh isolated-profile E2E suites (dynamically querying runtime **Google Chrome `157.0.8103.78`** via CDP and **Mozilla Firefox `160.0`** via Marionette, real keyboard input parity, and desktop/narrow responsive screenshots) pass with **0 failures, 0 errors, and 0 warnings**. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**
@@ -27,8 +27,8 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
 
 | Browser | Minimum Version | Justification |
 | :--- | :--- | :--- |
-| **Mozilla Firefox** | **115.0+** | Declared project compatibility floor in `browser_specific_settings.gecko.strict_min_version` (ESR 115 baseline supporting `storage.session`); verified at runtime in Firefox 158.0.1. |
-| **Google Chrome** | **109.0+** | Declared project compatibility floor in `minimum_chrome_version`; verified at runtime in Chrome 156.0.8078.48. |
+| **Mozilla Firefox** | **115.0+** | Declared project compatibility floor in `browser_specific_settings.gecko.strict_min_version` (ESR 115 baseline supporting `storage.session`); current `main` verified at runtime in Firefox `160.0` (and `v0.1.0` in `158.0.1`). |
+| **Google Chrome** | **109.0+** | Declared project compatibility floor in `minimum_chrome_version`; current `main` verified at runtime in Chrome `157.0.8103.78` (and `v0.1.0` in `156.0.8078.48`). |
 
 ## Declared Permissions and Reasons
 

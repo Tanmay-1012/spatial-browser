@@ -1,6 +1,6 @@
 # Task 12 — Research Tree Explorer Overview & Detail UI
 
-**Status:** Assigned — implementation may begin.  
+**Status:** Revision Submitted — Pending Lead Acceptance (see Task 12 output, Section 7). Do not start another task until lead acceptance.
 **Milestone:** 12 (Research Tree Explorer UI)  
 **Design authority:** Approved v15 proposal and acceptance matrix in Section 51 of [Task 10 output](../task-10-output.md); approval recorded in Section 52. Task 11 is accepted in Section 57 of [Task 11 output](../task-11-output.md).
 
@@ -64,7 +64,7 @@ Keep the existing graph data and tracking behavior. The UI must make separate tr
    - Global and tree-local search/time filtering with correct ancestry context and counts.
    - Root-pruned tree identity, empty state, large/deep tree layout, and safe Clear Map behavior.
    - Keyboard navigation, focus restoration, contrast, and reduced motion.
-2. Run updated isolated-profile end-to-end scenarios in Chrome 156.0.8078.48 and Firefox 158.0.1 using local test pages. Verify the overview/detail flow, tree/card counts, opener siblings, same-tab sibling branching, attributed and unattributed downloads, filter/search, keyboard/focus, pan/zoom/fit, clear confirmation, and restart persistence. Capture logs and report any unrun scenario as pending.
+2. Run updated isolated-profile end-to-end scenarios in Chrome (`157.0.8103.78` runtime; declared floor `109+`) and Firefox (`160.0` runtime; declared floor `115.0+`) using local test pages. Verify the overview/detail flow, tree/card counts, opener siblings, same-tab sibling branching, attributed and unattributed downloads, filter/search, real browser keyboard/focus, responsive desktop & narrow screenshots, pan/zoom/fit, clear confirmation, and restart persistence. Capture logs and report any unrun scenario as pending.
 3. Run npm.cmd test and npm.cmd run build. Confirm both packages contain the updated shared UI and pass manifest/build validation. Report exact test counts, browser versions, scenario outcomes, and evidence paths.
 
 ## Deliverables
@@ -87,3 +87,7 @@ Task 12 is ready for lead review when every applicable item below is demonstrate
 - Keyboard and assistive-technology structure, focus restoration, contrast, and reduced-motion behavior pass.
 - Clear Map, safe page reopening, and persistence still work.
 - Automated tests and both browser builds pass; fresh Chrome and Firefox logs are attached.
+
+## Lead Review Gate
+
+The initial implementation is submitted, but lead acceptance is withheld. Complete the revision checklist in [Task 12 output, Section 6](../task-12-output.md#6-lead-review--revisions-required) before closing this task. Keep all work within Task 12; do not begin Task 13.

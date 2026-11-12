@@ -11,8 +11,8 @@
 
 | Browser | Minimum Version Declared | Runtime Verification Target | Status |
 | :--- | :--- | :--- | :--- |
-| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome 156.0.8078.48 (x64 Windows) | **Verified (0 errors, 0 warnings)** |
-| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox 158.0.1 (x64 Windows) | **Verified (0 errors, 0 warnings)** |
+| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome `157.0.8103.78` (`main`; `156.0.8078.48` at `v0.1.0` tag) | **Verified (0 errors, 0 warnings)** |
+| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox `160.0` (`main`; `158.0.1` at `v0.1.0` tag) | **Verified (0 errors, 0 warnings)** |
 
 ---
 
@@ -110,16 +110,18 @@ Result: **59 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
 
 ### Cross-Browser End-to-End Test Records
 
-**Task 11 & Task 12 verification status (2026-11-12):** Task 11 backend/provenance is accepted (Section 57). **Task 12** Research Tree Explorer UI is implemented, verified by 59/59 automated checks plus isolated-profile Chrome 156.0.8078.48 and Firefox 158.0.1 E2E runs with zero errors or warnings, and submitted for lead review (`task output overview/task-12-output.md`).
+**Task 11 & Task 12 verification status (2026-11-12):** Task 11 backend/provenance is accepted (Section 57). Task 12 Section 6 revisions have been completed and re-verified across dynamic runtime version detection, fixed DPI-aware Chrome toolbar UI click & active-tab focus verification, real Chrome CDP keyboard input (`Enter`, `Space`, arrows, `Tab`/`Shift+Tab`), and desktop/narrow responsive screenshots — all passing with **0 failures, 0 errors, and 0 warnings**, pending lead acceptance in [`task output overview/task-12-output.md`](task%20output%20overview/task-12-output.md#7-revision-summary--fresh-verification-evidence-2026-11-12).
 Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
-- **Google Chrome 156.0.8078.48 (x64 Windows):**
+- **Google Chrome `157.0.8103.78` (x64 Windows; declared floor `Chrome 109+`):**
   - Full E2E Execution Log: [`docs/test-results/chrome-e2e.log`](docs/test-results/chrome-e2e.log)
-  - Pre-Restart Console Audit: [`docs/test-results/chrome-errors-pre-restart.json`](docs/test-results/chrome-errors-pre-restart.json) — **0 errors, 0 warnings**
-  - Post-Restart Console Audit: [`docs/test-results/chrome-errors-post-restart.json`](docs/test-results/chrome-errors-post-restart.json) — **0 errors, 0 warnings**
-- **Mozilla Firefox 158.0.1 (x64 Windows):**
+  - Pre-Restart Console Audit: [`docs/test-results/chrome-errors-pre-restart.json`](docs/test-results/chrome-errors-pre-restart.json) — **0 errors, 0 warnings** (`272` CDP records)
+  - Post-Restart Console Audit: [`docs/test-results/chrome-errors-post-restart.json`](docs/test-results/chrome-errors-post-restart.json) — **0 errors, 0 warnings** (`16` CDP records)
+  - Responsive Viewport Captures (`1280x800` & `420x800`): [`chrome-overview-desktop.png`](docs/test-results/chrome-overview-desktop.png), [`chrome-overview-narrow.png`](docs/test-results/chrome-overview-narrow.png), [`chrome-detail-desktop.png`](docs/test-results/chrome-detail-desktop.png), [`chrome-detail-narrow.png`](docs/test-results/chrome-detail-narrow.png)
+- **Mozilla Firefox `160.0` (x64 Windows; declared floor `Firefox 115.0+`):**
   - Full E2E Execution Log: [`docs/test-results/firefox-e2e.log`](docs/test-results/firefox-e2e.log)
-  - Pre-Restart Console Audit: [`docs/test-results/firefox-errors-pre-restart.json`](docs/test-results/firefox-errors-pre-restart.json) — **0 errors, 0 warnings**
-  - Post-Restart Console Audit: [`docs/test-results/firefox-errors-post-restart.json`](docs/test-results/firefox-errors-post-restart.json) — **0 errors, 0 warnings**
+  - Pre-Restart Console Audit: [`docs/test-results/firefox-errors-pre-restart.json`](docs/test-results/firefox-errors-pre-restart.json) — **0 errors, 0 warnings** (`5` Gecko records)
+  - Post-Restart Console Audit: [`docs/test-results/firefox-errors-post-restart.json`](docs/test-results/firefox-errors-post-restart.json) — **0 errors, 0 warnings** (`24` Gecko records)
+  - Responsive Viewport Captures (`1280x800` & `500x800` Windows min from `420x800` request): [`firefox-overview-desktop.png`](docs/test-results/firefox-overview-desktop.png), [`firefox-overview-narrow.png`](docs/test-results/firefox-overview-narrow.png), [`firefox-detail-desktop.png`](docs/test-results/firefox-detail-desktop.png), [`firefox-detail-narrow.png`](docs/test-results/firefox-detail-narrow.png)
 
 
