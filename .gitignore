@@ -1,0 +1,18 @@
+# Generated build deliverables (published via GitHub Releases)
+outputs/
+
+# Dependencies & caches
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# OS & editor artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.swp
+
+# Local debug / scratch files
+SPATIAL_BROWSER_HISTORY_AGENT_BRIEF.md

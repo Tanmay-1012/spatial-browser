@@ -1,0 +1,68 @@
+================================================================================
+FIREFOX DYNAMIC NAVIGATION & BACK/FORWARD PROBE LOG
+Timestamp: 2026-10-29 21:55:50
+Browser Target (Queried Dynamically): Firefox 159.0 (WINNT, Build: 20261022150525)
+================================================================================
+[PASS] Addon installed: ID=spatial-browser-history@term-project.local
+[PASS] Event logger attached in extension window (cabbe59a-fc77-4bc6-adac-5960bb2ee661)
+[STEP 1] Initial navigation to Page 1 in tab (c8c62e60-f813-4b05-95eb-251024ab2309)
+[STEP 2] Clicked #to-p2 link -> committed /page2
+[STEP 3] Clicked #spa-btn (history.pushState to /page2/spa-route)
+[STEP 4] Executed browser Back from SPA route -> /page2
+[STEP 5] Executed browser Forward to SPA route -> /page2/spa-route
+[STEP 6] Executed browser Back from SPA route -> /page2
+[STEP 7] Executed browser Back from /page2 -> /page1
+[STEP 8] Executed browser Forward from /page1 -> /page2
+[STEP 9] Executed browser Back from /page2 -> /page1
+[STEP 10] Clicked #to-p3 link from /page1 -> committed /page3 (branching)
+[STEP 11] Clicked normal <a href='/page1'> on Page 3 pointing to ancestor URL
+
+================================================================================
+RAW OBSERVED EVENT LOG FROM FIREFOX:
+================================================================================
+[01] onCommitted                      url=http://127.0.0.1:54405/page1
+     transitionType=link       transitionQualifiers=[]
+[02] tabs.onUpdated:url               url=http://127.0.0.1:54405/page1
+     status=loading
+[03] onCommitted                      url=http://127.0.0.1:54405/page2
+     transitionType=link       transitionQualifiers=[]
+[04] tabs.onUpdated:url               url=http://127.0.0.1:54405/page2
+     status=loading
+[05] onHistoryStateUpdated            url=http://127.0.0.1:54405/page2/spa-route
+     transitionType=link       transitionQualifiers=[]
+[06] tabs.onUpdated:url               url=http://127.0.0.1:54405/page2/spa-route
+     status=complete
+[07] onHistoryStateUpdated            url=http://127.0.0.1:54405/page2
+     transitionType=link       transitionQualifiers=['forward_back']
+[08] tabs.onUpdated:url               url=http://127.0.0.1:54405/page2
+     status=complete
+[09] onHistoryStateUpdated            url=http://127.0.0.1:54405/page2/spa-route
+     transitionType=link       transitionQualifiers=['forward_back']
+[10] tabs.onUpdated:url               url=http://127.0.0.1:54405/page2/spa-route
+     status=complete
+[11] onHistoryStateUpdated            url=http://127.0.0.1:54405/page2
+     transitionType=link       transitionQualifiers=['forward_back']
+[12] tabs.onUpdated:url               url=http://127.0.0.1:54405/page2
+     status=complete
+[13] onCommitted                      url=http://127.0.0.1:54405/page1
+     transitionType=link       transitionQualifiers=['forward_back']
+[14] tabs.onUpdated:url               url=http://127.0.0.1:54405/page1
+     status=loading
+[15] onCommitted                      url=http://127.0.0.1:54405/page2
+     transitionType=link       transitionQualifiers=['forward_back']
+[16] tabs.onUpdated:url               url=http://127.0.0.1:54405/page2
+     status=loading
+[17] onCommitted                      url=http://127.0.0.1:54405/page1
+     transitionType=link       transitionQualifiers=['forward_back']
+[18] tabs.onUpdated:url               url=http://127.0.0.1:54405/page1
+     status=loading
+[19] onCommitted                      url=http://127.0.0.1:54405/page3
+     transitionType=link       transitionQualifiers=[]
+[20] tabs.onUpdated:url               url=http://127.0.0.1:54405/page3
+     status=loading
+[21] onCommitted                      url=http://127.0.0.1:54405/page1
+     transitionType=link       transitionQualifiers=[]
+[22] tabs.onUpdated:url               url=http://127.0.0.1:54405/page1
+     status=loading
+================================================================================
+PROBE EXECUTION COMPLETED SUCCESSFULLY.

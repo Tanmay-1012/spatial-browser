@@ -1,0 +1,154 @@
+============================================================================
+TASK 6: GOOGLE CHROME 156.0.8078.48 RUNTIME ACCEPTANCE RUN
+Timestamp: 2026-11-12 18:30:15
+Browser Target: Google Chrome 156.0.8078.48 (x64 Windows)
+Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
+============================================================================
+[INIT] Local test HTTP server started at http://127.0.0.1:60533 (and http://localhost:60533)
+[INIT] Local CDN HTTP server started at http://127.0.0.1:60534
+
+--- STEP 1: Chrome Process Startup & Unpacked Extension Loading ---
+[INIT] Connected to Chrome 156.0.8078.48 via CDP: ws://127.0.0.1:60535/devtools/browser/90dc56ea-61cf-4436-98e3-c2cb4872781b
+[PASS] Unpacked extension loaded successfully from D:\Projects\HCI Project\outputs\chrome\unpacked
+       Extension ID: edhmggcmhhmlbfmidpeamoiffebfijah
+[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome.
+[PASS] Service worker discovered: Service Worker chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js (chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js)
+[PASS] Attached to background service worker (Session ID: 5D26F84C2D7A71CC4546437CCE166267).
+[PASS] Background service worker environment: {'hasStorage': True, 'hasTracker': True, 'hasLaunch': True}
+[PASS] Background tracker session state: {'initialized': True, 'initializing': False}
+
+--- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---
+  Pages before Action 1: 1
+[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab 7D31779E0D1DFC6C5B9788B65BAAF076, total pages=2 (was 1)
+  Switched focus to blank tab D3AC3F21495C32F7308ACA16120975DE. Pages before Action 2: 3
+[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 1555505481, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
+
+--- STEP 3: Exercise Browsing Scenarios & Verify Stored Visits and Parent Relationships ---
+  [3a] Navigating to Page 1...
+  [3b] Same-tab click to Page 2...
+  [3c] Navigating to HTTP 302 redirect (/redirect -> /target)...
+  [3d] Reloading target page (testing reload deduplication)...
+  [3e] Updating document.title dynamically...
+  [3f] Updating location.hash to #section1...
+  [3g] History API route update (pushState to /target/spa-route)...
+  [3h] Navigating to /opener and opening /child tab...
+  [3h] Child tab confirmed at http://127.0.0.1:60533/child. Closing child tab...
+  [3i] Navigating via unknown/closed opener to /unknown-parent...
+  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:60533/unknown-parent.
+
+[VISIT COUNT AUDIT - PRE-REOPEN]
+  Stored visits in local storage: 7
+    - [node_1794475843381_zunk1s] url=http://127.0.0.1:60533/page1, parent=None, children=['node_1794475844469_1denme'], checkpoint=True, title='Page One'
+    - [node_1794475844469_1denme] url=http://127.0.0.1:60533/page2, parent=node_1794475843381_zunk1s, children=['node_1794475845403_cz91oa'], checkpoint=False, title='Page Two'
+    - [node_1794475845403_cz91oa] url=http://127.0.0.1:60533/target#section1, parent=node_1794475844469_1denme, children=['node_1794475848623_b5xrrc'], checkpoint=False, title='Updated Target Title'
+    - [node_1794475848623_b5xrrc] url=http://127.0.0.1:60533/target/spa-route, parent=node_1794475845403_cz91oa, children=['node_1794475849954_1q7b8b'], checkpoint=False, title='Updated Target Title'
+    - [node_1794475849954_1q7b8b] url=http://127.0.0.1:60533/opener, parent=node_1794475848623_b5xrrc, children=['node_1794475850819_ozxsrr'], checkpoint=False, title='Opener Page'
+    - [node_1794475850819_ozxsrr] url=http://127.0.0.1:60533/child, parent=node_1794475849954_1q7b8b, children=[], checkpoint=False, title='Child Page'
+    - [node_1794475853785_8h7cc2] url=http://127.0.0.1:60533/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
+[PASS] Verified Page 1: Root checkpoint with parentNodeId: null.
+[PASS] Verified same-tab navigation: Page 2 parent is Page 1, Page 1 children includes Page 2.
+[PASS] Verified redirect destination: /target parent is Page 2.
+[PASS] Verified reload deduplication: Exactly 1 node stored for /target despite reload.
+[PASS] Verified dynamic title update: node title updated in place to 'Updated Target Title'.
+[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:60533/target#section1' without creating extra visit.
+[PASS] Verified SPA route (pushState): /target/spa-route parent is /target.
+[PASS] Verified opener relationship: /child parent is /opener (node_1794475849954_1q7b8b), opener children include child.
+[PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).
+  Rendered SVG map nodes before reopen: 7
+
+--- STEP 4: Select Closed Child Node, Reopen Saved URL & Explicitly Audit Visit Count ---
+[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:60533/child'
+[PASS] Reopened saved URL in new tab: http://127.0.0.1:60533/child
+
+[VISIT COUNT AUDIT - POST-REOPEN]
+  Stored visits in local storage: 8 (initial: 7, +1 from reopened tab)
+  Rendered SVG map nodes after reopen: 8
+[PASS] Explicit visit-count change proven: 7 visits before reopen -> 8 visits after reopen.
+
+--- STEP 5: Prove Search and Time Filtering Across Real Boundary ---
+  Base active visit count: 8
+  [Search] Typing 'target' into #search-input...
+  [Search 'target'] Badge: '2 of 8 visits', matching count: 2
+  [Clear Search] Clicking #search-clear-btn...
+  [Clear Search] Restored badge: '8 of 8 visits', node count: 8
+[PASS] Verified search query typing and clear-search button restoration.
+  Testing time filtering across boundary (setting Page 1 timestamp to 2 hours ago)...
+  [Time Filter] Selecting 'hour' option...
+  [Filter 'hour'] Badge: '7 of 8 visits', count: 7, Page 1 in map: False
+  [Filter 'day'] Count: 8 (includes 2hr-old visit)
+[PASS] Verified time filtering across boundary: 2hr visit excluded in 'hour' and restored in 'all'/'day'.
+
+--- STEP 6: Exercise Pan, Zoom, Keyboard Navigation, and Dialog Focus Trapping ---
+  [Pointer Pan] before: translate(53.04142011834318, 373.7514976004877) scale(0.5893491124260355) -> after: translate(133.04142011834318, 433.7514976004877) scale(0.5893491124260355)
+  [Zoom Controls] zoomIn=translate(-11.95029585798818, 349.9417934584759) scale(0.7072189349112425), zoomOut=translate(74.74125443786983, 374.227691683328) scale(0.5869917159763313), fit=translate(53.04142011834318, 373.7514976004877) scale(0.5893491124260355)
+  [Keyboard Enter Key Selection] isSelected=True, panelHidden=False
+  Testing Clear Dialog focus trapping with Tab and Shift+Tab keys...
+  [Clear Modal Opened] modalOpen=True, initialFocus='cancel-clear-btn'
+  [Tab Key Action] focus wrapped to: 'confirm-clear-btn'
+  [Shift+Tab Key Action] focus wrapped to: 'cancel-clear-btn'
+  [Cancel preserved nodes]: 8 of 8, modalClosed=True
+  [After Confirm Clear]: emptyStateHidden=False, nodeCount=0, badge='0 visits'
+[PASS] Verified clear dialog: Tab/Shift+Tab focus trap proven, cancel preserves data, confirm clears storage and resets map.
+
+--- STEP 6.5: Task 11 Core Scenarios: Sibling Branching & Download Provenance ---
+  [6.5a] Exercising Sibling Branching: /wiki -> /source-a -> Back -> /source-b...
+[PASS] Sibling Branching Proven: Source A (node_1794475871416_7neqws) and Source B (node_1794475873521_fv3qun) are siblings under Wikipedia (node_1794475870370_ut9dsk) in tree tree_node_1794475870370_ut9dsk.
+  [6.5b] Exercising Distinct-Host Download Provenance from http://localhost/download-portal to http://127.0.0.1 CDN...
+[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (from 127.0.0.1 CDN) attributed to source portal node_1794475874626_f235qr (originDomain: localhost != 127.0.0.1), raw URL/CDN omitted.
+  [6.5c] Exercising Unattributed Download (no referrer)...
+[PASS] Unattributed Download Proven: dataset.zip recorded with parentNodeId: null, originDomain: 'Source unavailable'.
+  [6.5d] Exercising Ambiguous Referrer Download (|M|=2 matches)...
+[PASS] Ambiguous Referrer Proven: ambiguous.bin matching 2 pages fell back safely to parentNodeId: null, origin: 'Source unavailable'.
+
+--- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---
+  [SAVED] Pre-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-errors-pre-restart.json
+  Evaluated 255 CDP event records prior to restart.
+  Extension Errors: 0, Warnings: 0
+[PASS] Pre-restart error audit passed with 0 errors and 0 warnings.
+
+--- STEP 8: Background Suspension & Browser Restart Persistence ---
+  [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...
+  Pre-restart node count stored in chrome.storage.local: 12
+  Pre-restart tab 1555505493 historyStack: ['node_1794475881747_mefjjh', 'node_1794475882222_wzbtom', 'node_1794475883428_l1ioaq'] (length 3)
+[PASS] Pre-restart multi-node baseline verified: tab 1555505493 has 3-node history stack.
+  [8b] Testing service worker stop/suspension...
+  [PASS] Service worker suspension signaled via Target.closeTarget.
+  [PASS] Service worker re-awakened on demand: 12 node(s) accessible.
+  [8c] Terminating Chrome process for full browser restart...
+  Chrome process terminated cleanly.
+  Relaunching Chrome with persistent profile and restored live tab...
+  Reconnected to restarted Chrome: ws://127.0.0.1:60535/devtools/browser/f10dae30-16c6-4dd2-9ba1-db3ff3ddaa11
+  Post-restart stored node count in storage: 12 (was 12)
+  Post-restart live tab state: stack=['node_1794475883428_l1ioaq'], index=0, baselineEstablished=True
+[PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.
+  Post-restart rendered node count in SVG map: 12 (12 of 12 visits)
+[PASS] Verified UI map reconciliation: All persisted visits correctly rendered after restart.
+
+--- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---
+  [SAVED] Post-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json
+  Evaluated 16 CDP event records in restarted session.
+  Post-Restart Extension Errors: 0, Warnings: 0
+[PASS] Post-restart error audit passed with 0 errors and 0 warnings.
+
+--- STEP 10: Cross-Browser Comparison & Evaluation ---
+  [CHROME VS FIREFOX RUNTIME COMPARISON]
+  - Extension Loading: Validated via Extensions.loadUnpacked in Chrome 156.0.8078.48.
+  - Toolbar Action Open-or-Focus: Exact parity; first browser UI click opens map tab, repeat click focuses existing map without duplication.
+  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,
+    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).
+  - Reload Deduplication: Exact parity; exactly 1 node stored for /target despite reload.
+  - Closed Child URL Reopen: Exact parity; 7 initial visits -> 8 visits after reopening child URL (+1 visit).
+  - Search & Time Filtering: Exact parity; search reduces to 2 of 8 visits, clear restores 8 visits;
+    1-hour filter excludes 2hr-old visit, 'all' and 'day' restore all visits.
+  - UI Controls & Focus Trapping: Exact parity; pan, zoom, fit, Enter node selection, Tab/Shift+Tab wrap.
+  - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.
+  - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.
+  - Task 11 Download Provenance: Exact parity; completed download from 127.0.0.1 CDN host attributes strictly to source page hostname (localhost).
+  - Task 11 Unattributed & Ambiguous Referrers: Exact parity; missing or ambiguous referrers safely fall back to 'Source unavailable'.
+  - Task 11 Multi-Node Session Restart: Exact parity; multi-node history stacks collapse to single-node baselines while stored graph remains intact.
+  - Error Telemetry: Exact parity; 0 extension errors, 0 warnings across both live and restart phases.
+
+============================================================================
+ALL EXECUTED CHROME 156.0.8078.48 CDP CHECKS PASSED (0 FAILURES)
+ALL ACCEPTANCE CRITERIA SATISFIED ACROSS LIVE RUNTIME VERIFICATION.
+============================================================================

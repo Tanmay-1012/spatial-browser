@@ -1,0 +1,25 @@
+{
+  "name": "spatial-browser-history",
+  "version": "0.1.0",
+  "description": "A local-first browser extension for Chrome and Firefox to retrace browsing and research paths.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node tests/verify-builds.mjs && node tests/test-tracker.mjs && node tests/test-ui.mjs",
+    "test:builds": "node tests/verify-builds.mjs",
+    "test:tracker": "node tests/test-tracker.mjs",
+    "test:ui": "node tests/test-ui.mjs",
+    "generate-icons": "python scripts/generate-icons.py"
+  },
+  "keywords": [
+    "browser-extension",
+    "chrome-extension",
+    "firefox-addon",
+    "webextensions",
+    "manifest-v3",
+    "spatial-history"
+  ],
+  "author": "Antigravity & Codex",
+  "license": "UNLICENSED"
+}

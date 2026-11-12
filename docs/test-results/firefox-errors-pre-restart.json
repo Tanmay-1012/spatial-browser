@@ -1,0 +1,14 @@
+{
+  "phase": "Pre-Restart Phase",
+  "browserTarget": "Mozilla Firefox 158.0.1 (x64 Windows)",
+  "addonId": "spatial-browser-history@term-project.local",
+  "addonUuid": "d14e130f-9ddc-4a9b-8f3e-spatial000001",
+  "timestamp": "2026-11-12T09:13:07Z",
+  "totalGeckoMessagesEvaluated": 5,
+  "errorCount": 0,
+  "warningCount": 0,
+  "infoCount": 0,
+  "extensionErrors": [],
+  "extensionWarnings": [],
+  "extensionInfo": []
+}

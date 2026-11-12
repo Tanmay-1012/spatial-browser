@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spatial Browser History</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header Toolbar -->
+    <header class="app-header" role="banner">
+      <div class="header-brand">
+        <img src="icons/icon-32.png" alt="" class="header-icon" width="24" height="24" aria-hidden="true">
+        <h1 class="header-title">Spatial Browser History</h1>
+        <span class="badge badge-stage" id="node-count-badge">0 visits</span>
+      </div>
+
+      <div class="header-controls">
+        <!-- Search Input -->
+        <div class="search-box">
+          <span class="search-icon" aria-hidden="true">&#x1F50D;</span>
+          <input 
+            type="search" 
+            id="search-input" 
+            placeholder="Search by title or address..." 
+            aria-label="Search visits by title or URL"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button id="search-clear-btn" class="search-clear-btn" aria-label="Clear search query" hidden>&#x2715;</button>
+        </div>
+
+        <!-- Time Range Filter -->
+        <div class="filter-box">
+          <label for="time-filter" class="visually-hidden">Filter visits by time</label>
+          <select id="time-filter" class="filter-select" aria-label="Filter visits by time">
+            <option value="all" selected>All Captured History</option>
+            <option value="hour">Past Hour</option>
+            <option value="day">Past 24 Hours</option>
+            <option value="week">Past 7 Days</option>
+          </select>
+        </div>
+
+        <!-- Zoom / View Controls -->
+        <div class="zoom-controls" role="group" aria-label="Map zoom and view controls">
+          <button id="zoom-in" class="btn btn-icon" title="Zoom In (+)" aria-label="Zoom in">&#x002B;</button>
+          <button id="zoom-out" class="btn btn-icon" title="Zoom Out (-)" aria-label="Zoom out">&#x2212;</button>
+          <button id="zoom-reset" class="btn btn-secondary btn-sm" title="Fit Map to View (0)" aria-label="Fit map to view">Fit</button>
+        </div>
+
+        <!-- Clear Action -->
+        <div class="header-actions">
+          <button id="clear-map-btn" class="btn btn-danger btn-sm" aria-haspopup="dialog" aria-label="Clear all captured history">Clear Map</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="app-main" id="main-content" role="main">
+      <!-- Interactive SVG Map Canvas -->
+      <div 
+        id="map-container" 
+        class="map-container" 
+        tabindex="0" 
+        role="region" 
+        aria-label="Spatial History Map. Use arrow keys to pan, plus and minus to zoom, or tab to navigate visits."
+      >
+        <svg id="map-svg" class="map-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Background grid pattern -->
+            <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1" class="grid-line" opacity="0.12"/>
+            </pattern>
+            <!-- Branch arrow marker -->
+            <marker id="branch-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="currentColor" class="branch-arrow-head"/>
+            </marker>
+          </defs>
+
+          <!-- Infinite Grid Background -->
+          <rect width="100%" height="100%" fill="url(#grid-pattern)" class="map-grid-bg"/>
+
+          <!-- Transformable Viewport Group -->
+          <g id="map-viewport" class="map-viewport">
+            <g id="edges-layer" class="edges-layer" aria-hidden="true"></g>
+            <g id="nodes-layer" class="nodes-layer" role="group" aria-label="Browsing visit nodes"></g>
+          </g>
+        </svg>
+
+        <!-- On-canvas hint -->
+        <div class="map-hint" aria-hidden="true">
+          <span>Pan: Drag or Arrow keys &bull; Zoom: Scroll or +/- &bull; Fit: 0 &bull; Select: Click or Enter</span>
+        </div>
+      </div>
+
+      <!-- Empty State View (shown when graph has zero nodes) -->
+      <section id="empty-state" class="placeholder-card" aria-labelledby="placeholder-heading" hidden>
+        <div class="illustration-container" aria-hidden="true">
+          <svg class="placeholder-graphic" viewBox="0 0 240 160" width="240" height="160" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="lineGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#818CF8" stop-opacity="0.8"/>
+              </linearGradient>
+              <linearGradient id="lineGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#34D399" stop-opacity="0.8"/>
+              </linearGradient>
+            </defs>
+            <path d="M 20 40 L 220 40 M 20 80 L 220 80 M 20 120 L 220 120" stroke="#334155" stroke-dasharray="3 3" stroke-width="1" opacity="0.4"/>
+            <path d="M 60 20 L 60 140 M 120 20 L 120 140 M 180 20 L 180 140" stroke="#334155" stroke-dasharray="3 3" stroke-width="1" opacity="0.4"/>
+            <path d="M 60 80 C 100 80, 100 48, 140 48" fill="none" stroke="url(#lineGrad1)" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M 60 80 C 100 80, 100 112, 140 112" fill="none" stroke="url(#lineGrad2)" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M 140 48 C 170 48, 170 32, 195 32" fill="none" stroke="#818CF8" stroke-dasharray="3 3" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <path d="M 140 48 C 170 48, 170 64, 195 64" fill="none" stroke="#818CF8" stroke-dasharray="3 3" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <g class="node-root">
+              <circle cx="60" cy="80" r="14" fill="#0EA5E9"/>
+              <circle cx="60" cy="80" r="6" fill="#F0F9FF"/>
+            </g>
+            <g class="node-child-1">
+              <circle cx="140" cy="48" r="12" fill="#6366F1"/>
+              <circle cx="140" cy="48" r="5" fill="#EEF2FF"/>
+            </g>
+            <g class="node-child-2">
+              <circle cx="140" cy="112" r="12" fill="#10B981"/>
+              <circle cx="140" cy="112" r="5" fill="#ECFDF5"/>
+            </g>
+            <circle cx="195" cy="32" r="7" fill="#475569" stroke="#94A3B8" stroke-width="1.5"/>
+            <circle cx="195" cy="64" r="7" fill="#475569" stroke="#94A3B8" stroke-width="1.5"/>
+          </svg>
+        </div>
+
+        <h2 id="placeholder-heading" class="placeholder-title">No Browsing Map Yet</h2>
+        <p class="placeholder-description">
+          Open browser tabs and start researching web pages. The extension will automatically capture your top-level navigation trails and render them as connected branches.
+        </p>
+
+        <div class="feature-overview">
+          <div class="feature-item">
+            <div class="feature-icon" aria-hidden="true">&#x1F5FA;&#xFE0F;</div>
+            <div class="feature-text">
+              <h3 class="feature-name">Spatial Trail Navigation</h3>
+              <p class="feature-detail">Visually retrace pages visited as connected branches instead of searching flat linear history logs.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon" aria-hidden="true">&#x1F512;</div>
+            <div class="feature-text">
+              <h3 class="feature-name">Local-First &amp; Private</h3>
+              <p class="feature-detail">Browsing metadata stays strictly inside your browser profile. No page body contents, form fields, passwords, or telemetry are collected or sent to remote servers.</p>
+            </div>
+          </div>
+        </div>
+
+        <footer class="placeholder-footer">
+          <p class="footer-note" id="diagnostic-text">Extension environment ready.</p>
+        </footer>
+      </section>
+
+      <!-- No Results State (shown when search/filter returns 0 matches) -->
+      <section id="no-results-state" class="no-results-card" aria-live="polite" hidden>
+        <div class="no-results-icon" aria-hidden="true">&#x1F50E;</div>
+        <h2 class="no-results-title">No Matching Visits Found</h2>
+        <p class="no-results-description" id="no-results-description">
+          No captured pages matched your search query or time range filter.
+        </p>
+        <button id="reset-filters-btn" class="btn btn-primary btn-sm">Clear Search &amp; Filters</button>
+      </section>
+
+      <!-- Visit Details Panel (Drawer) -->
+      <aside 
+        id="details-panel" 
+        class="details-panel" 
+        role="dialog" 
+        aria-modal="false" 
+        aria-labelledby="details-heading" 
+        hidden
+      >
+        <div class="details-header">
+          <div class="details-heading-group">
+            <span class="badge" id="details-badge">Visit Node</span>
+            <h2 id="details-heading" class="details-heading">Page Details</h2>
+          </div>
+          <button id="details-close-btn" class="details-close-btn" aria-label="Close details panel">&#x2715;</button>
+        </div>
+
+        <div class="details-body">
+          <div class="details-field">
+            <label class="details-label">Title</label>
+            <div id="details-title" class="details-value details-title-text font-bold"></div>
+          </div>
+
+          <div class="details-field">
+            <label class="details-label">Web Address (URL)</label>
+            <div id="details-url" class="details-value details-url-text"></div>
+          </div>
+
+          <div class="details-row">
+            <div class="details-field">
+              <label class="details-label">Visited</label>
+              <div id="details-time" class="details-value details-subtle"></div>
+            </div>
+            <div class="details-field">
+              <label class="details-label">Visit Type</label>
+              <div id="details-type" class="details-value details-subtle"></div>
+            </div>
+          </div>
+
+          <!-- Reopen Button -->
+          <div class="details-actions">
+            <button id="reopen-btn" class="btn btn-primary btn-block">Reopen Page in New Tab</button>
+            <p class="reopen-disclaimer">
+              Reopens the saved HTTP/HTTPS web address. Page contents, input forms, and session state are not restored.
+            </p>
+          </div>
+
+          <!-- Lineage Section -->
+          <div class="details-lineage">
+            <div class="details-field" id="parent-lineage-container">
+              <label class="details-label">Reached From (Parent)</label>
+              <button id="details-parent" type="button" class="lineage-node-pill"></button>
+            </div>
+
+            <div class="details-field" id="children-lineage-container">
+              <label class="details-label">Branched Visits (Children)</label>
+              <div id="details-children" class="lineage-list"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Confirmation Modal for Clear Map -->
+      <div id="clear-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-description" tabindex="-1" hidden>
+        <div class="modal-card">
+          <h2 id="modal-title" class="modal-title">Clear History Map?</h2>
+          <p id="modal-description" class="modal-description">
+            This will permanently delete all captured visit nodes and reset your active tab trails. This action cannot be undone.
+          </p>
+          <p id="clear-error" class="clear-error" role="alert" hidden>Could not clear the saved history. Please try again.</p>
+          <div class="modal-actions">
+            <button id="confirm-clear-btn" class="btn btn-danger">Yes, Clear All Data</button>
+            <button id="cancel-clear-btn" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="ui-logic.js"></script>
+  <script src="background-messages.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
