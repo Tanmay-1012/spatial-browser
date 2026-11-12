@@ -1,8 +1,8 @@
 # Task 11 — V2 Storage, Branch Tracking, Session Safety, and Download Capture
 
-**Status:** Revision submitted (Section 56) — distinct-host runtime provenance (`localhost` source vs `127.0.0.1` file host) verified in Chrome 156 and Firefox 158; awaiting lead acceptance.
+**Status:** Accepted — Task 11 complete per Section 57 of the Task 11 output.
 
-> **Developer status:** Section 55 requirements verified and documented in Section 56 of `../task-11-output.md`. Awaiting lead review before starting Task 12.
+> **Developer status:** Task 11 is accepted per Section 57. The active assignment is Task 12 in task-12.md.
 
 ## Approved design
 
@@ -63,5 +63,7 @@ Implement the V2 graph/storage core, branch-aware navigation tracking, startup/s
 - Task 11 acceptance criteria are implemented and documented without changing the current UI layout.
 - Existing and new automated tests pass; both builds validate; required Chrome and Firefox runtime evidence is attached or any environmental blocker is reported precisely.
 - `task output overview/task-11-output.md` is submitted and the overview/index files are updated. Wait for lead review before starting the next task.
+
+
 
 

@@ -10,31 +10,44 @@
   <div class="app-layout">
     <!-- Header Toolbar -->
     <header class="app-header" role="banner">
-      <div class="header-brand">
-        <img src="icons/icon-32.png" alt="" class="header-icon" width="24" height="24" aria-hidden="true">
-        <h1 class="header-title">Spatial Browser History</h1>
-        <span class="badge badge-stage" id="node-count-badge">0 visits</span>
+      <div class="header-left">
+        <div id="overview-brand" class="header-brand">
+          <img src="icons/icon-32.png" alt="" class="header-icon" width="24" height="24" aria-hidden="true">
+          <h1 class="header-title">Spatial Browser History</h1>
+          <span class="badge badge-stage" id="node-count-badge" aria-live="polite">0 visits</span>
+        </div>
+
+        <div id="detail-brand" class="header-detail-brand" hidden>
+          <button id="back-to-overview-btn" type="button" class="btn btn-secondary btn-sm">&#8592; Back to Overview</button>
+          <nav class="detail-breadcrumb" aria-label="Selected research tree">
+            <span class="breadcrumb-prefix">Tree:</span>
+            <span id="detail-tree-domain" class="breadcrumb-domain"></span>
+            <span class="breadcrumb-sep" aria-hidden="true">/</span>
+            <span id="detail-tree-title" class="breadcrumb-title"></span>
+          </nav>
+          <span class="badge badge-stage" id="detail-count-badge" aria-live="polite">0 visits</span>
+        </div>
       </div>
 
       <div class="header-controls">
         <!-- Search Input -->
         <div class="search-box">
           <span class="search-icon" aria-hidden="true">&#x1F50D;</span>
-          <input 
-            type="search" 
-            id="search-input" 
-            placeholder="Search by title or address..." 
-            aria-label="Search visits by title or URL"
+          <input
+            type="search"
+            id="search-input"
+            placeholder="Search titles, addresses, or files..."
+            aria-label="Search research trees, visits, and downloads"
             autocomplete="off"
             spellcheck="false"
           >
-          <button id="search-clear-btn" class="search-clear-btn" aria-label="Clear search query" hidden>&#x2715;</button>
+          <button id="search-clear-btn" type="button" class="search-clear-btn" aria-label="Clear search query" hidden>&#x2715;</button>
         </div>
 
         <!-- Time Range Filter -->
         <div class="filter-box">
-          <label for="time-filter" class="visually-hidden">Filter visits by time</label>
-          <select id="time-filter" class="filter-select" aria-label="Filter visits by time">
+          <label for="time-filter" class="visually-hidden">Filter history by time</label>
+          <select id="time-filter" class="filter-select" aria-label="Filter history by time">
             <option value="all" selected>All Captured History</option>
             <option value="hour">Past Hour</option>
             <option value="day">Past 24 Hours</option>
@@ -42,57 +55,101 @@
           </select>
         </div>
 
-        <!-- Zoom / View Controls -->
-        <div class="zoom-controls" role="group" aria-label="Map zoom and view controls">
-          <button id="zoom-in" class="btn btn-icon" title="Zoom In (+)" aria-label="Zoom in">&#x002B;</button>
-          <button id="zoom-out" class="btn btn-icon" title="Zoom Out (-)" aria-label="Zoom out">&#x2212;</button>
-          <button id="zoom-reset" class="btn btn-secondary btn-sm" title="Fit Map to View (0)" aria-label="Fit map to view">Fit</button>
+        <!-- Zoom / View Controls (Detail View Only) -->
+        <div id="zoom-controls" class="zoom-controls" role="group" aria-label="Map zoom and view controls" hidden>
+          <button id="zoom-in" type="button" class="btn btn-icon" title="Zoom In (+)" aria-label="Zoom in">&#x002B;</button>
+          <button id="zoom-out" type="button" class="btn btn-icon" title="Zoom Out (-)" aria-label="Zoom out">&#x2212;</button>
+          <button id="zoom-reset" type="button" class="btn btn-secondary btn-sm" title="Fit Map to View (0)" aria-label="Fit map to view">Fit</button>
         </div>
 
         <!-- Clear Action -->
         <div class="header-actions">
-          <button id="clear-map-btn" class="btn btn-danger btn-sm" aria-haspopup="dialog" aria-label="Clear all captured history">Clear Map</button>
+          <button id="clear-map-btn" type="button" class="btn btn-danger btn-sm" aria-haspopup="dialog" aria-label="Clear all captured history">Clear Map</button>
         </div>
       </div>
     </header>
 
     <!-- Main Workspace -->
     <main class="app-main" id="main-content" role="main">
-      <!-- Interactive SVG Map Canvas -->
-      <div 
-        id="map-container" 
-        class="map-container" 
-        tabindex="0" 
-        role="region" 
-        aria-label="Spatial History Map. Use arrow keys to pan, plus and minus to zoom, or tab to navigate visits."
-      >
-        <svg id="map-svg" class="map-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <!-- Background grid pattern -->
-            <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1" class="grid-line" opacity="0.12"/>
-            </pattern>
-            <!-- Branch arrow marker -->
-            <marker id="branch-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 1 L 8 5 L 0 9 z" fill="currentColor" class="branch-arrow-head"/>
-            </marker>
-          </defs>
+      <!-- Level 1: Research-Tree Overview -->
+      <section id="overview-view" class="overview-view" aria-label="Research Trees Overview" tabindex="-1" hidden>
+        <div class="overview-container">
+          <section id="research-trees-section" class="trees-section" aria-labelledby="research-trees-heading">
+            <div class="section-header">
+              <div class="section-title-group">
+                <h2 id="research-trees-heading" class="section-heading">Research Trees</h2>
+                <span id="overview-trees-summary" class="section-subtitle"></span>
+              </div>
+            </div>
 
-          <!-- Infinite Grid Background -->
-          <rect width="100%" height="100%" fill="url(#grid-pattern)" class="map-grid-bg"/>
+            <div id="trees-grid" class="trees-grid" role="list"></div>
+            <p id="research-trees-empty" class="section-empty-note" hidden>
+              No multi-page research trees yet. Unattributed downloads appear below.
+            </p>
+          </section>
 
-          <!-- Transformable Viewport Group -->
-          <g id="map-viewport" class="map-viewport">
-            <g id="edges-layer" class="edges-layer" aria-hidden="true"></g>
-            <g id="nodes-layer" class="nodes-layer" role="group" aria-label="Browsing visit nodes"></g>
-          </g>
-        </svg>
-
-        <!-- On-canvas hint -->
-        <div class="map-hint" aria-hidden="true">
-          <span>Pan: Drag or Arrow keys &bull; Zoom: Scroll or +/- &bull; Fit: 0 &bull; Select: Click or Enter</span>
+          <section id="unattributed-section" class="unattributed-section" aria-labelledby="unattributed-heading" hidden>
+            <div class="section-header">
+              <div class="section-title-group">
+                <h2 id="unattributed-heading" class="section-heading">Unattributed Downloads</h2>
+                <span class="section-subtitle">Source unverified or outside tracked sessions</span>
+              </div>
+            </div>
+            <ul id="unattributed-list" class="unattributed-list"></ul>
+          </section>
         </div>
-      </div>
+      </section>
+
+      <!-- Level 2: Selected Tree Detail View -->
+      <section id="detail-view" class="detail-view" aria-label="Research Tree Detail View" hidden>
+        <div
+          id="map-container"
+          class="map-container"
+          tabindex="0"
+          role="region"
+          aria-label="Research Tree Map. Use arrow keys to pan, plus and minus to zoom, 0 to fit, or tab to navigate visits and downloads."
+        >
+          <svg id="map-svg" class="map-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Background grid pattern -->
+              <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1" class="grid-line" opacity="0.12"/>
+              </pattern>
+              <!-- Branch arrow marker -->
+              <marker id="branch-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="currentColor" class="branch-arrow-head"/>
+              </marker>
+            </defs>
+
+            <!-- Infinite Grid Background -->
+            <rect width="100%" height="100%" fill="url(#grid-pattern)" class="map-grid-bg"/>
+
+            <!-- Transformable Viewport Group -->
+            <g id="map-viewport" class="map-viewport">
+              <g id="edges-layer" class="edges-layer" aria-hidden="true"></g>
+              <g id="nodes-layer" class="nodes-layer" role="group" aria-label="Selected tree visit and download nodes"></g>
+            </g>
+          </svg>
+
+          <!-- Context Ancestors Pill (shown when detail filters retain ancestor lineage) -->
+          <div id="detail-context-banner" class="context-banner" role="status" aria-live="polite" hidden></div>
+
+          <!-- On-canvas hint -->
+          <div class="map-hint" aria-hidden="true">
+            <span>Pan: Drag or Arrow keys &bull; Zoom: Scroll or +/- &bull; Fit: 0 &bull; Select: Click or Enter</span>
+          </div>
+        </div>
+
+        <!-- Tree-Local No Results State -->
+        <section id="detail-no-results" class="no-results-card" aria-live="polite" hidden>
+          <div class="no-results-icon" aria-hidden="true">&#x1F50E;</div>
+          <h2 class="no-results-title">No Matching Nodes in This Tree</h2>
+          <p class="no-results-description" id="detail-no-results-description">
+            No pages or downloads in this research tree matched your filter.
+          </p>
+          <button id="detail-reset-filters-btn" type="button" class="btn btn-primary btn-sm">Clear Tree Filters</button>
+        </section>
+      </section>
 
       <!-- Empty State View (shown when graph has zero nodes) -->
       <section id="empty-state" class="placeholder-card" aria-labelledby="placeholder-heading" hidden>
@@ -133,22 +190,22 @@
 
         <h2 id="placeholder-heading" class="placeholder-title">No Browsing Map Yet</h2>
         <p class="placeholder-description">
-          Open browser tabs and start researching web pages. The extension will automatically capture your top-level navigation trails and render them as connected branches.
+          Open browser tabs and start researching web pages. Each independent session becomes a Research Tree card that opens into a visual branch explorer.
         </p>
 
         <div class="feature-overview">
           <div class="feature-item">
             <div class="feature-icon" aria-hidden="true">&#x1F5FA;&#xFE0F;</div>
             <div class="feature-text">
-              <h3 class="feature-name">Spatial Trail Navigation</h3>
-              <p class="feature-detail">Visually retrace pages visited as connected branches instead of searching flat linear history logs.</p>
+              <h3 class="feature-name">Research Tree Cards &amp; Detail Map</h3>
+              <p class="feature-detail">Scan independent research trails on the overview grid, then inspect parallel branches and verified downloads inside each tree.</p>
             </div>
           </div>
           <div class="feature-item">
             <div class="feature-icon" aria-hidden="true">&#x1F512;</div>
             <div class="feature-text">
               <h3 class="feature-name">Local-First &amp; Private</h3>
-              <p class="feature-detail">Browsing metadata stays strictly inside your browser profile. No page body contents, form fields, passwords, or telemetry are collected or sent to remote servers.</p>
+              <p class="feature-detail">Browsing and download provenance stay inside your browser profile. File contents, filesystem paths, and raw download URLs are never stored.</p>
             </div>
           </div>
         </div>
@@ -158,23 +215,23 @@
         </footer>
       </section>
 
-      <!-- No Results State (shown when search/filter returns 0 matches) -->
+      <!-- Overview No Results State (shown when global search/filter returns 0 matches) -->
       <section id="no-results-state" class="no-results-card" aria-live="polite" hidden>
         <div class="no-results-icon" aria-hidden="true">&#x1F50E;</div>
-        <h2 class="no-results-title">No Matching Visits Found</h2>
+        <h2 class="no-results-title">No Matching Research Trees or Downloads</h2>
         <p class="no-results-description" id="no-results-description">
-          No captured pages matched your search query or time range filter.
+          No captured research trees or downloads matched your search query or time range filter.
         </p>
-        <button id="reset-filters-btn" class="btn btn-primary btn-sm">Clear Search &amp; Filters</button>
+        <button id="reset-filters-btn" type="button" class="btn btn-primary btn-sm">Clear Search &amp; Filters</button>
       </section>
 
-      <!-- Visit Details Panel (Drawer) -->
-      <aside 
-        id="details-panel" 
-        class="details-panel" 
-        role="dialog" 
-        aria-modal="false" 
-        aria-labelledby="details-heading" 
+      <!-- Visit / Download Details Panel (Drawer) -->
+      <aside
+        id="details-panel"
+        class="details-panel"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="details-heading"
         hidden
       >
         <div class="details-header">
@@ -182,34 +239,39 @@
             <span class="badge" id="details-badge">Visit Node</span>
             <h2 id="details-heading" class="details-heading">Page Details</h2>
           </div>
-          <button id="details-close-btn" class="details-close-btn" aria-label="Close details panel">&#x2715;</button>
+          <button id="details-close-btn" type="button" class="details-close-btn" aria-label="Close details panel">&#x2715;</button>
         </div>
 
         <div class="details-body">
           <div class="details-field">
-            <label class="details-label">Title</label>
+            <label id="details-title-label" class="details-label">Title</label>
             <div id="details-title" class="details-value details-title-text font-bold"></div>
           </div>
 
-          <div class="details-field">
+          <div class="details-field" id="details-url-field">
             <label class="details-label">Web Address (URL)</label>
             <div id="details-url" class="details-value details-url-text"></div>
           </div>
 
+          <div class="details-field" id="details-source-field" hidden>
+            <label class="details-label">Initiating Source</label>
+            <div id="details-source" class="details-value details-source-text"></div>
+          </div>
+
           <div class="details-row">
             <div class="details-field">
-              <label class="details-label">Visited</label>
+              <label id="details-time-label" class="details-label">Visited</label>
               <div id="details-time" class="details-value details-subtle"></div>
             </div>
             <div class="details-field">
-              <label class="details-label">Visit Type</label>
+              <label class="details-label">Node Type</label>
               <div id="details-type" class="details-value details-subtle"></div>
             </div>
           </div>
 
-          <!-- Reopen Button -->
-          <div class="details-actions">
-            <button id="reopen-btn" class="btn btn-primary btn-block">Reopen Page in New Tab</button>
+          <!-- Reopen Button (Page Nodes Only; hidden for Download Nodes) -->
+          <div id="details-actions" class="details-actions">
+            <button id="reopen-btn" type="button" class="btn btn-primary btn-block">Reopen Page in New Tab</button>
             <p class="reopen-disclaimer">
               Reopens the saved HTTP/HTTPS web address. Page contents, input forms, and session state are not restored.
             </p>
@@ -218,12 +280,12 @@
           <!-- Lineage Section -->
           <div class="details-lineage">
             <div class="details-field" id="parent-lineage-container">
-              <label class="details-label">Reached From (Parent)</label>
+              <label id="parent-lineage-label" class="details-label">Reached From (Parent)</label>
               <button id="details-parent" type="button" class="lineage-node-pill"></button>
             </div>
 
             <div class="details-field" id="children-lineage-container">
-              <label class="details-label">Branched Visits (Children)</label>
+              <label class="details-label">Branched Activity (Children)</label>
               <div id="details-children" class="lineage-list"></div>
             </div>
           </div>
@@ -235,12 +297,12 @@
         <div class="modal-card">
           <h2 id="modal-title" class="modal-title">Clear History Map?</h2>
           <p id="modal-description" class="modal-description">
-            This will permanently delete all captured visit nodes and reset your active tab trails. This action cannot be undone.
+            This will permanently delete all captured research trees, visit nodes, download provenance, and active tab trails. This action cannot be undone.
           </p>
           <p id="clear-error" class="clear-error" role="alert" hidden>Could not clear the saved history. Please try again.</p>
           <div class="modal-actions">
-            <button id="confirm-clear-btn" class="btn btn-danger">Yes, Clear All Data</button>
-            <button id="cancel-clear-btn" class="btn btn-secondary">Cancel</button>
+            <button id="confirm-clear-btn" type="button" class="btn btn-danger">Yes, Clear All Data</button>
+            <button id="cancel-clear-btn" type="button" class="btn btn-secondary">Cancel</button>
           </div>
         </div>
       </div>

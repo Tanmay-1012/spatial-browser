@@ -3,16 +3,16 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (`main`):** **Working Towards `v2.0`** — Task 11 remains active (Section 56 distinct-host verification submitted for lead review); Task 12 UI redesign has not started yet.
+> **Active Branch Status (main):** Task 11 is accepted (Section 57); Task 12 Research Tree Explorer UI is implemented, verified (`59/59` unit tests + Chrome 156 & Firefox 158 E2E), and awaiting lead review.
 
 ## Project Status & Roadmap Toward `v2.0`
 
 - **Stable Release (`v0.1.0` — Tagged & Published):**
-  - Cross-browser MV3 packages for Chrome 109+ and Firefox 115.0+ verified (`npm test`: 55 passed, 0 failed; isolated-profile Chrome 156.0.8078.48 & Firefox 158.0.1 E2E runs: 0 failures, 0 errors, 0 warnings).
+  - Cross-browser MV3 packages for Chrome 109+ and Firefox 115.0+ verified (`55 passed, 0 failed` at tag time; isolated-profile Chrome 156.0.8078.48 & Firefox 158.0.1 E2E runs: 0 failures, 0 errors, 0 warnings).
   - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
 - **Working Towards `v2.0` (Active Development on `main`):**
-  - **Active Milestone (Milestone 11 / Task 11 — Pending Lead Review):** Schema V2, crash-safe V1→V2 migration, same-tab Back/Forward sibling branching, `storage.session` startup barrier & fail-closed safety, and distinct-host download provenance (`localhost` source vs `127.0.0.1` final file URL hostname verified in Chrome and Firefox) implemented and submitted in Section 56 of [the Task 11 report](task%20output%20overview/task-11-output.md).
-  - **Planned Next (Milestone 12 / Task 12 — Not Started):** Multi-card Research Tree Explorer overview UI, interactive pan/zoom detail tree view, completed-downloads drawer, and full `v2.0` cross-browser acceptance after Task 11 approval. See [CHANGELOG.md](CHANGELOG.md) and [docs/TASK_10.md](docs/TASK_10.md).
+  - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
+  - **Submitted for Lead Review (Milestone 12 / Task 12):** Two-level Research Tree Explorer overview cards, Unattributed Downloads shelf (`Source unavailable`), per-tree Detail View with context-ancestor filtering and sibling fan geometry, attributed-download provenance drawer, and Back-to-Overview focus/filter restoration (`npm test`: `59 passed, 0 failed`; Chrome 156 & Firefox 158 E2E passed with 0 errors/warnings). See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**
@@ -21,9 +21,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - **Session Safety & Startup Barrier:** Synchronous listener registration with gated event buffer (up to 20 events). `storage.session` marker checks with bounded retries; fail-closed behavior on storage rejection. Zero-trust single-node baseline collapse for live tabs discovered during initialization.
   - **Download Capture & Provenance Attribution:** Completed-download capture with strict source-domain attribution derived only from a uniquely resolved source page/referrer ($|M|=1$), defaulting safely to `"Source unavailable"` without guessing. Sensitive URLs, filesystem paths, and query tokens are strictly omitted.
   - **Safe Pruning & Wipe:** 1,000-node cap protecting active heads and maintaining edge/stack integrity. Clear Map action wipes graph, tab state, download index, and V1 backup.
-- **Milestone 3 (Interactive History Map & Retrieval UI):** Interactive visual graph exploration with hierarchical forest layout, search, time filters, visit details drawer, HTTP/HTTPS URL reopening, pan/zoom controls, and dialog focus trapping (preserved for Task 11; overview/detail visual redesign deferred to Task 12).
-
-Chrome and Firefox isolated-profile runs verify all Task 11 scenarios including distinct-host download attribution (`localhost` source vs `127.0.0.1` download host). See [the cross-browser test plan](docs/TEST_PLAN.md) and Section 56 of [the Task 11 report](task%20output%20overview/task-11-output.md).
+- **Milestone 3 & 12 (Research Tree Explorer Overview & Detail UI):** Two-level Research Tree Explorer organizing browsing sessions into strict per-`treeId` Overview cards (`#overview-view`), separating unattributed/ambiguous downloads into a dedicated `"Source unavailable"` shelf, scoping Detail View (`#detail-view`) per research tree with sibling fan geometry, non-distorting context-ancestor filtering, download provenance drawer (hiding URLs/reopen), Back-to-Overview state/focus restoration, WCAG AA contrast, and Clear Map dialog focus trapping. See [the cross-browser test plan](docs/TEST_PLAN.md), [the Task 11 report](task%20output%20overview/task-11-output.md), and [the Task 12 report](task%20output%20overview/task-12-output.md).
 
 ## Minimum Supported Browser Versions
 
@@ -160,6 +158,7 @@ npm test
 - All browsing metadata remains strictly local to the active browser profile in `chrome.storage.local` / `browser.storage.local`.
 - No page content, form inputs, credentials, keystrokes, or remote telemetry are collected.
 - Reopening a saved page opens its HTTP/HTTPS URL in a new tab without restoring private session state.
+
 
 
 

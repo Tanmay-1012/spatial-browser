@@ -669,11 +669,35 @@ def run_tests():
         assert len(node_unknown["childNodeIds"]) == 0, "Unknown/closed opener visit must have no child nodes"
         print(f"[PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).")
 
+        # Verify Task 12 Two-Level Explorer Overview on initial load, then open main Research Tree Detail View
+        main_tree_id = node_page1["treeId"]
+        overview_state = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            return {
+                overviewHidden: document.getElementById('overview-view').hidden,
+                detailHidden: document.getElementById('detail-view').hidden,
+                zoomHidden: document.getElementById('zoom-controls').hidden,
+                cardCount: document.querySelectorAll('#trees-grid .tree-card').length,
+                badge: document.getElementById('node-count-badge').textContent
+            };
+            """
+        })["value"]
+        print(f"  Overview state before reopen: {overview_state}")
+        assert overview_state["overviewHidden"] is False, "Initial view must be Research Tree Overview"
+        assert overview_state["detailHidden"] is True, "Detail view must be hidden on Overview"
+        assert overview_state["zoomHidden"] is True, "Zoom controls must be hidden on Overview"
+        assert overview_state["cardCount"] == 2, f"Expected 2 tree cards (main tree + unknown-opener root), got {overview_state['cardCount']}"
+        assert "2 Research Trees" in overview_state["badge"] and "7 Visits" in overview_state["badge"], f"Unexpected overview badge: {overview_state['badge']}"
+
+        open_main_btn = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": f".tree-open-btn[data-tree-id='{main_tree_id}']"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(open_main_btn)})
+        time.sleep(0.5)
+
         initial_svg_nodes = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.querySelectorAll('.map-node').length;"
         })["value"]
-        print(f"  Rendered SVG map nodes before reopen: {initial_svg_nodes}")
-        assert initial_svg_nodes == 7, f"Expected 7 SVG nodes before reopen, got {initial_svg_nodes}"
+        print(f"  Opened Detail View for {main_tree_id}: rendered SVG nodes={initial_svg_nodes}")
+        assert initial_svg_nodes == 6, f"Expected 6 scoped SVG nodes in main tree before reopen (excluding unknown root), got {initial_svg_nodes}"
 
         # --- STEP 4: SELECT CLOSED CHILD NODE VIA BROWSER INPUT & EXPLICIT REOPEN VISIT COUNT ---
         print("\n--- STEP 4: Select Closed Child Node via Browser Input & Explicitly Audit Reopened Visit Count ---")
@@ -768,9 +792,17 @@ def run_tests():
         svg_nodes_post_reopen = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.querySelectorAll('.map-node').length;"
         })["value"]
-        print(f"  Rendered SVG map nodes after reopen: {svg_nodes_post_reopen}")
-        assert svg_nodes_post_reopen == 8, f"Expected 8 SVG nodes after reopen, got {svg_nodes_post_reopen}"
-        print("[PASS] Explicit visit-count change proven: 7 visits before reopen -> 8 visits after reopen.")
+        assert svg_nodes_post_reopen == 6, f"Detail view must remain strictly isolated to main tree (6 nodes), got {svg_nodes_post_reopen}"
+        back_btn_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_btn_el)})
+        time.sleep(0.4)
+        overview_post_reopen = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return { cardCount: document.querySelectorAll('#trees-grid .tree-card').length, badge: document.getElementById('node-count-badge').textContent };"
+        })["value"]
+        print(f"  Overview after reopen: {overview_post_reopen['cardCount']} tree cards ({overview_post_reopen['badge']})")
+        assert overview_post_reopen["cardCount"] == 3, f"Expected 3 independent root trees after reopen, got {overview_post_reopen['cardCount']}"
+        assert "8 Visits" in overview_post_reopen["badge"], f"Overview badge must reflect 8 Visits, got '{overview_post_reopen['badge']}'"
+        print("[PASS] Explicit visit-count change & strict tree isolation proven: 7 visits (2 trees) -> 8 visits (3 trees), Detail View stays scoped to 6 nodes.")
 
         # Close the reopened tab and switch back to extension
         client.send_cmd("WebDriver:SwitchToWindow", {"handle": reopened_handle})
@@ -778,32 +810,71 @@ def run_tests():
         time.sleep(1)
         client.send_cmd("WebDriver:SwitchToWindow", {"handle": ext_handle})
 
-        # --- STEP 5: PROVE SEARCH & TIME FILTERING ACROSS A REAL BOUNDARY ---
-        print("\n--- STEP 5: Prove Search and Time Filtering Across Real Boundary ---")
-        base_active_count = 8
-        print(f"  Base active visit count: {base_active_count}")
+        # --- STEP 5: PROVE OVERVIEW & TREE-LOCAL SEARCH + NON-DISTORTING TIME FILTERING ---
+        print("\n--- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---")
+
+        # 5a. Overview Search + Back-to-Overview Focus/Filter Restoration
+        print("  [Overview Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...")
+        ov_search_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#search-input"})
+        client.send_cmd("WebDriver:ElementSendKeys", {"id": extract_element_id(ov_search_el), "text": "target"})
+        time.sleep(0.6)
+        ov_search_cards = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.querySelectorAll('#trees-grid .tree-card').length;"
+        })["value"]
+        assert ov_search_cards == 1, f"Expected 1 matching tree card on Overview for 'target', got {ov_search_cards}"
+
+        open_main_el2 = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": f".tree-open-btn[data-tree-id='{main_tree_id}']"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(open_main_el2)})
+        time.sleep(0.4)
+        back_btn_el2 = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_btn_el2)})
+        time.sleep(0.3)
+        restored_ov = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return { query: document.getElementById('search-input').value, focusedTree: document.activeElement ? document.activeElement.getAttribute('data-tree-id') : null };"
+        })["value"]
+        assert restored_ov["query"] == "target", f"Back-to-Overview must restore prior query 'target', got '{restored_ov['query']}'"
+        assert restored_ov["focusedTree"] == main_tree_id, f"Back-to-Overview must restore focus to '{main_tree_id}', got '{restored_ov['focusedTree']}'"
+
+        ov_clear_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#search-clear-btn"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(ov_clear_el)})
+        time.sleep(0.4)
+        assert client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.querySelectorAll('#trees-grid .tree-card').length;"})["value"] == 3, "Clearing Overview search must restore all 3 tree cards"
+
+        # 5b. Open main_tree_id Detail View for tree-local search & time filtering
+        open_main_el3 = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": f".tree-open-btn[data-tree-id='{main_tree_id}']"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(open_main_el3)})
+        time.sleep(0.4)
+        base_active_count = 6
+        print(f"  Base active visit count inside {main_tree_id}: {base_active_count}")
 
         # Search for 'target' via WebDriver typing
-        print("  [Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...")
+        print("  [Detail Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...")
         search_input_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#search-input"})
         search_input_id = extract_element_id(search_input_el)
         client.send_cmd("WebDriver:ElementSendKeys", {"id": search_input_id, "text": "target"})
-        # Allow input debounce (150ms in app.js) and DOM re-render
         time.sleep(0.6)
 
         search_active_badge = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.getElementById('node-count-badge').textContent;"
+            "script": "return document.getElementById('detail-count-badge').textContent;"
         })["value"]
-        search_visible_nodes = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.querySelectorAll('.map-node').length;"
+        search_matches = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.querySelectorAll('.map-node.is-search-match').length;"
+        })["value"]
+        search_context = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.querySelectorAll('.map-node.is-context-ancestor').length;"
+        })["value"]
+        context_banner_hidden = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.getElementById('detail-context-banner').hidden;"
         })["value"]
         search_input_val = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.getElementById('search-input').value;"
         })["value"]
-        print(f"  [Search 'target'] Input value: '{search_input_val}', Badge: '{search_active_badge}', matching count: {search_visible_nodes}")
+        print(f"  [Detail Search 'target'] Input: '{search_input_val}', Badge: '{search_active_badge}', matches: {search_matches}, context ancestors: {search_context}")
         assert search_input_val == "target", "Search input value must be 'target'"
-        assert "of" in search_active_badge, "Badge must reflect filtered 'X of Y visits'"
-        assert search_visible_nodes == 2, f"Expected 2 matching nodes for 'target', got {search_visible_nodes}"
+        assert "2 of 6 matching" in search_active_badge, f"Detail badge must show '2 of 6 matching', got '{search_active_badge}'"
+        assert search_matches == 2, f"Expected 2 matching nodes for 'target', got {search_matches}"
+        assert search_context == 2, f"Expected 2 context ancestor nodes (/page1, /page2), got {search_context}"
+        assert context_banner_hidden is False, "Context banner must be visible when dimmed ancestor context is shown"
 
         # Clear search via clear button
         search_clear_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#search-clear-btn"})
@@ -811,7 +882,7 @@ def run_tests():
         time.sleep(0.5)
 
         restored_badge = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.getElementById('node-count-badge').textContent;"
+            "script": "return document.getElementById('detail-count-badge').textContent;"
         })["value"]
         restored_nodes_count = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.querySelectorAll('.map-node').length;"
@@ -821,8 +892,9 @@ def run_tests():
         })["value"]
         print(f"  [Clear Search] Input value: '{restored_input_val}', Restored badge: '{restored_badge}', node count: {restored_nodes_count}")
         assert restored_input_val == "", "Search input value must be empty after clear"
-        assert restored_nodes_count == base_active_count, "Clearing search must restore all initial nodes"
-        print("[PASS] Verified search query typing and clear-search button via WebDriver browser inputs.")
+        assert restored_nodes_count == base_active_count, "Clearing search must restore all 6 tree nodes"
+        assert client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('detail-context-banner').hidden;"})["value"] is True, "Context banner must hide after clearing search"
+        print("[PASS] Verified Overview & Detail search query typing, clear-search, and focus/filter restoration via WebDriver inputs.")
 
         # Time filtering with visits on both sides of a 1-hour time boundary
         print("  Testing time filtering across boundary (setting Page 1 timestamp to 2 hours ago)...")
@@ -852,24 +924,26 @@ def run_tests():
         time.sleep(0.5)
 
         hour_badge = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.getElementById('node-count-badge').textContent;"
+            "script": "return document.getElementById('detail-count-badge').textContent;"
         })["value"]
-        hour_nodes_count = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.querySelectorAll('.map-node').length;"
+        hour_matches = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.querySelectorAll('.map-node:not(.is-context-ancestor)').length;"
         })["value"]
         hour_sel_val = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.getElementById('time-filter').value;"
         })["value"]
-        page1_in_hour = client.send_cmd("WebDriver:ExecuteScript", {
+        page1_hour_state = client.send_cmd("WebDriver:ExecuteScript", {
             "script": """
-            return !!document.querySelector(`.map-node[data-id="${arguments[0]}"]`);
+            let el = document.querySelector(`.map-node[data-id="${arguments[0]}"]`);
+            return el ? { exists: true, isMatch: !el.classList.contains('is-context-ancestor'), isContext: el.classList.contains('is-context-ancestor') } : { exists: false };
             """,
             "args": [node_page1["id"]]
         })["value"]
-        print(f"  [Filter 'hour'] Value: '{hour_sel_val}', Badge: '{hour_badge}', count: {hour_nodes_count}, Page 1 in map: {page1_in_hour}")
+        print(f"  [Filter 'hour'] Value: '{hour_sel_val}', Badge: '{hour_badge}', matches: {hour_matches}, Page 1 state: {page1_hour_state}")
         assert hour_sel_val == "hour", f"Expected select value 'hour', got '{hour_sel_val}'"
-        assert hour_nodes_count == base_active_count - 1, f"Expected {base_active_count - 1} nodes in 1-hour filter, got {hour_nodes_count}"
-        assert page1_in_hour is False, "Page 1 (>1hr old) must be excluded in 1-hour filter"
+        assert hour_matches == base_active_count - 1, f"Expected {base_active_count - 1} matching nodes in 1-hour filter, got {hour_matches}"
+        assert page1_hour_state.get("isMatch") is False, "Page 1 (>1hr old) must NOT match 1-hour filter"
+        assert page1_hour_state.get("isContext") is True, "Page 1 must be preserved as dimmed context ancestor so children keep true root"
 
         # Trigger time filter 'all' via WebDriver option click
         print("  [Time Filter] Selecting 'all' option via WebDriver:ElementClick...")
@@ -883,38 +957,34 @@ def run_tests():
         all_sel_val = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.getElementById('time-filter').value;"
         })["value"]
-        page1_in_all = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": """
-            return !!document.querySelector(`.map-node[data-id="${arguments[0]}"]`);
-            """,
-            "args": [node_page1["id"]]
+        context_count_all = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.querySelectorAll('.map-node.is-context-ancestor').length;"
         })["value"]
-        print(f"  [Filter 'all'] Value: '{all_sel_val}', Count: {all_nodes_count}, Page 1 in map: {page1_in_all}")
+        print(f"  [Filter 'all'] Value: '{all_sel_val}', Count: {all_nodes_count}, context: {context_count_all}")
         assert all_sel_val == "all", f"Expected select value 'all', got '{all_sel_val}'"
-        assert all_nodes_count == base_active_count, "All filter must restore all visits"
-        assert page1_in_all is True, "Page 1 must be included in 'all' filter"
+        assert all_nodes_count == base_active_count and context_count_all == 0, "All filter must restore all visits without context dimming"
 
-        # Trigger time filter 'day' (24 hour window - 2hr visit should be included) via WebDriver option click
+        # Trigger time filter 'day' (24 hour window - 2hr visit should match cleanly) via WebDriver option click
         print("  [Time Filter] Selecting 'day' option via WebDriver:ElementClick...")
         opt_day_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#time-filter option[value='day']"})
         client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(opt_day_el)})
         time.sleep(0.5)
 
-        day_nodes_count = client.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.querySelectorAll('.map-node').length;"
+        day_matches = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.querySelectorAll('.map-node:not(.is-context-ancestor)').length;"
         })["value"]
         day_sel_val = client.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.getElementById('time-filter').value;"
         })["value"]
-        print(f"  [Filter 'day'] Value: '{day_sel_val}', Count: {day_nodes_count} (includes 2hr-old visit)")
+        print(f"  [Filter 'day'] Value: '{day_sel_val}', Matches: {day_matches} (includes 2hr-old visit)")
         assert day_sel_val == "day", f"Expected select value 'day', got '{day_sel_val}'"
-        assert day_nodes_count == base_active_count, "24-hour filter must include 2hr-old visit"
+        assert day_matches == base_active_count, f"24-hour filter must include 2hr-old visit (expected {base_active_count}, got {day_matches})"
 
         # Reset filter to 'all' via WebDriver option click
         opt_reset_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#time-filter option[value='all']"})
         client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(opt_reset_el)})
         time.sleep(0.5)
-        print("[PASS] Verified time filtering across boundary via WebDriver option selection: 2hr visit excluded in 'hour' and restored in 'all'/'day'.")
+        print("[PASS] Verified time filtering across boundary via WebDriver option selection: 2hr visit dimmed as context in 'hour' and restored as full match in 'all'/'day'.")
 
         # --- STEP 6: EXERCISE PAN, ZOOM, KEYBOARD NAVIGATION, AND FOCUS TRAPPING VIA BROWSER INPUT ---
         print("\n--- STEP 6: Exercise Pan, Zoom, Keyboard Navigation, and Dialog Focus Trapping via Browser Input ---")
@@ -1346,6 +1416,105 @@ def run_tests():
         client.send_cmd("WebDriver:ExecuteScript", {"script": "window.close();"})
         time.sleep(0.5)
 
+        # 5. Task 12 Live UI Verification on Overview + Tree Detail + Download Provenance
+        print("  [6.5e] Verifying Task 12 Research Tree Explorer UI (cards, unattributed shelf, sibling fan, download provenance)...")
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": ext_handle})
+        time.sleep(0.6)
+
+        explorer_ui = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            let [wikiTreeId, portalTreeId, unattrTreeId, ambigTreeId] = arguments;
+            let cardIds = Array.from(document.querySelectorAll('#trees-grid .tree-card')).map(el => el.getAttribute('data-tree-id'));
+            let unattrText = Array.from(document.querySelectorAll('#unattributed-list .unattributed-item')).map(el => el.textContent);
+            return {
+                overviewHidden: document.getElementById('overview-view').hidden,
+                unattrHidden: document.getElementById('unattributed-section').hidden,
+                cardIds: cardIds,
+                hasWikiCard: cardIds.includes(wikiTreeId),
+                hasPortalCard: cardIds.includes(portalTreeId),
+                hasUnattrAsCard: cardIds.includes(unattrTreeId),
+                hasAmbigAsCard: cardIds.includes(ambigTreeId),
+                unattrText: unattrText
+            };
+            """,
+            "args": [wiki_node["treeId"], portal_node["treeId"], unattr_dl_node["treeId"], ambig_dl_node["treeId"]]
+        })["value"]
+        print(f"  [Task 12 Overview] cards={len(explorer_ui['cardIds'])}, unattributed items={len(explorer_ui['unattrText'])}")
+        assert explorer_ui["overviewHidden"] is False, "Overview must be visible"
+        assert explorer_ui["unattrHidden"] is False, "Unattributed Downloads shelf must be visible"
+        assert explorer_ui["hasWikiCard"] is True and explorer_ui["hasPortalCard"] is True, "Overview must show separate cards for wiki and download-portal trees"
+        assert explorer_ui["hasUnattrAsCard"] is False and explorer_ui["hasAmbigAsCard"] is False, "Unattributed downloads must NOT generate Research Tree cards"
+        assert any("dataset.zip" in t and "Source unavailable" in t for t in explorer_ui["unattrText"]), f"Shelf must show dataset.zip + Source unavailable, got {explorer_ui['unattrText']}"
+        assert any("ambiguous.bin" in t and "Source unavailable" in t for t in explorer_ui["unattrText"]), f"Shelf must show ambiguous.bin + Source unavailable, got {explorer_ui['unattrText']}"
+
+        # Verify Wikipedia sibling branching in Detail View
+        wiki_btn_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": f".tree-open-btn[data-tree-id='{wiki_node['treeId']}']"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(wiki_btn_el)})
+        time.sleep(0.4)
+        wiki_coords = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            let [wikiId, aId, bId] = arguments;
+            let getXY = (id) => {
+                let el = document.querySelector('.map-node[data-id="' + id + '"]');
+                if (!el) return null;
+                let m = (el.getAttribute('transform') || '').match(/translate\\(([-\\d.]+),\\s*([-\\d.]+)\\)/);
+                return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
+            };
+            return {
+                count: document.querySelectorAll('.map-node').length,
+                wiki: getXY(wikiId),
+                a: getXY(aId),
+                b: getXY(bId)
+            };
+            """,
+            "args": [wiki_node["id"], source_a_node["id"], source_b_node["id"]]
+        })["value"]
+        print(f"  [Wiki Detail] count={wiki_coords['count']}, coords={wiki_coords}")
+        expected_wiki_count = len([n for n in nodes_ambig.values() if n.get("treeId") == wiki_node["treeId"]])
+        assert wiki_coords["count"] == expected_wiki_count, f"Wiki Detail must show {expected_wiki_count} nodes for tree {wiki_node['treeId']}, got {wiki_coords['count']}"
+        assert wiki_coords["a"] and wiki_coords["b"] and wiki_coords["wiki"], "Wiki and sibling nodes must render in SVG"
+        assert wiki_coords["a"]["x"] == wiki_coords["b"]["x"] > wiki_coords["wiki"]["x"], "Source A and Source B must align vertically as siblings to the right of Wikipedia"
+        assert wiki_coords["a"]["y"] != wiki_coords["b"]["y"], "Source A and Source B must occupy distinct vertical sibling rows"
+
+        back_wiki_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_wiki_el)})
+        time.sleep(0.3)
+
+        # Verify Attributed Download Node in Detail View & Inspector Drawer
+        portal_btn_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": f".tree-open-btn[data-tree-id='{portal_node['treeId']}']"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(portal_btn_el)})
+        time.sleep(0.4)
+        dl_ui = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            let dlId = arguments[0];
+            let dlNode = document.querySelector(`.map-node.is-download[data-id="${dlId}"]`);
+            let nodeText = dlNode ? dlNode.textContent : "";
+            if (dlNode) dlNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            return {
+                exists: !!dlNode,
+                nodeText: nodeText,
+                panelHidden: document.getElementById('details-panel').hidden,
+                sourceHidden: document.getElementById('details-source-field').hidden,
+                sourceText: document.getElementById('details-source').textContent,
+                urlHidden: document.getElementById('details-url-field').hidden,
+                actionsHidden: document.getElementById('details-actions').hidden
+            };
+            """,
+            "args": [cdn_dl_node["id"]]
+        })["value"]
+        print(f"  [Download Detail] ui={dl_ui}")
+        assert dl_ui["exists"] is True, "Attributed download node must render with .is-download class"
+        assert "Downloaded from localhost" in dl_ui["nodeText"], f"Download node must display 'Downloaded from localhost', got '{dl_ui['nodeText']}'"
+        assert "127.0.0.1" not in dl_ui["nodeText"], "Download node must NEVER display CDN host 127.0.0.1"
+        assert dl_ui["panelHidden"] is False and dl_ui["sourceHidden"] is False, "Download selection must open provenance drawer"
+        assert dl_ui["sourceText"] == "Downloaded from localhost", f"Drawer source must be 'Downloaded from localhost', got '{dl_ui['sourceText']}'"
+        assert dl_ui["urlHidden"] is True and dl_ui["actionsHidden"] is True, "Raw URL field and Reopen action must remain hidden for download nodes"
+
+        back_portal_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
+        client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_portal_el)})
+        time.sleep(0.3)
+        print("[PASS] Verified Task 12 UI Explorer across live Firefox storage, sibling geometry, attributed downloads, and unattributed shelf.")
+
         # --- STEP 7: ERROR AUDIT PRE-RESTART ---
         print("\n--- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---")
         pre_restart_audit = query_console_errors(client, "Pre-Restart Phase", ADDON_UUID)
@@ -1514,15 +1683,33 @@ def run_tests():
         assert post_tab_entry.get("lineageInvalidated") is False, "Lineage must not be invalidated"
         print("[PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.")
 
-        restarted_nodes = client2.send_cmd("WebDriver:ExecuteScript", {
+        ov_restart_state = client2.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            let treeId = arguments[0];
+            let cardBtn = document.querySelector(`.tree-open-btn[data-tree-id="${treeId}"]`);
+            if (cardBtn) cardBtn.click();
+            return {
+                overviewBadge: document.getElementById('node-count-badge').textContent,
+                cardCount: document.querySelectorAll('#trees-grid .tree-card').length,
+                foundStep3Card: !!cardBtn
+            };
+            """,
+            "args": [step3_node["treeId"]]
+        })["value"]
+        time.sleep(0.4)
+        restarted_detail_nodes = client2.send_cmd("WebDriver:ExecuteScript", {
             "script": "return document.querySelectorAll('.map-node').length;"
         })["value"]
-        restarted_badge = client2.send_cmd("WebDriver:ExecuteScript", {
-            "script": "return document.getElementById('node-count-badge').textContent;"
+        restarted_detail_badge = client2.send_cmd("WebDriver:ExecuteScript", {
+            "script": "return document.getElementById('detail-count-badge').textContent;"
         })["value"]
-        print(f"  Post-restart rendered node count in SVG map: {restarted_nodes} ({restarted_badge})")
-        assert restarted_nodes == pre_restart_count, f"Rendered nodes mismatch: expected {pre_restart_count}, got {restarted_nodes}"
-        print("[PASS] Verified UI map reconciliation: All persisted visits correctly rendered after restart.")
+        print(f"  Post-restart Overview: {ov_restart_state['cardCount']} cards ({ov_restart_state['overviewBadge']}); Detail View for {step3_node['treeId']}: {restarted_detail_nodes} nodes ({restarted_detail_badge})")
+        assert ov_restart_state["foundStep3Card"] is True, "Post-restart Overview must contain the 3-step session tree card"
+        assert restarted_detail_nodes == 3, f"Post-restart Detail View for {step3_node['treeId']} must render 3 nodes, got {restarted_detail_nodes}"
+        back_restart_el = client2.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
+        client2.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_restart_el)})
+        time.sleep(0.3)
+        print("[PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.")
 
         # --- STEP 9: POST-RESTART ERROR AUDIT & PERSISTENCE ---
         print("\n--- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---")
@@ -1547,9 +1734,10 @@ def run_tests():
         print("  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,")
         print("    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).")
         print("  - Reload Deduplication: Exact parity; exactly 1 node stored for /target despite reload.")
-        print("  - Closed Child URL Reopen: Exact parity; 7 initial visits -> 8 visits after reopening child URL (+1 visit).")
-        print("  - Search & Time Filtering: Exact parity; search reduces to 2 of 8 visits, clear restores 8 visits;")
-        print("    1-hour filter excludes 2hr-old visit, 'all' and 'day' restore all visits.")
+        print("  - Closed Child URL Reopen: Exact parity; 7 initial visits (2 trees) -> 8 visits (3 trees) after reopening child URL (+1 visit).")
+        print("  - Search & Time Filtering: Exact parity; Overview filters tree cards; Detail keeps non-matching context ancestors dimmed while matching descendants stay attached.")
+        print("  - Task 12 Explorer UI: Exact parity; Overview tree-card grouping, Unattributed Downloads shelf ('Source unavailable'), sibling fan geometry,")
+        print("    attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.")
         print("  - UI Controls & Focus Trapping: Exact parity; pan, zoom, fit, Enter node selection, Tab/Shift+Tab wrap.")
         print("  - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.")
         print("  - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.")

@@ -607,8 +607,8 @@ def run_tests():
         assert map_tabs_count == 1, f"Second toolbar click must NOT open duplicate map tab (found {map_tabs_count})"
         assert len(pages_after_action2) == pages_before_action2, f"Total page count must remain {pages_before_action2}, got {len(pages_after_action2)}"
 
-        # Verify which tab is active in the extension service worker via chrome.tabs.query
-        active_tab_info = cdp.evaluate(sw_sid, """
+        # Verify which tab is active in the extension page via chrome.tabs.query (extension tab is never suspended)
+        active_tab_info = cdp.evaluate(map_sid, """
         (async () => {
             const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
             return tabs[0] ? { id: tabs[0].id, url: tabs[0].url || tabs[0].pendingUrl || '' } : null;
@@ -677,7 +677,11 @@ def run_tests():
             if child_target:
                 break
         assert child_target is not None, "Child tab with /child must be created"
-        time.sleep(0.8)  # Allow webNavigation.onCommitted / tabs.onUpdated queue to commit child node before closing
+        for _ in range(20):
+            time.sleep(0.3)
+            st_child = cdp.evaluate(map_sid, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
+            if any("/child" in n.get("url", "") for n in st_child.get("spatial_browser_history_data", {}).get("nodes", {}).values()):
+                break
         print(f"  [3h] Child tab confirmed at {child_target['url']}. Closing child tab...")
         cdp.send_cmd("Target.closeTarget", {"targetId": child_target["targetId"]})
         time.sleep(1)
@@ -704,9 +708,13 @@ def run_tests():
         assert unknown_child_target is not None, "Child tab with /unknown-parent must be created"
         print(f"  [3i] Unknown-opener child tab confirmed at {unknown_child_target['url']}.")
 
-        # Close the opener tab immediately so opener is closed/unavailable
+        # Close the opener tab immediately so opener is closed/unavailable, then wait for /unknown-parent commit
         cdp.send_cmd("Target.closeTarget", {"targetId": temp_opener_id})
-        time.sleep(1.5)
+        for _ in range(20):
+            time.sleep(0.3)
+            st_check = cdp.evaluate(sw_sid, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
+            if any("/unknown-parent" in n.get("url", "") for n in st_check.get("spatial_browser_history_data", {}).get("nodes", {}).values()):
+                break
 
         # Close the child tab
         cdp.send_cmd("Target.closeTarget", {"targetId": unknown_child_target["targetId"]})
@@ -785,10 +793,33 @@ def run_tests():
         assert len(node_unknown["childNodeIds"]) == 0, "Unknown/closed opener visit must have no child nodes"
         print(f"[PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).")
 
-        # Verify rendered SVG map nodes in extension tab
+        # Verify Task 12 Two-Level Explorer Overview on initial load, then open main Research Tree Detail View
+        main_tree_id = node_page1["treeId"]
+        unknown_tree_id = node_unknown["treeId"]
+        overview_state = cdp.evaluate(map_sid, """
+        ({
+            overviewHidden: document.getElementById('overview-view').hidden,
+            detailHidden: document.getElementById('detail-view').hidden,
+            zoomHidden: document.getElementById('zoom-controls').hidden,
+            cardCount: document.querySelectorAll('#trees-grid .tree-card').length,
+            badge: document.getElementById('node-count-badge').textContent
+        })
+        """)
+        print(f"  Overview state before reopen: {overview_state}")
+        assert overview_state["overviewHidden"] is False, "Initial view must be Research Tree Overview"
+        assert overview_state["detailHidden"] is True, "Detail view must be hidden on initial Overview"
+        assert overview_state["zoomHidden"] is True, "Zoom controls must be hidden on Overview"
+        assert overview_state["cardCount"] == 2, f"Expected 2 tree cards (main tree + unknown-opener root), got {overview_state['cardCount']}"
+        assert "2 Research Trees" in overview_state["badge"] and "7 Visits" in overview_state["badge"], f"Unexpected overview badge: {overview_state['badge']}"
+
+        cdp.evaluate(map_sid, f"document.querySelector('.tree-open-btn[data-tree-id=\"{main_tree_id}\"]').click()")
+        time.sleep(0.5)
         initial_svg_nodes = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
-        print(f"  Rendered SVG map nodes before reopen: {initial_svg_nodes}")
-        assert initial_svg_nodes == 7, f"Expected 7 SVG nodes before reopen, got {initial_svg_nodes}"
+        detail_state_pre = cdp.evaluate(map_sid, "({ overviewHidden: document.getElementById('overview-view').hidden, detailHidden: document.getElementById('detail-view').hidden, zoomHidden: document.getElementById('zoom-controls').hidden, countBadge: document.getElementById('detail-count-badge').textContent })")
+        print(f"  Opened Detail View for {main_tree_id}: rendered SVG nodes={initial_svg_nodes}, badge='{detail_state_pre['countBadge']}'")
+        assert detail_state_pre["overviewHidden"] is True and detail_state_pre["detailHidden"] is False, "Clicking Open Tree must enter Detail View"
+        assert detail_state_pre["zoomHidden"] is False, "Zoom controls must be visible in Detail View"
+        assert initial_svg_nodes == 6, f"Expected 6 scoped SVG nodes in main tree before reopen (excluding unknown root tree), got {initial_svg_nodes}"
 
         # --- STEP 4: SELECT CLOSED CHILD NODE, REOPEN SAVED URL & PROVE VISIT COUNT INCREASE ---
         print("\n--- STEP 4: Select Closed Child Node, Reopen Saved URL & Explicitly Audit Visit Count ---")
@@ -834,24 +865,74 @@ def run_tests():
         assert post_reopen_count == initial_stored_count + 1, f"Expected {initial_stored_count + 1} visits after reopen, got {post_reopen_count}"
         assert post_reopen_count == 8, f"Expected 8 visits after reopen, got {post_reopen_count}"
 
+        # Reopened tab has no browser opener, so it creates its own root Research Tree card (3 trees total, while main_tree_id Detail View stays strictly scoped to 6 nodes)
         svg_nodes_post_reopen = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
-        print(f"  Rendered SVG map nodes after reopen: {svg_nodes_post_reopen}")
-        assert svg_nodes_post_reopen == 8, f"Expected 8 SVG nodes after reopen, got {svg_nodes_post_reopen}"
-        print("[PASS] Explicit visit-count change proven: 7 visits before reopen -> 8 visits after reopen.")
+        assert svg_nodes_post_reopen == 6, f"Detail view must remain strictly isolated to main tree (6 nodes), got {svg_nodes_post_reopen}"
+        cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
+        time.sleep(0.4)
+        overview_post_reopen = cdp.evaluate(map_sid, "({ cardCount: document.querySelectorAll('#trees-grid .tree-card').length, badge: document.getElementById('node-count-badge').textContent })")
+        print(f"  Overview after reopen: {overview_post_reopen['cardCount']} tree cards ({overview_post_reopen['badge']})")
+        assert overview_post_reopen["cardCount"] == 3, f"Expected 3 independent root trees after reopen, got {overview_post_reopen['cardCount']}"
+        assert "8 Visits" in overview_post_reopen["badge"], f"Overview badge must reflect 8 Visits, got '{overview_post_reopen['badge']}'"
+        print("[PASS] Explicit visit-count change & strict tree isolation proven: 7 visits (2 trees) -> 8 visits (3 trees), Detail View stays scoped to 6 nodes.")
 
         # Close the reopened child tab
         cdp.send_cmd("Target.closeTarget", {"targetId": reopened_target["targetId"]})
         time.sleep(1)
 
-        # --- STEP 5: PROVE SEARCH & TIME FILTERING ACROSS REAL BOUNDARIES ---
-        print("\n--- STEP 5: Prove Search and Time Filtering Across Real Boundary ---")
+        # --- STEP 5: PROVE OVERVIEW & TREE-LOCAL SEARCH + NON-DISTORTING CONTEXT TIME FILTERING ---
+        print("\n--- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---")
         cdp.send_cmd("Target.activateTarget", {"targetId": map_target["targetId"]})
         time.sleep(0.3)
-        base_active_count = 8
-        print(f"  Base active visit count: {base_active_count}")
 
-        # Search for 'target' via typing
-        print("  [Search] Typing 'target' into #search-input...")
+        # 5a. Global Overview Search
+        print("  [Overview Search] Typing 'target' into #search-input on Overview...")
+        cdp.evaluate(map_sid, """
+        (() => {
+            let inp = document.getElementById('search-input');
+            inp.focus();
+            inp.value = 'target';
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+        })()
+        """)
+        ov_search_cards = 3
+        ov_search_badge = ""
+        for _ in range(12):
+            time.sleep(0.25)
+            ov_search_cards = cdp.evaluate(map_sid, "document.querySelectorAll('#trees-grid .tree-card').length")
+            ov_search_badge = cdp.evaluate(map_sid, "document.getElementById('node-count-badge').textContent")
+            if ov_search_cards == 1:
+                break
+        print(f"  [Overview Search 'target'] Badge: '{ov_search_badge}', matching tree cards: {ov_search_cards}")
+        assert ov_search_cards == 1, f"Expected 1 matching tree card on Overview for 'target', got {ov_search_cards}"
+
+        # Verify Overview scroll/filter/focus preservation when opening Detail View and pressing Back
+        cdp.evaluate(map_sid, f"""
+        (() => {{
+            let btn = document.querySelector('.tree-open-btn[data-tree-id="{main_tree_id}"]');
+            if (btn) btn.focus();
+            if (btn) btn.click();
+        }})()
+        """)
+        time.sleep(0.4)
+        assert cdp.evaluate(map_sid, "document.getElementById('search-input').value") == "", "Tree Detail View must start with independent clean tree-local search input"
+        cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
+        time.sleep(0.3)
+        restored_ov = cdp.evaluate(map_sid, f"({{ query: document.getElementById('search-input').value, focusedTree: document.activeElement ? document.activeElement.getAttribute('data-tree-id') : null }})")
+        assert restored_ov["query"] == "target", f"Back-to-Overview must restore prior overview query 'target', got '{restored_ov['query']}'"
+        assert restored_ov["focusedTree"] == main_tree_id, f"Back-to-Overview must restore focus to last opened tree button '{main_tree_id}', got '{restored_ov['focusedTree']}'"
+
+        cdp.evaluate(map_sid, "document.getElementById('search-clear-btn').click()")
+        time.sleep(0.3)
+        assert cdp.evaluate(map_sid, "document.querySelectorAll('#trees-grid .tree-card').length") == 3, "Clearing Overview search must restore all 3 tree cards"
+
+        # 5b. Open main_tree_id Detail View for tree-local search & time filtering
+        cdp.evaluate(map_sid, f"document.querySelector('.tree-open-btn[data-tree-id=\"{main_tree_id}\"]').click()")
+        time.sleep(0.4)
+        base_active_count = 6
+        print(f"  Base active visit count inside {main_tree_id}: {base_active_count}")
+
+        print("  [Detail Search] Typing 'target' into #search-input inside Detail View...")
         cdp.evaluate(map_sid, """
         (() => {
             let inp = document.getElementById('search-input');
@@ -861,27 +942,32 @@ def run_tests():
         })()
         """)
         search_badge = ""
-        search_nodes = base_active_count
+        search_matches = 0
+        search_context = 0
         for _ in range(12):
-            time.sleep(0.3)
-            search_badge = cdp.evaluate(map_sid, "document.getElementById('node-count-badge').textContent")
-            search_nodes = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
-            if search_nodes == 2:
+            time.sleep(0.25)
+            search_badge = cdp.evaluate(map_sid, "document.getElementById('detail-count-badge').textContent")
+            search_matches = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node.is-search-match').length")
+            search_context = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node.is-context-ancestor').length")
+            if search_matches == 2:
                 break
-        print(f"  [Search 'target'] Badge: '{search_badge}', matching count: {search_nodes}")
-        assert "of" in search_badge, "Badge must reflect filtered 'X of Y visits'"
-        assert search_nodes == 2, f"Expected 2 matching nodes for 'target', got {search_nodes}"
+        context_banner_hidden = cdp.evaluate(map_sid, "document.getElementById('detail-context-banner').hidden")
+        print(f"  [Detail Search 'target'] Badge: '{search_badge}', matches: {search_matches}, context ancestors: {search_context}")
+        assert "2 of 6 matching" in search_badge, f"Detail badge must show '2 of 6 matching', got '{search_badge}'"
+        assert search_matches == 2, f"Expected 2 matching nodes for 'target', got {search_matches}"
+        assert search_context == 2, f"Expected 2 context ancestor nodes (/page1, /page2) to preserve tree hierarchy, got {search_context}"
+        assert context_banner_hidden is False, "Context banner must be visible when dimmed ancestor context is shown"
 
         # Clear search via clear button
         print("  [Clear Search] Clicking #search-clear-btn...")
         cdp.evaluate(map_sid, "document.getElementById('search-clear-btn').click()")
-        time.sleep(0.5)
-
-        restored_badge = cdp.evaluate(map_sid, "document.getElementById('node-count-badge').textContent")
+        time.sleep(0.4)
+        restored_badge = cdp.evaluate(map_sid, "document.getElementById('detail-count-badge').textContent")
         restored_nodes = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
         print(f"  [Clear Search] Restored badge: '{restored_badge}', node count: {restored_nodes}")
-        assert restored_nodes == base_active_count, "Clearing search must restore all initial nodes"
-        print("[PASS] Verified search query typing and clear-search button restoration.")
+        assert restored_nodes == base_active_count, "Clearing search must restore all 6 tree nodes"
+        assert cdp.evaluate(map_sid, "document.getElementById('detail-context-banner').hidden") is True, "Context banner must hide when filter is cleared"
+        print("[PASS] Verified Overview & Detail search with non-distorting context ancestors + focus/filter restoration.")
 
         # Time filtering across a 1-hour time boundary
         print("  Testing time filtering across boundary (setting Page 1 timestamp to 2 hours ago)...")
@@ -901,7 +987,7 @@ def run_tests():
         """, await_promise=True)
         time.sleep(1)
 
-        # Trigger time filter 'hour' (1-hour window)
+        # Trigger time filter 'hour' (1-hour window): Page 1 (>1hr) is non-matching but retained as dimmed context ancestor for its 5 recent descendants
         print("  [Time Filter] Selecting 'hour' option...")
         cdp.evaluate(map_sid, """
         (() => {
@@ -912,12 +998,18 @@ def run_tests():
         """)
         time.sleep(0.5)
 
-        hour_badge = cdp.evaluate(map_sid, "document.getElementById('node-count-badge').textContent")
-        hour_nodes = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
-        page1_in_hour = cdp.evaluate(map_sid, f"!!document.querySelector('.map-node[data-id=\"{node_page1['id']}\"]')")
-        print(f"  [Filter 'hour'] Badge: '{hour_badge}', count: {hour_nodes}, Page 1 in map: {page1_in_hour}")
-        assert hour_nodes == base_active_count - 1, f"Expected {base_active_count - 1} nodes in 1-hour filter, got {hour_nodes}"
-        assert page1_in_hour is False, "Page 1 (>1hr old) must be excluded in 1-hour filter"
+        hour_badge = cdp.evaluate(map_sid, "document.getElementById('detail-count-badge').textContent")
+        hour_matches = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node:not(.is-context-ancestor)').length")
+        page1_hour_state = cdp.evaluate(map_sid, f"""
+        (() => {{
+            let el = document.querySelector('.map-node[data-id="{node_page1['id']}"]');
+            return el ? {{ exists: true, isMatch: !el.classList.contains('is-context-ancestor'), isContext: el.classList.contains('is-context-ancestor') }} : {{ exists: false }};
+        }})()
+        """)
+        print(f"  [Filter 'hour'] Badge: '{hour_badge}', matches: {hour_matches}, Page 1 state: {page1_hour_state}")
+        assert hour_matches == base_active_count - 1, f"Expected {base_active_count - 1} matching nodes in 1-hour filter, got {hour_matches}"
+        assert page1_hour_state.get("isMatch") is False, "Page 1 (>1hr old) must NOT match 1-hour filter"
+        assert page1_hour_state.get("isContext") is True, "Page 1 must be preserved as dimmed context ancestor so children keep true root"
 
         # Trigger time filter 'all'
         cdp.evaluate(map_sid, """
@@ -927,11 +1019,11 @@ def run_tests():
             sel.dispatchEvent(new Event('change', { bubbles: true }));
         })()
         """)
-        time.sleep(0.5)
+        time.sleep(0.4)
         all_nodes = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
-        assert all_nodes == base_active_count, "All filter must restore all visits"
+        assert all_nodes == base_active_count and cdp.evaluate(map_sid, "document.querySelectorAll('.map-node.is-context-ancestor').length") == 0, "All filter must restore all visits without context dimming"
 
-        # Trigger time filter 'day' (24-hour window: 2hr visit should be included)
+        # Trigger time filter 'day' (24-hour window: 2hr visit should match cleanly)
         cdp.evaluate(map_sid, """
         (() => {
             let sel = document.getElementById('time-filter');
@@ -939,10 +1031,10 @@ def run_tests():
             sel.dispatchEvent(new Event('change', { bubbles: true }));
         })()
         """)
-        time.sleep(0.5)
-        day_nodes = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node').length")
-        assert day_nodes == base_active_count, "24-hour filter must include 2hr-old visit"
-        print(f"  [Filter 'day'] Count: {day_nodes} (includes 2hr-old visit)")
+        time.sleep(0.4)
+        day_matches = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node:not(.is-context-ancestor)').length")
+        assert day_matches == base_active_count, f"24-hour filter must include 2hr-old visit (expected {base_active_count}, got {day_matches})"
+        print(f"  [Filter 'day'] Matches: {day_matches} (includes 2hr-old visit)")
 
         # Reset filter to 'all'
         cdp.evaluate(map_sid, """
@@ -952,7 +1044,7 @@ def run_tests():
             sel.dispatchEvent(new Event('change', { bubbles: true }));
         })()
         """)
-        print("[PASS] Verified time filtering across boundary: 2hr visit excluded in 'hour' and restored in 'all'/'day'.")
+        print("[PASS] Verified time filtering across boundary: 2hr visit dimmed as context in 'hour' and restored as full match in 'all'/'day'.")
 
         # --- STEP 6: EXERCISE PAN, ZOOM, KEYBOARD CONTROLS, AND CLEAR MODAL FOCUS TRAP ---
         print("\n--- STEP 6: Exercise Pan, Zoom, Keyboard Navigation, and Dialog Focus Trapping ---")
@@ -1208,6 +1300,95 @@ def run_tests():
         cdp.send_cmd("Target.closeTarget", {"targetId": ambig_tid})
         time.sleep(0.5)
 
+        # 5. Task 12 Live UI Verification on Overview + Tree Detail + Download Provenance
+        print("  [6.5e] Verifying Task 12 Research Tree Explorer UI (cards, unattributed shelf, sibling fan, download provenance)...")
+        cdp.send_cmd("Target.activateTarget", {"targetId": map_target["targetId"]})
+        time.sleep(0.6)
+
+        explorer_ui = cdp.evaluate(map_sid, f"""
+        (() => {{
+            let cardIds = Array.from(document.querySelectorAll('#trees-grid .tree-card')).map(el => el.getAttribute('data-tree-id'));
+            let unattrText = Array.from(document.querySelectorAll('#unattributed-list .unattributed-item')).map(el => el.textContent);
+            return {{
+                overviewHidden: document.getElementById('overview-view').hidden,
+                unattrHidden: document.getElementById('unattributed-section').hidden,
+                cardIds: cardIds,
+                hasWikiCard: cardIds.includes("{wiki_node['treeId']}"),
+                hasPortalCard: cardIds.includes("{portal_node['treeId']}"),
+                hasUnattrAsCard: cardIds.includes("{unattr_dl_node['treeId']}"),
+                hasAmbigAsCard: cardIds.includes("{ambig_dl_node['treeId']}"),
+                unattrText: unattrText
+            }};
+        }})()
+        """)
+        print(f"  [Task 12 Overview] cards={len(explorer_ui['cardIds'])}, unattributed items={len(explorer_ui['unattrText'])}")
+        assert explorer_ui["overviewHidden"] is False, "Overview must be visible"
+        assert explorer_ui["unattrHidden"] is False, "Unattributed Downloads shelf must be visible"
+        assert explorer_ui["hasWikiCard"] is True and explorer_ui["hasPortalCard"] is True, "Overview must show separate cards for wiki and download-portal trees"
+        assert explorer_ui["hasUnattrAsCard"] is False and explorer_ui["hasAmbigAsCard"] is False, "Unattributed downloads must NOT generate Research Tree cards"
+        assert any("dataset.zip" in t and "Source unavailable" in t for t in explorer_ui["unattrText"]), f"Shelf must show dataset.zip + Source unavailable, got {explorer_ui['unattrText']}"
+        assert any("ambiguous.bin" in t and "Source unavailable" in t for t in explorer_ui["unattrText"]), f"Shelf must show ambiguous.bin + Source unavailable, got {explorer_ui['unattrText']}"
+
+        # Verify Wikipedia sibling branching in Detail View
+        cdp.evaluate(map_sid, f"document.querySelector('.tree-open-btn[data-tree-id=\"{wiki_node['treeId']}\"]').click()")
+        time.sleep(0.4)
+        wiki_coords = cdp.evaluate(map_sid, f"""
+        (() => {{
+            let getXY = (id) => {{
+                let el = document.querySelector('.map-node[data-id="' + id + '"]');
+                if (!el) return null;
+                let m = (el.getAttribute('transform') || '').match(/translate\\(([-\\d.]+),\\s*([-\\d.]+)\\)/);
+                return m ? {{ x: Number(m[1]), y: Number(m[2]) }} : null;
+            }};
+            return {{
+                count: document.querySelectorAll('.map-node').length,
+                wiki: getXY("{wiki_node['id']}"),
+                a: getXY("{source_a_node['id']}"),
+                b: getXY("{source_b_node['id']}")
+            }};
+        }})()
+        """)
+        print(f"  [Wiki Detail] count={wiki_coords['count']}, coords={wiki_coords}")
+        expected_wiki_count = len([n for n in nodes_ambig.values() if n.get("treeId") == wiki_node["treeId"]])
+        assert wiki_coords["count"] == expected_wiki_count, f"Wiki Detail must show {expected_wiki_count} nodes for tree {wiki_node['treeId']}, got {wiki_coords['count']}"
+        assert wiki_coords["a"] and wiki_coords["b"] and wiki_coords["wiki"], "Wiki and sibling nodes must render in SVG"
+        assert wiki_coords["a"]["x"] == wiki_coords["b"]["x"] > wiki_coords["wiki"]["x"], "Source A and Source B must align vertically as siblings to the right of Wikipedia"
+        assert wiki_coords["a"]["y"] != wiki_coords["b"]["y"], "Source A and Source B must occupy distinct vertical sibling rows"
+
+        cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
+        time.sleep(0.3)
+
+        # Verify Attributed Download Node in Detail View & Inspector Drawer
+        cdp.evaluate(map_sid, f"document.querySelector('.tree-open-btn[data-tree-id=\"{portal_node['treeId']}\"]').click()")
+        time.sleep(0.4)
+        dl_ui = cdp.evaluate(map_sid, f"""
+        (() => {{
+            let dlNode = document.querySelector('.map-node.is-download[data-id="{cdn_dl_node['id']}"]');
+            let nodeText = dlNode ? dlNode.textContent : "";
+            if (dlNode) dlNode.dispatchEvent(new MouseEvent('click', {{ bubbles: true }}));
+            return {{
+                exists: !!dlNode,
+                nodeText: nodeText,
+                panelHidden: document.getElementById('details-panel').hidden,
+                sourceHidden: document.getElementById('details-source-field').hidden,
+                sourceText: document.getElementById('details-source').textContent,
+                urlHidden: document.getElementById('details-url-field').hidden,
+                actionsHidden: document.getElementById('details-actions').hidden
+            }};
+        }})()
+        """)
+        print(f"  [Download Detail] ui={dl_ui}")
+        assert dl_ui["exists"] is True, "Attributed download node must render with .is-download class"
+        assert "Downloaded from localhost" in dl_ui["nodeText"], f"Download node must display 'Downloaded from localhost', got '{dl_ui['nodeText']}'"
+        assert "127.0.0.1" not in dl_ui["nodeText"], "Download node must NEVER display CDN host 127.0.0.1"
+        assert dl_ui["panelHidden"] is False and dl_ui["sourceHidden"] is False, "Download selection must open provenance drawer"
+        assert dl_ui["sourceText"] == "Downloaded from localhost", f"Drawer source must be 'Downloaded from localhost', got '{dl_ui['sourceText']}'"
+        assert dl_ui["urlHidden"] is True and dl_ui["actionsHidden"] is True, "Raw URL field and Reopen action must remain hidden for download nodes"
+
+        cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
+        time.sleep(0.3)
+        print("[PASS] Verified Task 12 UI Explorer across live extension storage, sibling geometry, attributed downloads, and unattributed shelf.")
+
         # --- STEP 7: ERROR LOG AUDIT PRE-RESTART ---
         print("\n--- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---")
         pre_ext_errors = filter_extension_errors(cdp.errors, ext_id)
@@ -1244,20 +1425,32 @@ def run_tests():
         time.sleep(0.5)
 
         cdp.send_cmd("Page.navigate", {"url": f"{base_url}/restart-step1"}, session_id=restart_sid)
-        time.sleep(1.0)
+        for _ in range(15):
+            time.sleep(0.3)
+            st_r = cdp.evaluate(map_sid, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
+            if any("/restart-step1" in n.get("url", "") for n in st_r.get("spatial_browser_history_data", {}).get("nodes", {}).values()):
+                break
         cdp.evaluate(restart_sid, "document.getElementById('step2-link').click()")
-        time.sleep(1.0)
+        for _ in range(15):
+            time.sleep(0.3)
+            st_r = cdp.evaluate(map_sid, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
+            if any("/restart-step2" in n.get("url", "") for n in st_r.get("spatial_browser_history_data", {}).get("nodes", {}).values()):
+                break
         cdp.evaluate(restart_sid, "document.getElementById('step3-link').click()")
-        time.sleep(1.0)
-
-        pre_restart_storage = cdp.evaluate(sw_sid, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
-        stored_nodes_pre_restart = pre_restart_storage.get("spatial_browser_history_data", {}).get("nodes", {})
+        pre_restart_storage = {}
+        stored_nodes_pre_restart = {}
+        step1_node = step2_node = step3_node = None
+        for _ in range(15):
+            time.sleep(0.3)
+            pre_restart_storage = cdp.evaluate(sw_sid, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
+            stored_nodes_pre_restart = pre_restart_storage.get("spatial_browser_history_data", {}).get("nodes", {})
+            step1_node = next((n for n in stored_nodes_pre_restart.values() if "/restart-step1" in n.get("url", "")), None)
+            step2_node = next((n for n in stored_nodes_pre_restart.values() if "/restart-step2" in n.get("url", "")), None)
+            step3_node = next((n for n in stored_nodes_pre_restart.values() if "/restart-step3" in n.get("url", "")), None)
+            if step1_node and step2_node and step3_node:
+                break
         pre_restart_count = len(stored_nodes_pre_restart)
         print(f"  Pre-restart node count stored in chrome.storage.local: {pre_restart_count}")
-
-        step1_node = next((n for n in stored_nodes_pre_restart.values() if "/restart-step1" in n.get("url", "")), None)
-        step2_node = next((n for n in stored_nodes_pre_restart.values() if "/restart-step2" in n.get("url", "")), None)
-        step3_node = next((n for n in stored_nodes_pre_restart.values() if "/restart-step3" in n.get("url", "")), None)
         assert step1_node and step2_node and step3_node, "All three restart step nodes must exist in storage before restart"
 
         # Query tab state for content tab to prove 3-node stack before restart
@@ -1352,11 +1545,26 @@ def run_tests():
         assert post_tab_entry.get("lineageInvalidated") is False, "Lineage must not be invalidated"
         print("[PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.")
 
-        restarted_nodes = cdp2.evaluate(restarted_map_sid, "document.querySelectorAll('.map-node').length")
-        restarted_badge = cdp2.evaluate(restarted_map_sid, "document.getElementById('node-count-badge').textContent")
-        print(f"  Post-restart rendered node count in SVG map: {restarted_nodes} ({restarted_badge})")
-        assert restarted_nodes == pre_restart_count, f"Rendered nodes mismatch: expected {pre_restart_count}, got {restarted_nodes}"
-        print("[PASS] Verified UI map reconciliation: All persisted visits correctly rendered after restart.")
+        ov_restart_state = cdp2.evaluate(restarted_map_sid, f"""
+        (() => {{
+            let cardBtn = document.querySelector('.tree-open-btn[data-tree-id="{step3_node['treeId']}"]');
+            if (cardBtn) cardBtn.click();
+            return {{
+                overviewBadge: document.getElementById('node-count-badge').textContent,
+                cardCount: document.querySelectorAll('#trees-grid .tree-card').length,
+                foundStep3Card: !!cardBtn
+            }};
+        }})()
+        """)
+        time.sleep(0.4)
+        restarted_detail_nodes = cdp2.evaluate(restarted_map_sid, "document.querySelectorAll('.map-node').length")
+        restarted_detail_badge = cdp2.evaluate(restarted_map_sid, "document.getElementById('detail-count-badge').textContent")
+        print(f"  Post-restart Overview: {ov_restart_state['cardCount']} cards ({ov_restart_state['overviewBadge']}); Detail View for {step3_node['treeId']}: {restarted_detail_nodes} nodes ({restarted_detail_badge})")
+        assert ov_restart_state["foundStep3Card"] is True, "Post-restart Overview must contain the 3-step session tree card"
+        assert restarted_detail_nodes == 3, f"Post-restart Detail View for {step3_node['treeId']} must render 3 nodes, got {restarted_detail_nodes}"
+        cdp2.evaluate(restarted_map_sid, "document.getElementById('back-to-overview-btn').click()")
+        time.sleep(0.3)
+        print("[PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.")
 
         # --- STEP 9: POST-RESTART ERROR AUDIT & PERSISTENCE ---
         print("\n--- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---")
@@ -1382,9 +1590,10 @@ def run_tests():
         print("  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,")
         print("    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).")
         print("  - Reload Deduplication: Exact parity; exactly 1 node stored for /target despite reload.")
-        print("  - Closed Child URL Reopen: Exact parity; 7 initial visits -> 8 visits after reopening child URL (+1 visit).")
-        print("  - Search & Time Filtering: Exact parity; search reduces to 2 of 8 visits, clear restores 8 visits;")
-        print("    1-hour filter excludes 2hr-old visit, 'all' and 'day' restore all visits.")
+        print("  - Closed Child URL Reopen: Exact parity; 7 initial visits (2 trees) -> 8 visits (3 trees) after reopening child URL (+1 visit).")
+        print("  - Search & Time Filtering: Exact parity; Overview filters tree cards; Detail keeps non-matching context ancestors dimmed while matching descendants stay attached.")
+        print("  - Task 12 Explorer UI: Exact parity; Overview tree-card grouping, Unattributed Downloads shelf ('Source unavailable'), sibling fan geometry,")
+        print("    attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.")
         print("  - UI Controls & Focus Trapping: Exact parity; pan, zoom, fit, Enter node selection, Tab/Shift+Tab wrap.")
         print("  - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.")
         print("  - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.")

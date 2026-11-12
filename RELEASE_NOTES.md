@@ -103,14 +103,14 @@ All distribution packages are generated deterministically with zero external dep
 
 ### Automated Test Suite
 Run command: `npm test`  
-Result: **55 passed, 0 failed**
+Result: **59 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
 - Build, Manifest, CSP, Parity, and Archive Integrity: **12 tests passed**
 - Navigation Tracker, Sibling Branching, Session Safety & Storage V2: **35 tests passed**
-- UI Logic, Forest Layout, Contrast, and Security: **8 tests passed**
+- Research Tree Explorer UI, Forest Layout, Contrast, and Security: **12 tests passed**
 
 ### Cross-Browser End-to-End Test Records
 
-**Task 11 verification status (2026-11-12):** Automated checks (`55 passed, 0 failed`) and isolated-profile Chrome 156.0.8078.48 & Firefox 158.0.1 E2E runs pass (`0 failures, 0 errors, 0 warnings`), covering sibling branching, distinct-host download provenance (`http://localhost` source vs `http://127.0.0.1` file host), missing/ambiguous referrers (`Source unavailable`), and multi-node restart baseline recovery. See Section 56 of [`task output overview/task-11-output.md`](task%20output%20overview/task-11-output.md).
+**Task 11 & Task 12 verification status (2026-11-12):** Task 11 backend/provenance is accepted (Section 57). **Task 12** Research Tree Explorer UI is implemented, verified by 59/59 automated checks plus isolated-profile Chrome 156.0.8078.48 and Firefox 158.0.1 E2E runs with zero errors or warnings, and submitted for lead review (`task output overview/task-12-output.md`).
 Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
 - **Google Chrome 156.0.8078.48 (x64 Windows):**
@@ -121,4 +121,5 @@ Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](
   - Full E2E Execution Log: [`docs/test-results/firefox-e2e.log`](docs/test-results/firefox-e2e.log)
   - Pre-Restart Console Audit: [`docs/test-results/firefox-errors-pre-restart.json`](docs/test-results/firefox-errors-pre-restart.json) — **0 errors, 0 warnings**
   - Post-Restart Console Audit: [`docs/test-results/firefox-errors-post-restart.json`](docs/test-results/firefox-errors-post-restart.json) — **0 errors, 0 warnings**
+
 

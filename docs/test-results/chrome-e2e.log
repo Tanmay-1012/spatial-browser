@@ -1,27 +1,27 @@
 ============================================================================
 TASK 6: GOOGLE CHROME 156.0.8078.48 RUNTIME ACCEPTANCE RUN
-Timestamp: 2026-11-12 20:19:45
+Timestamp: 2026-11-12 21:30:53
 Browser Target: Google Chrome 156.0.8078.48 (x64 Windows)
 Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
 ============================================================================
-[INIT] Local test HTTP server started at http://127.0.0.1:53535 (and http://localhost:53535)
-[INIT] Local CDN HTTP server started at http://127.0.0.1:53536
+[INIT] Local test HTTP server started at http://127.0.0.1:51434 (and http://localhost:51434)
+[INIT] Local CDN HTTP server started at http://127.0.0.1:51435
 
 --- STEP 1: Chrome Process Startup & Unpacked Extension Loading ---
-[INIT] Connected to Chrome 156.0.8078.48 via CDP: ws://127.0.0.1:53537/devtools/browser/51b48d86-5287-4be6-8ed3-32a890ad1a70
+[INIT] Connected to Chrome 156.0.8078.48 via CDP: ws://127.0.0.1:51436/devtools/browser/5894b8be-688c-45c2-8a0e-1b768ae56fea
 [PASS] Unpacked extension loaded successfully from D:\Projects\HCI Project\outputs\chrome\unpacked
        Extension ID: edhmggcmhhmlbfmidpeamoiffebfijah
 [PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome.
 [PASS] Service worker discovered: Service Worker chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js (chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js)
-[PASS] Attached to background service worker (Session ID: CEC1EA0486BB7D75934DD0D7DC021510).
+[PASS] Attached to background service worker (Session ID: 5C329DE08CF1DE89C17F20841C98FFFD).
 [PASS] Background service worker environment: {'hasStorage': True, 'hasTracker': True, 'hasLaunch': True}
 [PASS] Background tracker session state: {'initialized': True, 'initializing': False}
 
 --- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---
   Pages before Action 1: 1
-[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab EFC6C5868D9C8300D35DDCB1AC7B97A9, total pages=2 (was 1)
-  Switched focus to blank tab 848DC1F244FABE4614D667EC22F9F5BD. Pages before Action 2: 3
-[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 1533936193, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
+[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab 88327F0BA0ECCB6D01CE5F05B01EFD21, total pages=2 (was 1)
+  Switched focus to blank tab EE827FFDF7ABC7DFE86597C0A848D6A5. Pages before Action 2: 3
+[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 439442565, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
 
 --- STEP 3: Exercise Browsing Scenarios & Verify Stored Visits and Parent Relationships ---
   [3a] Navigating to Page 1...
@@ -32,97 +32,105 @@ Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
   [3f] Updating location.hash to #section1...
   [3g] History API route update (pushState to /target/spa-route)...
   [3h] Navigating to /opener and opening /child tab...
-  [3h] Child tab confirmed at http://127.0.0.1:53535/child. Closing child tab...
+  [3h] Child tab confirmed at http://127.0.0.1:51434/child. Closing child tab...
   [3i] Navigating via unknown/closed opener to /unknown-parent...
-  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:53535/unknown-parent.
+  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:51434/unknown-parent.
 
 [VISIT COUNT AUDIT - PRE-REOPEN]
   Stored visits in local storage: 7
-    - [node_1794482425401_gbl051] url=http://127.0.0.1:53535/page1, parent=None, children=['node_1794482425614_v8tlla'], checkpoint=True, title='Page One'
-    - [node_1794482425614_v8tlla] url=http://127.0.0.1:53535/page2, parent=node_1794482425401_gbl051, children=['node_1794482429199_o1rx5y'], checkpoint=False, title='Page Two'
-    - [node_1794482429199_o1rx5y] url=http://127.0.0.1:53535/target#section1, parent=node_1794482425614_v8tlla, children=['node_1794482431329_u39upq'], checkpoint=False, title='Updated Target Title'
-    - [node_1794482431329_u39upq] url=http://127.0.0.1:53535/target/spa-route, parent=node_1794482429199_o1rx5y, children=['node_1794482431495_le6enr'], checkpoint=False, title='Opener Page'
-    - [node_1794482431495_le6enr] url=http://127.0.0.1:53535/opener, parent=node_1794482431329_u39upq, children=['node_1794482432176_kfh209'], checkpoint=False, title='Opener Page'
-    - [node_1794482432176_kfh209] url=http://127.0.0.1:53535/child, parent=node_1794482431495_le6enr, children=[], checkpoint=False, title='Child Page'
-    - [node_1794482436955_tgupa7] url=http://127.0.0.1:53535/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
+    - [node_1794486683194_9to1x6] url=http://127.0.0.1:51434/page1, parent=None, children=['node_1794486684183_hgakyk'], checkpoint=True, title='Page One'
+    - [node_1794486684183_hgakyk] url=http://127.0.0.1:51434/page2, parent=node_1794486683194_9to1x6, children=['node_1794486685222_ce9pel'], checkpoint=False, title='Page Two'
+    - [node_1794486685222_ce9pel] url=http://127.0.0.1:51434/target#section1, parent=node_1794486684183_hgakyk, children=['node_1794486688468_aaglw0'], checkpoint=False, title='Updated Target Title'
+    - [node_1794486688468_aaglw0] url=http://127.0.0.1:51434/target/spa-route, parent=node_1794486685222_ce9pel, children=['node_1794486689888_1darlz'], checkpoint=False, title='Updated Target Title'
+    - [node_1794486689888_1darlz] url=http://127.0.0.1:51434/opener, parent=node_1794486688468_aaglw0, children=['node_1794486690690_tfp3vr'], checkpoint=False, title='Opener Page'
+    - [node_1794486690690_tfp3vr] url=http://127.0.0.1:51434/child, parent=node_1794486689888_1darlz, children=[], checkpoint=False, title='Child Page'
+    - [node_1794486693225_0yzg50] url=http://127.0.0.1:51434/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
 [PASS] Verified Page 1: Root checkpoint with parentNodeId: null.
 [PASS] Verified same-tab navigation: Page 2 parent is Page 1, Page 1 children includes Page 2.
 [PASS] Verified redirect destination: /target parent is Page 2.
 [PASS] Verified reload deduplication: Exactly 1 node stored for /target despite reload.
 [PASS] Verified dynamic title update: node title updated in place to 'Updated Target Title'.
-[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:53535/target#section1' without creating extra visit.
+[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:51434/target#section1' without creating extra visit.
 [PASS] Verified SPA route (pushState): /target/spa-route parent is /target.
-[PASS] Verified opener relationship: /child parent is /opener (node_1794482431495_le6enr), opener children include child.
+[PASS] Verified opener relationship: /child parent is /opener (node_1794486689888_1darlz), opener children include child.
 [PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).
-  Rendered SVG map nodes before reopen: 7
+  Overview state before reopen: {'overviewHidden': False, 'detailHidden': True, 'zoomHidden': True, 'cardCount': 2, 'badge': '2 Research Trees · 7 Visits'}
+  Opened Detail View for tree_node_1794486683194_9to1x6: rendered SVG nodes=6, badge='6 nodes'
 
 --- STEP 4: Select Closed Child Node, Reopen Saved URL & Explicitly Audit Visit Count ---
-[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:53535/child'
-[PASS] Reopened saved URL in new tab: http://127.0.0.1:53535/child
+[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:51434/child'
+[PASS] Reopened saved URL in new tab: http://127.0.0.1:51434/child
 
 [VISIT COUNT AUDIT - POST-REOPEN]
   Stored visits in local storage: 8 (initial: 7, +1 from reopened tab)
-  Rendered SVG map nodes after reopen: 8
-[PASS] Explicit visit-count change proven: 7 visits before reopen -> 8 visits after reopen.
+  Overview after reopen: 3 tree cards (3 Research Trees · 8 Visits)
+[PASS] Explicit visit-count change & strict tree isolation proven: 7 visits (2 trees) -> 8 visits (3 trees), Detail View stays scoped to 6 nodes.
 
---- STEP 5: Prove Search and Time Filtering Across Real Boundary ---
-  Base active visit count: 8
-  [Search] Typing 'target' into #search-input...
-  [Search 'target'] Badge: '2 of 8 visits', matching count: 2
+--- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---
+  [Overview Search] Typing 'target' into #search-input on Overview...
+  [Overview Search 'target'] Badge: '3 Research Trees · 8 Visits', matching tree cards: 1
+  Base active visit count inside tree_node_1794486683194_9to1x6: 6
+  [Detail Search] Typing 'target' into #search-input inside Detail View...
+  [Detail Search 'target'] Badge: '2 of 6 matching (+2 context)', matches: 2, context ancestors: 2
   [Clear Search] Clicking #search-clear-btn...
-  [Clear Search] Restored badge: '8 of 8 visits', node count: 8
-[PASS] Verified search query typing and clear-search button restoration.
+  [Clear Search] Restored badge: '6 nodes', node count: 6
+[PASS] Verified Overview & Detail search with non-distorting context ancestors + focus/filter restoration.
   Testing time filtering across boundary (setting Page 1 timestamp to 2 hours ago)...
   [Time Filter] Selecting 'hour' option...
-  [Filter 'hour'] Badge: '7 of 8 visits', count: 7, Page 1 in map: False
-  [Filter 'day'] Count: 8 (includes 2hr-old visit)
-[PASS] Verified time filtering across boundary: 2hr visit excluded in 'hour' and restored in 'all'/'day'.
+  [Filter 'hour'] Badge: '5 of 6 matching (+1 context)', matches: 5, Page 1 state: {'exists': True, 'isMatch': False, 'isContext': True}
+  [Filter 'day'] Matches: 6 (includes 2hr-old visit)
+[PASS] Verified time filtering across boundary: 2hr visit dimmed as context in 'hour' and restored as full match in 'all'/'day'.
 
 --- STEP 6: Exercise Pan, Zoom, Keyboard Navigation, and Dialog Focus Trapping ---
-  [Pointer Pan] before: translate(53.04142011834318, 373.7514976004877) scale(0.5893491124260355) -> after: translate(133.04142011834318, 433.7514976004877) scale(0.5893491124260355)
-  [Zoom Controls] zoomIn=translate(-11.95029585798818, 349.9417934584759) scale(0.7072189349112425), zoomOut=translate(74.74125443786983, 374.227691683328) scale(0.5869917159763313), fit=translate(53.04142011834318, 373.7514976004877) scale(0.5893491124260355)
+  [Pointer Pan] before: translate(53.04142011834318, 445.652089316464) scale(0.5893491124260355) -> after: translate(133.04142011834318, 505.652089316464) scale(0.5893491124260355)
+  [Zoom Controls] zoomIn=translate(-11.95029585798818, 436.22250351764745) scale(0.7072189349112425), zoomOut=translate(74.74125443786983, 445.84068103244033) scale(0.5869917159763313), fit=translate(53.04142011834318, 445.652089316464) scale(0.5893491124260355)
   [Keyboard Enter Key Selection] isSelected=True, panelHidden=False
   Testing Clear Dialog focus trapping with Tab and Shift+Tab keys...
   [Clear Modal Opened] modalOpen=True, initialFocus='cancel-clear-btn'
   [Tab Key Action] focus wrapped to: 'confirm-clear-btn'
   [Shift+Tab Key Action] focus wrapped to: 'cancel-clear-btn'
-  [Cancel preserved nodes]: 8 of 8, modalClosed=True
+  [Cancel preserved nodes]: 6 of 6, modalClosed=True
   [After Confirm Clear]: emptyStateHidden=False, nodeCount=0, badge='0 visits'
 [PASS] Verified clear dialog: Tab/Shift+Tab focus trap proven, cancel preserves data, confirm clears storage and resets map.
 
 --- STEP 6.5: Task 11 Core Scenarios: Sibling Branching & Download Provenance ---
   [6.5a] Exercising Sibling Branching: /wiki -> /source-a -> Back -> /source-b...
-[PASS] Sibling Branching Proven: Source A (node_1794482452900_yyintg) and Source B (node_1794482454996_qbv0nu) are siblings under Wikipedia (node_1794482451842_dbboth) in tree tree_node_1794482451842_dbboth.
+[PASS] Sibling Branching Proven: Source A (node_1794486713046_fdnt8c) and Source B (node_1794486715171_mxrwqf) are siblings under Wikipedia (node_1794486712000_epsv3x) in tree tree_node_1794486712000_epsv3x.
   [6.5b] Exercising Distinct-Host Download Provenance from http://localhost/download-portal to http://127.0.0.1 CDN...
-[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794482456117_q6vhce (originDomain: localhost), raw URL/CDN omitted.
+[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794486716256_ao3y2g (originDomain: localhost), raw URL/CDN omitted.
   [6.5c] Exercising Unattributed Download (no referrer)...
 [PASS] Unattributed Download Proven: dataset.zip recorded with parentNodeId: null, originDomain: 'Source unavailable'.
   [6.5d] Exercising Ambiguous Referrer Download (|M|=2 matches)...
 [PASS] Ambiguous Referrer Proven: ambiguous.bin matching 2 pages fell back safely to parentNodeId: null, origin: 'Source unavailable'.
+  [6.5e] Verifying Task 12 Research Tree Explorer UI (cards, unattributed shelf, sibling fan, download provenance)...
+  [Task 12 Overview] cards=2, unattributed items=2
+  [Wiki Detail] count=6, coords={'count': 6, 'wiki': {'x': 80, 'y': 131}, 'a': {'x': 350, 'y': 80}, 'b': {'x': 350, 'y': 182}}
+  [Download Detail] ui={'exists': True, 'nodeText': 'research_paper.pdfDownloaded from localhost • j…', 'panelHidden': False, 'sourceHidden': False, 'sourceText': 'Downloaded from localhost', 'urlHidden': True, 'actionsHidden': True}
+[PASS] Verified Task 12 UI Explorer across live extension storage, sibling geometry, attributed downloads, and unattributed shelf.
 
 --- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---
   [SAVED] Pre-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-errors-pre-restart.json
-  Evaluated 255 CDP event records prior to restart.
+  Evaluated 254 CDP event records prior to restart.
   Extension Errors: 0, Warnings: 0
 [PASS] Pre-restart error audit passed with 0 errors and 0 warnings.
 
 --- STEP 8: Background Suspension & Browser Restart Persistence ---
   [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...
   Pre-restart node count stored in chrome.storage.local: 12
-  Pre-restart tab 1533936205 historyStack: ['node_1794482463501_po20er', 'node_1794482464572_2bhomg', 'node_1794482465537_rzzyf7'] (length 3)
-[PASS] Pre-restart multi-node baseline verified: tab 1533936205 has 3-node history stack.
+  Pre-restart tab 439442577 historyStack: ['node_1794486725354_f56jm7', 'node_1794486727279_zdn5dc', 'node_1794486727926_zdzpki'] (length 3)
+[PASS] Pre-restart multi-node baseline verified: tab 439442577 has 3-node history stack.
   [8b] Testing service worker stop/suspension...
   [PASS] Service worker suspension signaled via Target.closeTarget.
   [PASS] Service worker re-awakened on demand: 12 node(s) accessible.
   [8c] Terminating Chrome process for full browser restart...
   Chrome process terminated cleanly.
   Relaunching Chrome with persistent profile and restored live tab...
-  Reconnected to restarted Chrome: ws://127.0.0.1:53537/devtools/browser/a42af208-962a-423c-9e05-afcc0c48e3bb
+  Reconnected to restarted Chrome: ws://127.0.0.1:51436/devtools/browser/4f077ddf-0dd5-4efb-8156-ca04832830d2
   Post-restart stored node count in storage: 12 (was 12)
-  Post-restart live tab state: stack=['node_1794482465537_rzzyf7'], index=0, baselineEstablished=True
+  Post-restart live tab state: stack=['node_1794486727926_zdzpki'], index=0, baselineEstablished=True
 [PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.
-  Post-restart rendered node count in SVG map: 12 (12 of 12 visits)
-[PASS] Verified UI map reconciliation: All persisted visits correctly rendered after restart.
+  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794486725354_f56jm7: 3 nodes (3 nodes)
+[PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.
 
 --- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---
   [SAVED] Post-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json
@@ -137,9 +145,10 @@ Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
   - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,
     SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).
   - Reload Deduplication: Exact parity; exactly 1 node stored for /target despite reload.
-  - Closed Child URL Reopen: Exact parity; 7 initial visits -> 8 visits after reopening child URL (+1 visit).
-  - Search & Time Filtering: Exact parity; search reduces to 2 of 8 visits, clear restores 8 visits;
-    1-hour filter excludes 2hr-old visit, 'all' and 'day' restore all visits.
+  - Closed Child URL Reopen: Exact parity; 7 initial visits (2 trees) -> 8 visits (3 trees) after reopening child URL (+1 visit).
+  - Search & Time Filtering: Exact parity; Overview filters tree cards; Detail keeps non-matching context ancestors dimmed while matching descendants stay attached.
+  - Task 12 Explorer UI: Exact parity; Overview tree-card grouping, Unattributed Downloads shelf ('Source unavailable'), sibling fan geometry,
+    attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.
   - UI Controls & Focus Trapping: Exact parity; pan, zoom, fit, Enter node selection, Tab/Shift+Tab wrap.
   - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.
   - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.

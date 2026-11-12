@@ -1,6 +1,6 @@
 # Task 11 Output — V2 Storage, Branch Tracking, Session Safety, and Download Capture
 
-**Status:** Revision Submitted (Section 56 — Pending Lead Review)  
+**Status:** Accepted — Task 11 Complete (Section 57)
 **Milestone:** 11 (Core Backend V2 Architecture)  
 **Browser Targets:** Google Chrome 156.0.8078.48 (min 109+) & Mozilla Firefox 158.0.1 (strict_min_version: 115.0)  
 **Execution Date:** 2026-11-12  
@@ -306,7 +306,7 @@ Both target browsers were executed in real temporary profiles with local test en
 ## 7. Known Limits & Deferred Scope
 
 1. **Overview & Detail Multi-Tree UI Redesign Deferred to Task 12:**
-   - As explicitly directed, Task 11 submitted the backend V2 storage, branch-aware tracking, startup barrier, and download-capture implementation while keeping the existing UI layout intact. Acceptance remains open per Section 53; do not start Task 12 yet.
+   - Task 11 is accepted per Section 57. The UI redesign specified in Task 10 v15 is now assigned as Task 12.
    - The UI redesign specified in Task 10 v15 (Research Tree Explorer overview card grid, detail pan/zoom canvas, and downloads drawer) is planned for Task 12 after Task 11 is accepted.
 2. **Gecko Console Lifecycle Constraint:**
    - Mozilla Firefox's `Services.console` is an in-process ring buffer that resets upon process termination. Comprehensive telemetry auditing requires per-phase captures (pre-restart and post-restart), which are fully captured and preserved.
@@ -329,7 +329,7 @@ Both target browsers were executed in real temporary profiles with local test en
 - [x] `npm.cmd test` passes 55/55 tests across all 3 suites.
 - [x] Task 11 runtime acceptance: sibling branching, distinct-host download provenance (`originDomain === "localhost"` vs `127.0.0.1` file host), unattributed/ambiguous downloads (`Source unavailable`), and multi-node restart checks pass in both Chrome 156.0.8078.48 and Firefox 158.0.1 (Section 56).
 - [x] All index files updated (`task output overview/README.md`, `task output overview/tasks/README.md`, `task output overview/tasks/task-11.md`).
-- [ ] Lead acceptance: revision addressing Section 55 submitted in Section 56; do not start Task 12 until approved.
+- [x] Lead acceptance: Task 11 accepted per Section 57; Task 12 assigned in tasks/task-12.md.
 
 ## 53. Lead Review — Task 11 Revision Required
 
@@ -471,3 +471,12 @@ Both browser E2E harnesses were updated without modifying the system hosts file 
 
 
 
+
+
+
+
+## 57. Lead Acceptance — Task 11 Complete; Task 12 Assigned
+
+I reviewed the Section 56 changes, both updated browser harnesses and logs, the source implementation, and the unit tests. The distinct-host browser fixture now uses a localhost source page and a 127.0.0.1 file host; the logs confirm the final download URL hostname is 127.0.0.1 while the stored originDomain is localhost and the download is attached to the verified source page. The missing and ambiguous referrer checks, sibling branching, and multi-node restart-baseline checks also pass in both browsers.
+
+I independently reran npm.cmd test: **55 passed, 0 failed**. The Section 56 Chrome 156.0.8078.48 and Firefox 158.0.1 logs report zero extension errors and warnings. Task 11 is accepted. Task 12, the approved v15 Research Tree Explorer overview and detail UI, is assigned in tasks/task-12.md. The developer may begin Task 12 and must wait for lead review before starting another task.

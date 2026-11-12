@@ -103,13 +103,13 @@ All distribution packages are generated deterministically with zero external dep
 
 ### Automated Test Suite
 Run command: `npm test`  
-Result: **55 passed, 0 failed**
+Result: **59 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
 - Build, Manifest, CSP, Parity, and Archive Integrity: **12 tests passed**
 - Navigation Tracker, Sibling Branching, Session Safety & Storage V2: **35 tests passed**
-- UI Logic, Forest Layout, Contrast, and Security: **8 tests passed**
+- Research Tree Explorer UI, Forest Layout, Contrast, and Security: **12 tests passed**
 
 ### Cross-Browser End-to-End Test Records
-Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), and Section 56 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) records verified distinct-host download provenance (`http://localhost` source vs `http://127.0.0.1` file host) across both browsers (`2026-11-12`).
+Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), Section 56 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) (Task 11 accepted), and [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md) (Task 12 Explorer UI submitted for lead review on `2026-11-12`).
 
 - **Google Chrome 156.0.8078.48 (x64 Windows):**
   - Full E2E Execution Log: [`docs/test-results/chrome-e2e.log`](test-results/chrome-e2e.log)

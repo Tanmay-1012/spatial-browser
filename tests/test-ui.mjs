@@ -1,8 +1,9 @@
 /**
- * Spatial Browser History - UI logic and structure tests.
- * Pure layout, filtering, URL, and background message helpers are loaded from
- * the same production files used by the extension. DOM interactions still need
- * the browser smoke checks recorded in docs/TEST_PLAN.md.
+ * Spatial Browser History - Research Tree Explorer UI logic & structure tests.
+ * Pure overview grouping, detail-tree scoping, ancestry-preserving filters,
+ * download shelf separation, layout, URL safety, and background message helpers
+ * are loaded directly from production files. Live browser E2E checks run in
+ * Chrome and Firefox via scripts/e2e-*.py and are recorded in docs/TEST_PLAN.md.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -84,14 +85,18 @@ function assertAa(label, foreground, background) {
   assert(ratio >= 4.5, `${label} contrast ${ratio.toFixed(2)}:1 is below 4.5:1`);
 }
 
-console.log('=== Running Task 3 UI Logic & Structure Tests ===\n');
+console.log('=== Running Task 12 Research Tree Explorer UI Tests ===\n');
 
-test('Map controls, dialog semantics, lineage buttons, and script ordering are present', () => {
+test('Two-level Explorer controls, overview/detail landmarks, dialog semantics, and script order are present', () => {
   for (const id of [
-    'search-input', 'search-clear-btn', 'time-filter', 'zoom-in', 'zoom-out', 'zoom-reset',
-    'clear-map-btn', 'clear-modal', 'confirm-clear-btn', 'cancel-clear-btn', 'map-svg',
-    'map-viewport', 'edges-layer', 'nodes-layer', 'empty-state', 'no-results-state',
-    'details-panel', 'details-parent', 'details-children', 'reopen-btn', 'details-close-btn'
+    'overview-brand', 'detail-brand', 'back-to-overview-btn', 'detail-tree-domain', 'detail-tree-title',
+    'detail-count-badge', 'search-input', 'search-clear-btn', 'time-filter', 'zoom-controls',
+    'zoom-in', 'zoom-out', 'zoom-reset', 'clear-map-btn', 'clear-modal', 'confirm-clear-btn',
+    'cancel-clear-btn', 'overview-view', 'trees-grid', 'overview-trees-summary', 'unattributed-section',
+    'unattributed-list', 'detail-view', 'map-container', 'map-svg', 'map-viewport', 'edges-layer',
+    'nodes-layer', 'detail-context-banner', 'detail-no-results', 'detail-reset-filters-btn',
+    'empty-state', 'no-results-state', 'details-panel', 'details-url-field', 'details-source-field',
+    'details-source', 'details-actions', 'details-parent', 'details-children', 'reopen-btn', 'details-close-btn'
   ]) assert(html.includes(`id="${id}"`), `Missing ${id}`);
   assert(html.includes('id="details-parent" type="button"'), 'Parent lineage must be a keyboard-operable button');
   assert(html.includes('aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-description"'), 'Clear dialog needs an accessible name and description');
@@ -100,16 +105,18 @@ test('Map controls, dialog semantics, lineage buttons, and script ordering are p
   assert(html.indexOf('src="background-messages.js"') < html.indexOf('src="app.js"'), 'Message constant must load before the app');
 });
 
-test('Extension markup and dynamic rendering keep CSP and text safety', () => {
+test('Extension markup and dynamic rendering keep CSP, XSS safety, and download-reopen restrictions', () => {
   assert(!/<script\b(?![^>]*\bsrc\b)[^>]*>([\s\S]*?)<\/script>/i.test(html), 'Inline script found');
   assert(!/\son[a-z]+\s*=\s*['"][^'"]*['"]/i.test(html), 'Inline event handler found');
   assert(!appJs.includes('.innerHTML') && !appJs.includes('.outerHTML'), 'Unsafe HTML injection API found');
   assert(appJs.includes("setAttribute('marker-end', 'url(#branch-arrow)')"), 'Rendered connectors must show direction');
-  assert(appJs.includes('elClearModal.addEventListener(\'keydown\''), 'Modal needs keyboard focus containment');
+  assert(appJs.includes("elClearModal.addEventListener('keydown'"), 'Modal needs keyboard focus containment');
   assert(appJs.includes('api.runtime.sendMessage'), 'Clear operation must be serialized by the background context');
+  assert(appJs.includes('if (uiLogic.isDownloadNode(node)) return;'), 'Download nodes must never invoke page reopening');
+  assert(appJs.includes('elDetailsActions.hidden = true;'), 'Download details drawer must hide reopen controls');
 });
 
-test('Light and dark text color combinations meet WCAG AA normal-text contrast', () => {
+test('Light and dark text color combinations meet WCAG AA contrast and CSS includes responsive & reduced-motion support', () => {
   const dark = rootThemeBlock(css, 1);
   const light = rootThemeBlock(css, 2);
   const darkBg = cssVariable(dark, '--color-bg');
@@ -132,6 +139,8 @@ test('Light and dark text color combinations meet WCAG AA normal-text contrast',
     ['dark danger hover text', '#FFFFFF', cssVariable(dark, '--color-danger-hover')],
     ['dark root badge', cssVariable(dark, '--color-badge-root-text'), blend('#0EA5E9', darkSurface, 0.15)],
     ['dark branch badge', cssVariable(dark, '--color-badge-branch-text'), blend('#6366F1', darkSurface, 0.15)],
+    ['dark download badge', cssVariable(dark, '--color-badge-download-text'), blend('#10B981', darkSurface, 0.14)],
+    ['dark unattributed badge', cssVariable(dark, '--color-badge-unattributed-text'), blend('#F59E0B', darkSurface, 0.14)],
     ['light main text', cssVariable(light, '--color-text-main'), lightBg],
     ['light muted text', cssVariable(light, '--color-text-muted'), lightSurface],
     ['light subtle text', cssVariable(light, '--color-text-subtle'), lightBg],
@@ -141,10 +150,208 @@ test('Light and dark text color combinations meet WCAG AA normal-text contrast',
     ['light danger button text', cssVariable(light, '--color-danger'), blend('#EF4444', lightSurface, 0.12)],
     ['light danger hover text', '#FFFFFF', cssVariable(light, '--color-danger-hover')],
     ['light root badge', cssVariable(light, '--color-badge-root-text'), blend('#0EA5E9', lightSurface, 0.15)],
-    ['light branch badge', cssVariable(light, '--color-badge-branch-text'), blend('#6366F1', lightSurface, 0.15)]
+    ['light branch badge', cssVariable(light, '--color-badge-branch-text'), blend('#6366F1', lightSurface, 0.15)],
+    ['light download badge', cssVariable(light, '--color-badge-download-text'), blend('#10B981', lightSurface, 0.14)],
+    ['light unattributed badge', cssVariable(light, '--color-badge-unattributed-text'), blend('#F59E0B', lightSurface, 0.14)]
   ]) assertAa(label, fg, bg);
   assertAa('dark map hint', '#F8FAFC', blend('#0F172A', darkBg, 0.85));
   assertAa('light map hint', '#F8FAFC', blend('#0F172A', lightBg, 0.85));
+  assert(css.includes(':focus-visible'), 'Keyboard focus styles are required');
+  assert(css.includes('@media (prefers-reduced-motion: reduce)'), 'Reduced motion support is required');
+  assert(css.includes('@media (max-width: 900px)'), 'Responsive breakpoint for narrow viewports is required');
+});
+
+test('Three independent root treeIds produce exactly three overview cards', () => {
+  const now = 1730000000000;
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      n1: { id: 'n1', treeId: 'tree_n1', nodeType: 'page', title: 'Quantum Computing', url: 'https://en.wikipedia.org/wiki/Quantum', timestamp: now - 3000, parentNodeId: null, childNodeIds: ['n1_c'] },
+      n1_c: { id: 'n1_c', treeId: 'tree_n1', nodeType: 'page', title: 'Qubit', url: 'https://arxiv.org/abs/1', timestamp: now - 2000, parentNodeId: 'n1', childNodeIds: [] },
+      n2: { id: 'n2', treeId: 'tree_n2', nodeType: 'page', title: 'GNN Survey', url: 'https://scholar.google.com/gnn', timestamp: now - 2500, parentNodeId: null, childNodeIds: [] },
+      n3: { id: 'n3', treeId: 'tree_n3', nodeType: 'page', title: 'CSS Grid Guide', url: 'https://developer.mozilla.org/css-grid', timestamp: now - 1000, parentNodeId: null, childNodeIds: [] }
+    },
+    tabState: {
+      '1': { currentNodeId: 'n1_c', historyStack: ['n1', 'n1_c'], historyIndex: 1 },
+      '2': { currentNodeId: 'n3', historyStack: ['n3'], historyIndex: 0 }
+    }
+  };
+  const summary = uiLogic.buildResearchTrees(state, { now });
+  assert.strictEqual(summary.allTreesCount, 3);
+  assert.strictEqual(summary.trees.length, 3, 'Three roots must produce exactly three overview cards');
+  assert.deepStrictEqual(Array.from(summary.trees, (t) => t.treeId), ['tree_n3', 'tree_n1', 'tree_n2'], 'Cards should sort newest activity first');
+  assert.strictEqual(summary.trees[1].domain, 'en.wikipedia.org');
+  assert.strictEqual(summary.trees[1].visitCount, 2);
+  assert.strictEqual(summary.trees[1].openTabCount, 1);
+  assert.strictEqual(summary.totalVisitsCount, 4);
+});
+
+test('Multiple opener-created product tabs stay in one tree card and align as parallel siblings', () => {
+  const now = 1730000100000;
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      search: { id: 'search', treeId: 'tree_search', nodeType: 'page', title: 'Keyboards Listing', url: 'https://www.amazon.com/s?k=keyboards', timestamp: now - 5000, parentNodeId: null, childNodeIds: ['p1', 'p2', 'p3'] },
+      p1: { id: 'p1', treeId: 'tree_search', nodeType: 'page', title: 'Keychron Q1', url: 'https://www.amazon.com/dp/B01', timestamp: now - 4000, parentNodeId: 'search', childNodeIds: [] },
+      p2: { id: 'p2', treeId: 'tree_search', nodeType: 'page', title: 'HHKB Hybrid', url: 'https://www.amazon.com/dp/B02', timestamp: now - 3000, parentNodeId: 'search', childNodeIds: [] },
+      p3: { id: 'p3', treeId: 'tree_search', nodeType: 'page', title: 'Leopold FC660M', url: 'https://www.amazon.com/dp/B03', timestamp: now - 2000, parentNodeId: 'search', childNodeIds: [] }
+    },
+    tabState: {
+      '10': { currentNodeId: 'search' },
+      '11': { currentNodeId: 'p1' },
+      '12': { currentNodeId: 'p2' },
+      '13': { currentNodeId: 'p3' }
+    }
+  };
+
+  const summary = uiLogic.buildResearchTrees(state, { now });
+  assert.strictEqual(summary.trees.length, 1, 'Product tabs sharing one treeId must collapse to one overview card');
+  assert.strictEqual(summary.trees[0].visitCount, 4);
+  assert.strictEqual(summary.trees[0].branchCount, 3);
+  assert.strictEqual(summary.trees[0].openTabCount, 4);
+  assert.strictEqual(summary.trees[0].domain, 'amazon.com');
+
+  const detail = uiLogic.buildTreeDetailView(state, 'tree_search', { now });
+  const layout = uiLogic.computeGraphLayout(detail.nodesMap);
+  const byId = Object.fromEntries(layout.layoutNodes.map((n) => [n.id, n]));
+  assert.strictEqual(byId.p1.x, byId.p2.x);
+  assert.strictEqual(byId.p2.x, byId.p3.x, 'Product child tabs must align at the same sibling depth');
+  assert(byId.p1.y < byId.p2.y && byId.p2.y < byId.p3.y, 'Product siblings must fan vertically');
+});
+
+test('Back-to-parent same-tab branches remain in one card and render as siblings in detail view', () => {
+  const now = 1730000200000;
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      wiki: { id: 'wiki', treeId: 'tree_wiki', nodeType: 'page', title: 'Wikipedia Portal', url: 'https://en.wikipedia.org/wiki/Main', timestamp: now - 4000, parentNodeId: null, childNodeIds: ['srcA', 'srcB'] },
+      srcA: { id: 'srcA', treeId: 'tree_wiki', nodeType: 'page', title: 'Source A', url: 'https://phys.org/a', timestamp: now - 3000, parentNodeId: 'wiki', childNodeIds: [] },
+      srcB: { id: 'srcB', treeId: 'tree_wiki', nodeType: 'page', title: 'Source B', url: 'https://nature.com/b', timestamp: now - 1000, parentNodeId: 'wiki', childNodeIds: [] }
+    },
+    tabState: {}
+  };
+  const summary = uiLogic.buildResearchTrees(state, { now });
+  assert.strictEqual(summary.trees.length, 1);
+  assert.strictEqual(summary.trees[0].branchCount, 2);
+
+  const detail = uiLogic.buildTreeDetailView(state, 'tree_wiki', { now });
+  const layout = uiLogic.computeGraphLayout(detail.nodesMap);
+  const byId = Object.fromEntries(layout.layoutNodes.map((n) => [n.id, n]));
+  assert.strictEqual(byId.srcA.x, byId.srcB.x);
+  assert.strictEqual(byId.wiki.y, (byId.srcA.y + byId.srcB.y) / 2);
+});
+
+test('Detail scoping isolates one treeId without cross-tree leakage and app restores overview state', () => {
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      a1: { id: 'a1', treeId: 'tree_a', nodeType: 'page', title: 'Tree A Root', url: 'https://a.example/1', timestamp: 100, parentNodeId: null, childNodeIds: ['a2'] },
+      a2: { id: 'a2', treeId: 'tree_a', nodeType: 'page', title: 'Tree A Leaf', url: 'https://a.example/2', timestamp: 200, parentNodeId: 'a1', childNodeIds: [] },
+      b1: { id: 'b1', treeId: 'tree_b', nodeType: 'page', title: 'Tree B Root', url: 'https://b.example/1', timestamp: 300, parentNodeId: null, childNodeIds: [] }
+    },
+    tabState: {}
+  };
+
+  const detailA = uiLogic.buildTreeDetailView(state, 'tree_a');
+  assert.deepStrictEqual(Array.from(detailA.nodesMap.keys()).sort(), ['a1', 'a2']);
+  assert(!detailA.nodesMap.has('b1'), 'Selected tree detail view must exclude nodes from other treeIds');
+
+  assert(appJs.includes('overviewFilters.scrollTop = elOverviewView.scrollTop;'), 'Must save overview scroll before opening detail');
+  assert(appJs.includes('overviewFilters.focusedTreeId = treeId;'), 'Must save focused tree ID before opening detail');
+  assert(appJs.includes('elOverviewView.scrollTop = overviewFilters.scrollTop || 0;'), 'Must restore overview scroll when returning');
+  assert(appJs.includes('cardBtn.focus({ preventScroll: true });'), 'Must restore keyboard focus to opened tree card button');
+});
+
+test('Attributed downloads appear under verified source page while unattributed downloads stay in separate shelf', () => {
+  const now = 1730000300000;
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      p1: { id: 'p1', treeId: 'tree_p1', nodeType: 'page', title: 'ArXiv Paper', url: 'https://arxiv.org/abs/2401.08922', timestamp: now - 60000, parentNodeId: null, childNodeIds: ['d1'] },
+      d1: { id: 'd1', treeId: 'tree_p1', nodeType: 'download', filename: 'paper_08922.pdf', originDomain: 'arxiv.org', timestamp: now - 5000, parentNodeId: 'p1', childNodeIds: [], downloadId: 101 },
+      dUnattr: { id: 'dUnattr', treeId: 'tree_dUnattr', nodeType: 'download', filename: 'dataset_raw.zip', originDomain: 'Source unavailable', timestamp: now - 1000, parentNodeId: null, childNodeIds: [], downloadId: 102 }
+    },
+    tabState: {}
+  };
+
+  const summary = uiLogic.buildResearchTrees(state, { now });
+  assert.strictEqual(summary.trees.length, 1, 'Unattributed download must never generate a tree card');
+  assert.strictEqual(summary.trees[0].treeId, 'tree_p1');
+  assert.strictEqual(summary.trees[0].latestNode.id, 'd1', 'Attributed download newer than page visit must appear as latest activity');
+  assert.strictEqual(summary.unattributedDownloads.length, 1);
+  assert.strictEqual(summary.unattributedDownloads[0].filename, 'dataset_raw.zip');
+  assert.strictEqual(summary.unattributedDownloads[0].originDomain, 'Source unavailable');
+
+  const detail = uiLogic.buildTreeDetailView(state, 'tree_p1', { now });
+  assert(detail.nodesMap.has('d1'), 'Attributed download must render inside its tree detail');
+  assert(!detail.nodesMap.has('dUnattr'), 'Unattributed download must stay excluded from page trees');
+  const layout = uiLogic.computeGraphLayout(detail.nodesMap);
+  const dlLayout = layout.layoutNodes.find((n) => n.id === 'd1');
+  assert.strictEqual(dlLayout.nodeType, 'download');
+  assert.strictEqual(dlLayout.originDomain, 'arxiv.org');
+  assert.strictEqual(layout.layoutEdges.some((e) => e.parentId === 'p1' && e.childId === 'd1'), true);
+  assert(appJs.includes('Downloaded from ${origin}'), 'Download details drawer must label verified website provenance');
+});
+
+test('Global and tree-local filtering search titles/domains/files and preserve ancestry context without false parents', () => {
+  const now = 1730000400000;
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      root: { id: 'root', treeId: 'tree_root', nodeType: 'page', title: 'Stanford HCI Group', url: 'https://hci.stanford.edu', timestamp: now - 3 * 60 * 60 * 1000, parentNodeId: null, childNodeIds: ['child', 'other'] },
+      child: { id: 'child', treeId: 'tree_root', nodeType: 'page', title: 'ACM Spatial Notes', url: 'https://dl.acm.org/doi/1', timestamp: now - 10 * 60 * 1000, parentNodeId: 'root', childNodeIds: ['dlChild'] },
+      dlChild: { id: 'dlChild', treeId: 'tree_root', nodeType: 'download', filename: 'spatial_notes.pdf', originDomain: 'dl.acm.org', timestamp: now - 5 * 60 * 1000, parentNodeId: 'child', childNodeIds: [], downloadId: 5 },
+      other: { id: 'other', treeId: 'tree_root', nodeType: 'page', title: 'Unrelated Old Tab', url: 'https://example.org/old', timestamp: now - 5 * 60 * 60 * 1000, parentNodeId: 'root', childNodeIds: [] }
+    },
+    tabState: {}
+  };
+
+  // Global overview search across download filename and domain
+  const fileSearch = uiLogic.buildResearchTrees(state, { query: 'spatial_notes.pdf', now });
+  assert.strictEqual(fileSearch.trees.length, 1);
+  assert.strictEqual(uiLogic.filterNodes(Object.values(state.nodes), 'dl.acm.org', 'all', now).length, 2);
+
+  // Tree-local time filter ('hour') matches child + download; preserves root as context ancestor
+  const detailHour = uiLogic.buildTreeDetailView(state, 'tree_root', { timeFilter: 'hour', now });
+  assert.deepStrictEqual(Array.from(detailHour.matchedIds).sort(), ['child', 'dlChild']);
+  assert.strictEqual(detailHour.contextAncestorIds.has('root'), true, 'Parent outside time filter must remain as context');
+  assert.strictEqual(detailHour.nodesMap.has('other'), false, 'Non-matching sibling branch stays excluded');
+  assert.strictEqual(detailHour.nodesMap.get('root').isContextAncestor, true);
+  assert.strictEqual(detailHour.nodesMap.get('child').isContextAncestor, false);
+});
+
+test('Root-pruned trees keep one card and large or cyclic graphs render deterministically', () => {
+  const now = 1730000500000;
+  // Original root R was pruned; two children C1, C2 now have parentNodeId: null while keeping tree_R
+  const prunedState = {
+    schemaVersion: 2,
+    nodes: {
+      c1: { id: 'c1', treeId: 'tree_R', nodeType: 'page', title: 'Surviving Branch 1', url: 'https://example.org/c1', timestamp: now - 4000, parentNodeId: null, childNodeIds: [], isCheckpoint: true },
+      c2: { id: 'c2', treeId: 'tree_R', nodeType: 'page', title: 'Surviving Branch 2', url: 'https://example.org/c2', timestamp: now - 2000, parentNodeId: null, childNodeIds: [], isCheckpoint: true }
+    },
+    tabState: {}
+  };
+  const summary = uiLogic.buildResearchTrees(prunedState, { now });
+  assert.strictEqual(summary.trees.length, 1, 'Root-pruned tree must stay one card, not split into two');
+  assert.strictEqual(summary.trees[0].rootPruned, true);
+  assert.strictEqual(summary.trees[0].visualRootCount, 2);
+  assert.strictEqual(summary.trees[0].visitCount, 2);
+
+  // Large 301-node layout check
+  const many = new Map();
+  const childIds = Array.from({ length: 300 }, (_, index) => `child-${index}`);
+  many.set('root', { id: 'root', timestamp: 0, parentNodeId: null, childNodeIds: childIds });
+  childIds.forEach((id, index) => many.set(id, { id, timestamp: index + 1, parentNodeId: 'root', childNodeIds: [] }));
+  const large = uiLogic.computeGraphLayout(many);
+  assert.strictEqual(large.layoutNodes.length, 301);
+  assert.strictEqual(large.layoutEdges.length, 300);
+
+  // Cyclic graph safety
+  const cyclic = new Map([
+    ['X', { id: 'X', timestamp: 1, parentNodeId: 'Y', childNodeIds: ['Y'] }],
+    ['Y', { id: 'Y', timestamp: 2, parentNodeId: 'X', childNodeIds: ['X'] }]
+  ]);
+  assert.strictEqual(uiLogic.computeGraphLayout(cyclic).layoutNodes.length, 2, 'Corrupt cycles should not produce a blank graph');
 });
 
 test('Production URL validation allows only HTTP and HTTPS', () => {
@@ -155,55 +362,6 @@ test('Production URL validation allows only HTTP and HTTPS', () => {
     assert.strictEqual(uiLogic.isSafeHttpUrl(url), false, `${url} should be rejected`);
   }
   assert(appJs.includes('uiLogic.isSafeHttpUrl(rawUrl)'), 'App must call production URL validation helper');
-});
-
-test('Production forest layout keeps branches separated and renders large and cyclic graphs', () => {
-  const graph = new Map([
-    ['A', { id: 'A', timestamp: 100, parentNodeId: null, childNodeIds: ['B', 'C'] }],
-    ['B', { id: 'B', timestamp: 200, parentNodeId: 'A', childNodeIds: [] }],
-    ['C', { id: 'C', timestamp: 300, parentNodeId: 'A', childNodeIds: ['D'] }],
-    ['D', { id: 'D', timestamp: 400, parentNodeId: 'C', childNodeIds: [] }],
-    ['E', { id: 'E', timestamp: 500, parentNodeId: null, childNodeIds: [] }]
-  ]);
-  const result = uiLogic.computeGraphLayout(graph);
-  const byId = Object.fromEntries(result.layoutNodes.map((node) => [node.id, node]));
-  assert.strictEqual(byId.A.x, 80);
-  assert.strictEqual(byId.B.x, 350);
-  assert.strictEqual(byId.D.x, 620);
-  assert.strictEqual(byId.A.y, (byId.B.y + byId.C.y) / 2);
-  assert(byId.E.y > byId.C.y, 'Independent tree should be spaced below the first');
-  assert.strictEqual(result.layoutEdges.length, 3);
-  assert.strictEqual(result.layoutNodes[0].id, 'B', 'Keyboard order should follow map reading order');
-
-  const many = new Map();
-  const childIds = Array.from({ length: 300 }, (_, index) => `child-${index}`);
-  many.set('root', { id: 'root', timestamp: 0, parentNodeId: null, childNodeIds: childIds });
-  childIds.forEach((id, index) => many.set(id, { id, timestamp: index + 1, parentNodeId: 'root', childNodeIds: [] }));
-  const large = uiLogic.computeGraphLayout(many);
-  assert.strictEqual(large.layoutNodes.length, 301);
-  assert.strictEqual(large.layoutEdges.length, 300);
-
-  const cyclic = new Map([
-    ['X', { id: 'X', timestamp: 1, parentNodeId: 'Y', childNodeIds: ['Y'] }],
-    ['Y', { id: 'Y', timestamp: 2, parentNodeId: 'X', childNodeIds: ['X'] }]
-  ]);
-  assert.strictEqual(uiLogic.computeGraphLayout(cyclic).layoutNodes.length, 2, 'Corrupt cycles should not produce a blank graph');
-});
-
-test('Production filtering searches title/address and applies time ranges', () => {
-  const now = 1700000000000;
-  const nodes = [
-    { id: '1', title: 'Stanford HCI Group', url: 'https://hci.stanford.edu', timestamp: now - 10 * 60 * 1000 },
-    { id: '2', title: 'ACM Digital Library', url: 'https://dl.acm.org/doi/10.1145', timestamp: now - 120 * 60 * 1000 },
-    { id: '3', title: 'Wikipedia Spatial Memory', url: 'https://en.wikipedia.org/wiki/Spatial_memory', timestamp: now - 48 * 60 * 60 * 1000 }
-  ];
-  assert.strictEqual(uiLogic.filterNodes(nodes, '', 'all', now).length, 3);
-  assert.deepStrictEqual(Array.from(uiLogic.filterNodes(nodes, 'stanford', 'all', now), (node) => node.id), ['1']);
-  assert.deepStrictEqual(Array.from(uiLogic.filterNodes(nodes, 'wikipedia.org', 'all', now), (node) => node.id), ['3']);
-  assert.strictEqual(uiLogic.filterNodes(nodes, '', 'hour', now).length, 1);
-  assert.strictEqual(uiLogic.filterNodes(nodes, '', 'day', now).length, 2);
-  assert.strictEqual(uiLogic.filterNodes(nodes, '', 'week', now).length, 3);
-  assert.strictEqual(uiLogic.filterNodes(nodes, 'missing', 'all', now).length, 0);
 });
 
 test('Clear-history message uses the background storage queue and resets graph plus tab links', async () => {
@@ -221,16 +379,6 @@ test('Clear-history message uses the background storage queue and resets graph p
   const state = await manager.getState();
   assert.deepStrictEqual(Object.keys(state.nodes), []);
   assert.deepStrictEqual(Object.keys(state.tabState), []);
-});
-
-test('App implements first-render fitting, filter selection cleanup, dialog focus handling, and button lineage', () => {
-  assert(appJs.includes('if (needsInitialFit)'), 'Initial history should be fit to the visible map');
-  assert(appJs.includes('Math.max(0.003, Math.min(scaleX, scaleY))'), 'Large graphs need a small fit-scale floor');
-  assert(appJs.includes('if (selectedNodeId && !activeNodesMap.has(selectedNodeId))'), 'Filtered-out selection should close');
-  assert(appJs.includes('childPill.type = \'button\''), 'Child lineage controls need keyboard semantics');
-  assert(appJs.includes("closeDetailsPanel(true)"), 'Closing details should return focus to the selected node');
-  assert(appJs.includes('elCancelClearBtn.disabled = true'), 'Dialog actions should not escape focus during clear');
-  assert(css.includes(':focus-visible'), 'Keyboard focus styles are required');
 });
 
 await Promise.all(pendingTests);

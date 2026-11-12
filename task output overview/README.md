@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's design is approved; Task 11's Section 56 distinct-host runtime provenance verification (`localhost` vs `127.0.0.1`) is complete and submitted for lead review.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved, Task 11 is accepted, and Task 12 (`task-12-output.md`) has been implemented and submitted for lead review.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -16,7 +16,7 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`task-8-output.md`](task-8-output.md) | Task 8: Unknown-Opener Fallback and Cross-Browser Parity | Milestone 8 (Full Runtime Parity) | Completed & Verified |
 | [`task-9-output.md`](task-9-output.md) | Task 9: Final Release Handoff & Checksum Verification | Milestone 9 (Release v0.1.0 Handoff) | Completed & Delivered |
 | [`task-10.md`](tasks/task-10.md) · [`task-10-output.md`](task-10-output.md) | Task 10: Research Tree Explorer & Branching Proposal | Milestone 10 (Research Tree Explorer) | Design Approved (v15) |
-| [`task-11.md`](tasks/task-11.md) · [`task-11-output.md`](task-11-output.md) | Task 11: V2 Storage, Branch Tracking, Session Safety & Downloads | Milestone 11 (V2 Core Implementation) | Revision Submitted (Section 56 — Pending Lead Review) |
-
+| [task-11.md](tasks/task-11.md) · [task-11-output.md](task-11-output.md) | Task 11: V2 Storage, Branch Tracking, Session Safety & Downloads | Milestone 11 (V2 Core Implementation) | Completed & Accepted (Section 57) |
+| [`task-12.md`](tasks/task-12.md) · [`task-12-output.md`](task-12-output.md) | Task 12: Research Tree Explorer Overview & Detail UI | Milestone 12 (Research Tree Explorer UI) | Implemented & Verified — Pending Lead Review |
 
 
