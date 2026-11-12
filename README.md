@@ -3,16 +3,16 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (`main`):** **Working Towards `v2.0`** — V2 storage, branching, session safety, and download provenance core complete; Milestone 12 Research Tree Explorer UI redesign in progress.
+> **Active Branch Status (`main`):** **Working Towards `v2.0`** — Task 11 remains active (Section 56 distinct-host verification submitted for lead review); Task 12 UI redesign has not started yet.
 
 ## Project Status & Roadmap Toward `v2.0`
 
-- **Stable Release (`v0.1.0` — Tagged & Verified):**
+- **Stable Release (`v0.1.0` — Tagged & Published):**
   - Cross-browser MV3 packages for Chrome 109+ and Firefox 115.0+ verified (`npm test`: 55 passed, 0 failed; isolated-profile Chrome 156.0.8078.48 & Firefox 158.0.1 E2E runs: 0 failures, 0 errors, 0 warnings).
   - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
 - **Working Towards `v2.0` (Active Development on `main`):**
-  - **Completed Core (Milestone 11 / Task 11):** Schema V2, crash-safe V1→V2 migration, same-tab Back/Forward sibling branching, `storage.session` startup barrier & fail-closed safety, and distinct-host download provenance (`localhost` source vs `127.0.0.1` file host verified).
-  - **Next Up (Milestone 12 / Task 12):** Multi-card Research Tree Explorer overview UI, interactive pan/zoom detail tree view, completed-downloads drawer, and full `v2.0` cross-browser acceptance before tagging `v2.0.0`. See [CHANGELOG.md](CHANGELOG.md) and [docs/TASK_10.md](docs/TASK_10.md).
+  - **Active Milestone (Milestone 11 / Task 11 — Pending Lead Review):** Schema V2, crash-safe V1→V2 migration, same-tab Back/Forward sibling branching, `storage.session` startup barrier & fail-closed safety, and distinct-host download provenance (`localhost` source vs `127.0.0.1` final file URL hostname verified in Chrome and Firefox) implemented and submitted in Section 56 of [the Task 11 report](task%20output%20overview/task-11-output.md).
+  - **Planned Next (Milestone 12 / Task 12 — Not Started):** Multi-card Research Tree Explorer overview UI, interactive pan/zoom detail tree view, completed-downloads drawer, and full `v2.0` cross-browser acceptance after Task 11 approval. See [CHANGELOG.md](CHANGELOG.md) and [docs/TASK_10.md](docs/TASK_10.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**

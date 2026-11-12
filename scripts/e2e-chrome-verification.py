@@ -164,19 +164,20 @@ class CDPClient:
                         self.events.append(msg)
                         # Error tracking
                         if method == "Runtime.exceptionThrown":
-                            details = params.get("exceptionDetails", {})
+                            details = (params.get("exceptionDetails") or {})
+                            exc = (details.get("exception") or {})
                             self.errors.append({
                                 "source": details.get("url", "unknown"),
                                 "line": details.get("lineNumber"),
                                 "column": details.get("columnNumber"),
-                                "message": details.get("text", "") + " " + details.get("exception", {}).get("description", ""),
+                                "message": (details.get("text") or "") + " " + (exc.get("description") or ""),
                                 "severity": "ERROR"
                             })
                         elif method == "Runtime.consoleAPICalled":
                             mtype = params.get("type")
-                            args = params.get("args", [])
+                            args = params.get("args") or []
                             text = " ".join([str(a.get("value", a.get("description", ""))) for a in args])
-                            stack = params.get("stackTrace", {}).get("callFrames", [])
+                            stack = (params.get("stackTrace") or {}).get("callFrames") or []
                             src = stack[0].get("url", "") if stack else ""
                             line = stack[0].get("lineNumber") if stack else None
                             if mtype in ("error", "assert"):
@@ -194,7 +195,7 @@ class CDPClient:
                                     "severity": "WARNING"
                                 })
                         elif method == "Log.entryAdded":
-                            entry = params.get("entry", {})
+                            entry = params.get("entry") or {}
                             level = entry.get("level")
                             if level == "error":
                                 self.errors.append({
@@ -210,7 +211,9 @@ class CDPClient:
                                     "message": entry.get("text", ""),
                                     "severity": "WARNING"
                                 })
-            except Exception:
+            except Exception as recv_err:
+                if self.running:
+                    print(f"  [WARN] CDPClient _recv_loop stopped: {recv_err}")
                 break
 
     def send_cmd(self, method, params=None, session_id=None, timeout=15):
@@ -284,6 +287,40 @@ def filter_extension_errors(raw_errors, addon_id):
         if matches:
             filtered.append(err)
     return filtered
+
+def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
+    sw_target = None
+    sw_sid = None
+    for attempt in range(retries):
+        time.sleep(1.5)
+        sw_target = None
+        for _ in range(25):
+            targets = cdp.send_cmd("Target.getTargets").get("targetInfos", [])
+            sw_targets = [t for t in targets if t.get("type") == "service_worker" and ext_id in t.get("url", "")]
+            if sw_targets:
+                sw_target = sw_targets[-1]
+                break
+            time.sleep(0.3)
+        assert sw_target is not None, "Service worker target must be discovered for extension"
+        try:
+            sw_sid = cdp.attach_target(sw_target["targetId"])
+            cdp.send_cmd("Log.enable", session_id=sw_sid, timeout=6)
+            cdp.send_cmd("Runtime.evaluate", {"expression": "typeof tracker", "returnByValue": True}, session_id=sw_sid, timeout=6)
+            cdp.send_cmd("Runtime.enable", session_id=sw_sid, timeout=6)
+            return sw_target, sw_sid
+        except Exception as sw_err:
+            print(f"  [NOTE] Service worker attach attempt {attempt + 1} retrying: {sw_err}")
+            try:
+                if sw_sid:
+                    cdp.send_cmd("Target.detachFromTarget", {"sessionId": sw_sid}, timeout=3)
+            except Exception:
+                pass
+            try:
+                cdp.send_cmd("Extensions.loadUnpacked", {"path": ext_dir}, timeout=10)
+            except Exception:
+                pass
+            sw_sid = None
+    raise AssertionError("Could not attach and enable Runtime on extension service worker")
 
 def click_chrome_toolbar_action(process_id):
     ps_script = r"""
@@ -508,37 +545,8 @@ def run_tests():
         assert load_res.get("id") == ext_id, "Chrome extension ID must remain stable after pinning and restart"
         print("[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome.")
 
-        # Wait for service worker target registration and attach reliably (with retry & worker wake if needed)
-        sw_target = None
-        sw_sid = None
-        for attempt in range(4):
-            sw_target = None
-            for _ in range(20):
-                targets = cdp.send_cmd("Target.getTargets").get("targetInfos", [])
-                sw_target = next((t for t in targets if t.get("type") == "service_worker" and ext_id in t.get("url", "")), None)
-                if sw_target:
-                    break
-                time.sleep(0.3)
-            assert sw_target is not None, "Service worker target must be discovered for extension"
-            try:
-                sw_sid = cdp.attach_target(sw_target["targetId"])
-                cdp.send_cmd("Runtime.enable", session_id=sw_sid, timeout=6)
-                cdp.send_cmd("Log.enable", session_id=sw_sid, timeout=6)
-                break
-            except Exception as sw_err:
-                print(f"  [NOTE] Service worker attach attempt {attempt + 1} retrying: {sw_err}")
-                try:
-                    if sw_sid:
-                        cdp.send_cmd("Target.detachFromTarget", {"sessionId": sw_sid}, timeout=3)
-                except Exception:
-                    pass
-                try:
-                    cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR}, timeout=10)
-                except Exception:
-                    pass
-                sw_sid = None
-                time.sleep(0.5)
-        assert sw_sid is not None, "Could not attach and enable Runtime on extension service worker"
+        # Wait for service worker target registration and attach reliably (preferring auto-attached session)
+        sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
         print(f"[PASS] Service worker discovered: {sw_target['title']} ({sw_target['url']})")
         print(f"[PASS] Attached to background service worker (Session ID: {sw_sid}).")
 
@@ -1120,7 +1128,12 @@ def run_tests():
 
         assert portal_node is not None, "Portal page node must exist"
         assert portal_node.get("url", "").startswith(source_host_url), f"Portal page must load from '{source_host_url}', got '{portal_node.get('url')}'"
+        assert urlsplit(portal_node.get("url", "")).hostname == "localhost", f"Portal source hostname must be 'localhost', got '{portal_node.get('url')}'"
         assert cdn_dl_node is not None, f"Download node for research_paper.pdf must exist in storage (nodes: {list(nodes_dl.keys())})"
+        dl_items = cdp.evaluate(sw_sid, f"new Promise(resolve => chrome.downloads.search({{ id: {int(cdn_dl_node['downloadId'])} }}, resolve))", await_promise=True)
+        assert dl_items and len(dl_items) == 1, f"chrome.downloads.search must find completed item for downloadId {cdn_dl_node.get('downloadId')}"
+        final_dl_url = dl_items[0].get("finalUrl") or dl_items[0].get("url") or ""
+        assert urlsplit(final_dl_url).hostname == "127.0.0.1", f"Final file URL hostname must be '127.0.0.1', got '{final_dl_url}'"
         assert cdn_dl_node["parentNodeId"] == portal_node["id"], f"Download node must be child of source page ({portal_node['id']}), got {cdn_dl_node['parentNodeId']}"
         assert cdn_dl_node["treeId"] == portal_node["treeId"], "Download node must inherit source page treeId"
         assert cdn_dl_node["originDomain"] == "localhost", f"Origin domain must equal source hostname 'localhost' (and differ from CDN host '127.0.0.1'), got '{cdn_dl_node['originDomain']}'"
@@ -1128,7 +1141,7 @@ def run_tests():
         assert cdn_dl_node["filename"] == "research_paper.pdf", f"Filename must be basename only, got '{cdn_dl_node['filename']}'"
         assert cdn_dl_node.get("url") is None, "Download node must NOT persist raw URL or CDN tokens"
         assert cdn_dl_node["id"] in portal_node["childNodeIds"], "Portal page childNodeIds must include download node"
-        print(f"[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (from 127.0.0.1 CDN) attributed to source portal {portal_node['id']} (originDomain: {cdn_dl_node['originDomain']} != 127.0.0.1), raw URL/CDN omitted.")
+        print(f"[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: {urlsplit(final_dl_url).hostname}) attached to source portal {portal_node['id']} (originDomain: {cdn_dl_node['originDomain']}), raw URL/CDN omitted.")
 
         # 3. Unattributed Download: missing / empty referrer
         print("  [6.5c] Exercising Unattributed Download (no referrer)...")
@@ -1305,18 +1318,8 @@ def run_tests():
         ext_id2 = load_res2.get("id")
         assert ext_id2 == ext_id, f"Extension ID must be stable across restart (was {ext_id}, got {ext_id2})"
 
-        # Wait for service worker in restarted Chrome
-        sw_target2 = None
-        for _ in range(20):
-            targets2 = cdp2.send_cmd("Target.getTargets").get("targetInfos", [])
-            sw_target2 = next((t for t in targets2 if t.get("type") == "service_worker" and ext_id2 in t.get("url", "")), None)
-            if sw_target2:
-                break
-            time.sleep(0.3)
-        assert sw_target2 is not None, "Service worker target must be discovered in restarted Chrome"
-        sw_sid2 = cdp2.attach_target(sw_target2["targetId"])
-        cdp2.send_cmd("Runtime.enable", session_id=sw_sid2)
-        cdp2.send_cmd("Log.enable", session_id=sw_sid2)
+        # Attach to service worker in restarted Chrome
+        sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
 
         # Open extension map page
         create_map_res = cdp2.send_cmd("Target.createTarget", {"url": f"chrome-extension://{ext_id2}/index.html"})

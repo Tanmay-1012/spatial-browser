@@ -1227,7 +1227,14 @@ def run_tests():
 
         assert portal_node is not None, "Portal page node must exist"
         assert portal_node.get("url", "").startswith(source_host_url), f"Portal page must load from '{source_host_url}', got '{portal_node.get('url')}'"
+        assert urlsplit(portal_node.get("url", "")).hostname == "localhost", f"Portal source hostname must be 'localhost', got '{portal_node.get('url')}'"
         assert cdn_dl_node is not None, f"Download node for research_paper.pdf must exist in storage (nodes: {list(nodes_dl.keys())})"
+        dl_items = client.send_cmd("WebDriver:ExecuteAsyncScript", {
+            "script": f"let [resolve] = arguments; browser.downloads.search({{ id: {int(cdn_dl_node['downloadId'])} }}).then(resolve);"
+        })["value"]
+        assert dl_items and len(dl_items) == 1, f"browser.downloads.search must find completed item for downloadId {cdn_dl_node.get('downloadId')}"
+        final_dl_url = dl_items[0].get("finalUrl") or dl_items[0].get("url") or ""
+        assert urlsplit(final_dl_url).hostname == "127.0.0.1", f"Final file URL hostname must be '127.0.0.1', got '{final_dl_url}'"
         assert cdn_dl_node["parentNodeId"] == portal_node["id"], f"Download node must be child of source page ({portal_node['id']}), got {cdn_dl_node['parentNodeId']}"
         assert cdn_dl_node["treeId"] == portal_node["treeId"], "Download node must inherit source page treeId"
         assert cdn_dl_node["originDomain"] == "localhost", f"Origin domain must equal source hostname 'localhost' (and differ from CDN host '127.0.0.1'), got '{cdn_dl_node['originDomain']}'"
@@ -1235,7 +1242,7 @@ def run_tests():
         assert cdn_dl_node["filename"] == "research_paper.pdf", f"Filename must be basename only, got '{cdn_dl_node['filename']}'"
         assert cdn_dl_node.get("url") is None, "Download node must NOT persist raw URL or CDN tokens"
         assert cdn_dl_node["id"] in portal_node["childNodeIds"], "Portal page childNodeIds must include download node"
-        print(f"[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (from 127.0.0.1 CDN) attributed to source portal {portal_node['id']} (originDomain: {cdn_dl_node['originDomain']} != 127.0.0.1), raw URL/CDN omitted.")
+        print(f"[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: {urlsplit(final_dl_url).hostname}) attached to source portal {portal_node['id']} (originDomain: {cdn_dl_node['originDomain']}), raw URL/CDN omitted.")
 
         # 3. Unattributed Download: missing / empty referrer
         print("  [6.5c] Exercising Unattributed Download (no referrer)...")

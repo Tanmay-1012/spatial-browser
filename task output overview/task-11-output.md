@@ -450,7 +450,7 @@ Both browser E2E harnesses were updated without modifying the system hosts file 
 - **[`scripts/e2e-chrome-verification.py`](../scripts/e2e-chrome-verification.py) & [`scripts/e2e-firefox-verification.py`](../scripts/e2e-firefox-verification.py):**
   - Updated the main local test server to dual-stack IPv4/IPv6 (`::`) so `http://localhost:{TEST_PORT}` and `http://127.0.0.1:{TEST_PORT}` both resolve cleanly while the secondary CDN file server remains strictly bound to `http://127.0.0.1:{CDN_PORT}`.
   - Updated Step 6.5b (`/download-portal`) and Step 6.5d (`/ambiguous-page`) to load from `http://localhost:{TEST_PORT}` while initiating downloads from `http://127.0.0.1:{CDN_PORT}`.
-  - Asserted in both browsers that `research_paper.pdf` records `originDomain === "localhost"`, `originDomain !== "127.0.0.1"`, links as a child of the `/download-portal` node in its tree, and omits raw URLs/CDN addresses; kept empty-referrer (`dataset.zip`) and ambiguous-referrer (`ambiguous.bin`, $|M| = 2$) fallback assertions (`parentNodeId: null`, `originDomain: "Source unavailable"`).
+  - Asserted in both browsers via extension storage inspection plus `chrome.downloads.search` / `browser.downloads.search` that the completed download item's final file URL hostname (`finalUrl` / `url`) is `"127.0.0.1"`, while the stored `research_paper.pdf` node records `originDomain === "localhost"`, `originDomain !== "127.0.0.1"`, links as a child of the `/download-portal` node in its tree, and omits raw URLs/CDN addresses; kept empty-referrer (`dataset.zip`) and ambiguous-referrer (`ambiguous.bin`, $|M| = 2$) fallback assertions (`parentNodeId: null`, `originDomain: "Source unavailable"`).
 
 ### 56.2 Fresh Isolated-Profile Runtime Evidence (2026-11-12)
 
@@ -458,16 +458,16 @@ Both browser E2E harnesses were updated without modifying the system hosts file 
    - **Execution Log:** [`docs/test-results/chrome-e2e.log`](../docs/test-results/chrome-e2e.log)
    - **Pre-Restart Audit:** 255 CDP event records evaluated $\to$ **0 errors, 0 warnings** ([`docs/test-results/chrome-errors-pre-restart.json`](../docs/test-results/chrome-errors-pre-restart.json)).
    - **Post-Restart Audit:** 16 CDP event records evaluated $\to$ **0 errors, 0 warnings** ([`docs/test-results/chrome-errors-post-restart.json`](../docs/test-results/chrome-errors-post-restart.json)).
-   - **Step 6.5b Result:** `research_paper.pdf` (served by `127.0.0.1` CDN) attached under `http://localhost` `/download-portal` node with `originDomain: "localhost"` (`!= "127.0.0.1"`), raw URL omitted. Steps 6.5a, 6.5c, 6.5d, and Step 8 (12 stored nodes preserved intact; 3-node live tab stack collapsed to single-node baseline) all passed.
+   - **Step 6.5b Result:** `research_paper.pdf` (final file URL hostname verified `"127.0.0.1"` via `chrome.downloads.search`) attached under `http://localhost` `/download-portal` node with `originDomain: "localhost"` (`!= "127.0.0.1"`), raw URL omitted. Steps 6.5a, 6.5c, 6.5d, and Step 8 (12 stored nodes preserved intact; 3-node live tab stack collapsed to single-node baseline) all passed.
 
 2. **Mozilla Firefox 158.0.1 (x64 Windows) — 0 Failures:**
    - **Execution Log:** [`docs/test-results/firefox-e2e.log`](../docs/test-results/firefox-e2e.log)
    - **Pre-Restart Audit:** 5 Gecko console records evaluated $\to$ **0 errors, 0 warnings** ([`docs/test-results/firefox-errors-pre-restart.json`](../docs/test-results/firefox-errors-pre-restart.json)).
-   - **Post-Restart Audit:** 25 Gecko console records evaluated $\to$ **0 errors, 0 warnings** ([`docs/test-results/firefox-errors-post-restart.json`](../docs/test-results/firefox-errors-post-restart.json)).
-   - **Step 6.5b Result:** `research_paper.pdf` (served by `127.0.0.1` CDN) attached under `http://localhost` `/download-portal` node with `originDomain: "localhost"` (`!= "127.0.0.1"`), raw URL omitted. Steps 6.5a, 6.5c, 6.5d, and Step 8 (12 SQLite nodes preserved intact; 3-node live tab stack collapsed to single-node baseline) all passed.
+   - **Post-Restart Audit:** 24 Gecko console records evaluated $\to$ **0 errors, 0 warnings** ([`docs/test-results/firefox-errors-post-restart.json`](../docs/test-results/firefox-errors-post-restart.json)).
+   - **Step 6.5b Result:** `research_paper.pdf` (final file URL hostname verified `"127.0.0.1"` via `browser.downloads.search`) attached under `http://localhost` `/download-portal` node with `originDomain: "localhost"` (`!= "127.0.0.1"`), raw URL omitted. Steps 6.5a, 6.5c, 6.5d, and Step 8 (12 SQLite nodes preserved intact; 3-node live tab stack collapsed to single-node baseline) all passed.
 
 3. **Build & Automated Verification Scope:**
-   - Only E2E Python test harnesses and verification documentation changed since Section 54; source files (`src/`), manifests, and build scripts remain unchanged. Re-verified `node scripts/build.mjs` and `npm.cmd test` cleanly (55 passed, 0 failed). Task 12 UI redesign remains unstarted pending lead review.
+   - Only E2E Python test harnesses and verification documentation changed since Section 54; source files (`src/`), manifests, and build scripts remain unchanged. Re-verified `npm.cmd test` cleanly (55 passed, 0 failed across 12 build, 35 tracker, and 8 UI tests). Task 11 remains active pending lead review; Task 12 UI redesign has not started.
 
 
 
