@@ -1,0 +1,37 @@
+# Changelog
+
+All notable changes to **Spatial Browser History** are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+---
+
+## [Unreleased] — Working Towards `v2.0`
+
+Active development on `main` is building toward **Spatial Browser History `v2.0`** (Milestone 10–12 architecture).
+
+### Completed on `main` (V2 Core Backend — Milestone 11)
+- **Schema V2 & Crash-Safe Migration:** Stable `treeId`, `nodeType` (`page` / `download`), `downloadNodeMap`, `baselineEstablished` tab state, V1 → V2 migration with verified backup (`spatial_browser_history_data_v1_backup`), and passive 24-hour wake-up expiration.
+- **Branch-Aware Navigation Engine:** Same-tab Back/Forward resolution with sibling branching (`Wikipedia → Source A → Back → Source B`) and symmetrical duplicate-traversal lineage invalidation.
+- **Session Safety & Startup Barrier:** Synchronous listener registration gated by `storage.session` marker checks, bounded retries, fail-closed protection on storage errors, and single-node baseline collapse for pre-restart live tabs.
+- **Download Provenance Attribution:** Referrer-only attribution to uniquely matched source pages ($|M|=1$), `"Source unavailable"` fallback when missing or ambiguous, zero raw URLs or local paths stored, verified across distinct local hostnames (`localhost` source vs `127.0.0.1` CDN) in Chrome 156 and Firefox 158.
+
+### Planned for `v2.0` (Milestone 12 UI & Release Polish)
+- **Research Tree Explorer Overview:** Multi-card view summarizing independent research sessions with quick search, counts, and entry points.
+- **Interactive Tree Detail View:** Full pan/zoom branch exploration view highlighting sibling paths, checkpoints, and linked downloads.
+- **Downloads Drawer & Filtering:** Dedicated surface showing captured downloads alongside their originating research domains without exposing sensitive URLs.
+- **Accessibility & Final `v2.0` Packaging:** Keyboard focus management across overview/detail transitions, cross-browser parity E2E coverage, and signed/checksummed `v2.0` release bundles.
+
+---
+
+## [0.1.0] — 2026-11-12
+
+First verified cross-browser **Manifest V3** stable release targeting **Google Chrome 109+** and **Mozilla Firefox 115.0+**.
+
+### Highlights
+- Single-tab toolbar open-or-focus launch behavior (`launch.js`) across Chrome and Firefox.
+- Local-first graph capture (`chrome.storage.local` / `browser.storage.local`) for same-tab links, HTTP redirects, SPA `history.pushState` routes, fragment updates, reload deduplication, dynamic title updates, and known/unknown opener tabs.
+- V2 storage schema, branch-aware Back/Forward tracking, session startup safety, and distinct-host download provenance (`originDomain` privacy boundary enforced).
+- Interactive hierarchical SVG history map with debounced search, time range filtering, details drawer with safe HTTP/HTTPS URL reopening, keyboard controls, and accessible Clear Map modal focus trap.
+- Zero-dependency deterministic build pipeline (`node scripts/build.mjs`) producing unpacked extensions, `.zip`, `.xpi`, and `SHA256SUMS`.
+- **Verification:** `npm test` **55 passed, 0 failed** (`12` build/manifest, `35` tracker/storage, `8` UI logic); isolated-profile E2E suites passed with **0 failures, 0 errors, 0 warnings** in **Google Chrome 156.0.8078.48** and **Mozilla Firefox 158.0.1**.

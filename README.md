@@ -2,9 +2,17 @@
 
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
-## Project status: v0.1.0 Stable Baseline Verified (Task 11 Complete; Task 12 Next)
+> **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
+> **Active Branch Status (`main`):** **Working Towards `v2.0`** — V2 storage, branching, session safety, and download provenance core complete; Milestone 12 Research Tree Explorer UI redesign in progress.
 
-All Task 11 V2 core requirements and unit/E2E checks pass with 0 failures (`npm test`: 55 passed, 0 failed). Fresh isolated-profile browser suites on **2026-11-12** verify sibling branching, distinct-host download provenance (`http://localhost` source portal vs `http://127.0.0.1` file host, storing `originDomain: "localhost"`), missing/ambiguous fallback (`Source unavailable`), and multi-node restart baseline recovery in both **Google Chrome 156.0.8078.48** and **Mozilla Firefox 158.0.1** with 0 extension errors or warnings. Task 12 (UI redesign) remains unstarted pending lead approval of Task 11 Section 56.
+## Project Status & Roadmap Toward `v2.0`
+
+- **Stable Release (`v0.1.0` — Tagged & Verified):**
+  - Cross-browser MV3 packages for Chrome 109+ and Firefox 115.0+ verified (`npm test`: 55 passed, 0 failed; isolated-profile Chrome 156.0.8078.48 & Firefox 158.0.1 E2E runs: 0 failures, 0 errors, 0 warnings).
+  - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
+- **Working Towards `v2.0` (Active Development on `main`):**
+  - **Completed Core (Milestone 11 / Task 11):** Schema V2, crash-safe V1→V2 migration, same-tab Back/Forward sibling branching, `storage.session` startup barrier & fail-closed safety, and distinct-host download provenance (`localhost` source vs `127.0.0.1` file host verified).
+  - **Next Up (Milestone 12 / Task 12):** Multi-card Research Tree Explorer overview UI, interactive pan/zoom detail tree view, completed-downloads drawer, and full `v2.0` cross-browser acceptance before tagging `v2.0.0`. See [CHANGELOG.md](CHANGELOG.md) and [docs/TASK_10.md](docs/TASK_10.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**
@@ -57,8 +65,10 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │       ├── manifest.json      # MV3 manifest with background.scripts & gecko ID
 │       └── background.js      # Event page entry point initializing tracker & storage
 ├── scripts/
-│   ├── build.mjs              # Deterministic zero-dependency packaging helper
-│   └── generate-icons.py      # Standard library PNG & SVG icon generator
+│   ├── build.mjs                      # Deterministic zero-dependency packaging helper
+│   ├── generate-icons.py              # Standard library PNG & SVG icon generator
+│   ├── e2e-chrome-verification.py     # Chrome CDP E2E acceptance & error-audit runner
+│   └── e2e-firefox-verification.py    # Firefox Marionette E2E acceptance & error-audit runner
 ├── tests/
 │   ├── verify-builds.mjs      # Build output, manifest, CSP, and launch tests
 │   ├── test-tracker.mjs       # Navigation capture, relationships, queue, and pruning tests
@@ -82,7 +92,8 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │   ├── tasks/                  # Canonical developer assignments (Task 10 onward)
 │   ├── task-1-output.md        # Completed task reports and verification evidence
 │   └── README.md               # Assignment/report index and review status
-├── RELEASE_NOTES.md           # Root link to release notes and verification summary
+├── CHANGELOG.md               # Release history (v0.1.0) and roadmap toward v2.0
+├── RELEASE_NOTES.md           # Root release notes, deliverables, and verification summary
 └── README.md
 ```
 
