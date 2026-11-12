@@ -145,6 +145,7 @@ class CDPClient:
         self.errors = []
         self.warnings = []
         self.lock = threading.Lock()
+        self.send_lock = threading.Lock()
         self.running = True
         self.recv_thread = threading.Thread(target=self._recv_loop, daemon=True)
         self.recv_thread.start()
@@ -225,7 +226,8 @@ class CDPClient:
             if session_id:
                 payload["sessionId"] = session_id
         
-        self.ws.send(json.dumps(payload))
+        with self.send_lock:
+            self.ws.send(json.dumps(payload))
         start = time.time()
         while time.time() - start < timeout:
             with self.lock:
@@ -291,7 +293,7 @@ def dispatch_cdp_key(cdp, session_id, key, code, windows_vk, modifiers=0, text=N
     cdp.send_cmd("Input.dispatchKeyEvent", {"type": "keyUp", **base_params}, session_id=session_id)
     time.sleep(0.05)
 
-def verify_responsive_and_capture(cdp, session_id, width, height, mode, screenshot_path):
+def verify_responsive_and_capture(cdp, session_id, width, height, mode, screenshot_path, expect_drawer=True):
     cdp.send_cmd("Emulation.setDeviceMetricsOverride", {
         "width": width,
         "height": height,
@@ -303,6 +305,7 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
         cdp.evaluate(session_id, "document.getElementById('zoom-reset').click()")
         time.sleep(0.25)
 
+    expect_drawer_js = "true" if expect_drawer else "false"
     metrics = cdp.evaluate(session_id, f"""
     (() => {{
         const iw = window.innerWidth;
@@ -335,16 +338,23 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
             checks.backBtn = boxInfo('#back-to-overview-btn');
             checks.zoomControls = boxInfo('#zoom-controls');
             checks.mapContainer = boxInfo('#map-container');
-            checks.detailsPanel = boxInfo('#details-panel');
+            if ({expect_drawer_js}) {{
+                checks.detailsPanel = boxInfo('#details-panel');
+            }} else {{
+                const dp = document.getElementById('details-panel');
+                checks.drawerHidden = !!(dp && dp.hidden);
+                checks.mapSvg = boxInfo('#map-svg');
+                checks.mapHasNodes = document.querySelectorAll('.map-node').length >= 1;
+            }}
         }}
         return {{ iw, ih, sw, overflowX: sw > iw + 1, checks }};
     }})()
     """)
-    print(f"  [Responsive {mode} {width}x{height}] inner={metrics['iw']}x{metrics['ih']}, scrollWidth={metrics['sw']}, overflowX={metrics['overflowX']}")
+    print(f"  [Responsive {mode} {width}x{height} drawer={expect_drawer}] inner={metrics['iw']}x{metrics['ih']}, scrollWidth={metrics['sw']}, overflowX={metrics['overflowX']}")
     assert metrics["overflowX"] is False, f"Horizontal overflow detected at {width}x{height} ({mode}): scrollWidth={metrics['sw']} > innerWidth={metrics['iw']}"
     for name, rect in metrics["checks"].items():
         if isinstance(rect, bool):
-            assert rect is True, f"All overview cards must fit without clipping at {width}x{height}"
+            assert rect is True, f"Responsive boolean check '{name}' failed at {width}x{height}"
             continue
         assert rect is not None, f"Control '{name}' must be visible in {mode} at {width}x{height}"
         assert rect["width"] > 0 and rect["height"] > 0, f"Control '{name}' must have positive size at {width}x{height}: {rect}"
@@ -354,7 +364,7 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
     os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
     with open(screenshot_path, "wb") as f:
         f.write(base64.b64decode(shot["data"]))
-    print(f"  [SCREENSHOT] Saved {mode} ({width}x{height}) screenshot to: {screenshot_path}")
+    print(f"  [SCREENSHOT] Saved {mode} ({width}x{height}, drawer={expect_drawer}) screenshot to: {screenshot_path}")
     return metrics
 
 def filter_extension_errors(raw_errors, addon_id):
@@ -371,14 +381,39 @@ def filter_extension_errors(raw_errors, addon_id):
             filtered.append(err)
     return filtered
 
+def terminate_chrome_tree(process):
+    if not process:
+        return
+    pid = process.pid
+    try:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
+    except Exception:
+        pass
+    try:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            )
+    except Exception:
+        pass
+    time.sleep(0.4)
+
 def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
     sw_target = None
     sw_sid = None
     for attempt in range(retries):
-        time.sleep(1.5)
+        if attempt > 0:
+            time.sleep(1.2)
+        else:
+            time.sleep(0.6)
         sw_target = None
-        for _ in range(25):
-            targets = cdp.send_cmd("Target.getTargets").get("targetInfos", [])
+        for _ in range(35):
+            targets = cdp.send_cmd("Target.getTargets", timeout=10).get("targetInfos", [])
             sw_targets = [t for t in targets if t.get("type") == "service_worker" and ext_id in t.get("url", "")]
             if sw_targets:
                 sw_target = sw_targets[-1]
@@ -387,19 +422,18 @@ def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
         assert sw_target is not None, "Service worker target must be discovered for extension"
         try:
             sw_sid = cdp.attach_target(sw_target["targetId"])
-            cdp.send_cmd("Log.enable", session_id=sw_sid, timeout=6)
-            cdp.send_cmd("Runtime.evaluate", {"expression": "typeof tracker", "returnByValue": True}, session_id=sw_sid, timeout=6)
-            cdp.send_cmd("Runtime.enable", session_id=sw_sid, timeout=6)
+            cdp.send_cmd("Runtime.enable", session_id=sw_sid, timeout=12)
+            cdp.send_cmd("Runtime.evaluate", {"expression": "typeof tracker", "returnByValue": True}, session_id=sw_sid, timeout=12)
+            try:
+                cdp.send_cmd("Log.enable", session_id=sw_sid, timeout=3)
+            except Exception:
+                pass
             return sw_target, sw_sid
         except Exception as sw_err:
             print(f"  [NOTE] Service worker attach attempt {attempt + 1} retrying: {sw_err}")
             try:
                 if sw_sid:
                     cdp.send_cmd("Target.detachFromTarget", {"sessionId": sw_sid}, timeout=3)
-            except Exception:
-                pass
-            try:
-                cdp.send_cmd("Extensions.loadUnpacked", {"path": ext_dir}, timeout=10)
             except Exception:
                 pass
             sw_sid = None
@@ -651,8 +685,7 @@ def run_tests():
         # pinned_extensions on shutdown or background flush.
         cdp.close()
         cdp = None
-        proc.kill()
-        proc.wait()
+        terminate_chrome_tree(proc)
 
         preferences_path = os.path.join(default_profile_dir, "Preferences")
         with open(preferences_path, "r", encoding="utf-8") as f:
@@ -1595,6 +1628,43 @@ def run_tests():
             os.path.join(results_dir, "chrome-detail-narrow.png")
         )
         print(f"  [Responsive Detail 420x800] {detail_narrow_metrics}")
+
+        # Close drawer at 420x800, verify map & branches are exposed cleanly, capture screenshot, then reopen details
+        closed_drawer_state = cdp.evaluate(map_sid, """
+        (() => {
+            document.getElementById('details-close-btn').click();
+            return {
+                panelHidden: document.getElementById('details-panel').hidden,
+                nodeCount: document.querySelectorAll('.map-node').length
+            };
+        })()
+        """)
+        assert closed_drawer_state["panelHidden"] is True, "Close button must hide #details-panel at 420x800"
+        assert closed_drawer_state["nodeCount"] >= 2, "Visible branch map must expose rendered nodes when drawer is closed"
+        time.sleep(0.25)
+        detail_narrow_map_metrics = verify_responsive_and_capture(
+            cdp, map_sid, 420, 800, "detail",
+            os.path.join(results_dir, "chrome-detail-narrow-map.png"),
+            expect_drawer=False
+        )
+        print(f"  [Responsive Detail Map-Only 420x800] {detail_narrow_map_metrics}")
+
+        reopened_drawer_state = cdp.evaluate(map_sid, f"""
+        (() => {{
+            const dlNode = document.querySelector('.map-node.is-download[data-id="{cdn_dl_node['id']}"]');
+            if (dlNode) dlNode.dispatchEvent(new MouseEvent('click', {{ bubbles: true }}));
+            return {{
+                foundNode: !!dlNode,
+                panelHidden: document.getElementById('details-panel').hidden,
+                sourceText: document.getElementById('details-source').textContent
+            }};
+        }})()
+        """)
+        print(f"  [Narrow Detail Drawer Reopen] {reopened_drawer_state}")
+        assert reopened_drawer_state["foundNode"] is True, "Attributed download node must be clickable on narrow map"
+        assert reopened_drawer_state["panelHidden"] is False, "Clicking a node on narrow map must reopen #details-panel"
+        assert reopened_drawer_state["sourceText"] == "Downloaded from localhost", "Reopened drawer must restore 'Downloaded from localhost'"
+
         cdp.send_cmd("Emulation.clearDeviceMetricsOverride", {}, session_id=map_sid)
 
         cdp.evaluate(map_sid, "document.getElementById('back-to-overview-btn').click()")
@@ -1679,6 +1749,7 @@ def run_tests():
             if step1_node and step2_node and step3_node:
                 break
         pre_restart_count = len(stored_nodes_pre_restart)
+        pre_restart_node_ids = set(stored_nodes_pre_restart.keys())
         print(f"  Pre-restart node count stored in chrome.storage.local: {pre_restart_count}")
         assert step1_node and step2_node and step3_node, "All three restart step nodes must exist in storage before restart"
 
@@ -1710,8 +1781,9 @@ def run_tests():
         # 8c. Browser Process Restart
         print("  [8c] Terminating Chrome process for full browser restart...")
         cdp.close()
-        proc.kill()
-        proc.wait()
+        cdp = None
+        terminate_chrome_tree(proc)
+        proc = None
         print("  Chrome process terminated cleanly.")
 
         # Relaunch Chrome with the persistent profile and restored live tab
@@ -1720,7 +1792,7 @@ def run_tests():
         proc2 = subprocess.Popen(chrome_cmd_restart)
         
         ws_url2 = None
-        for _ in range(25):
+        for _ in range(30):
             try:
                 ver_req = urllib.request.urlopen(f"http://127.0.0.1:{cdp_port}/json/version")
                 ver_data = json.loads(ver_req.read().decode('utf-8'))
@@ -1735,7 +1807,36 @@ def run_tests():
         actual_chrome_version2 = ver_info2.get("product", f"Chrome/{actual_chrome_version}").replace("Chrome/", "")
         print(f"  Reconnected to restarted Google Chrome {actual_chrome_version2}: {ws_url2}")
         cdp2.send_cmd("Target.setDiscoverTargets", {"discover": True})
-        time.sleep(0.5)
+
+        # Ensure the CLI-opened /restart-step3 tab has fully committed BEFORE loading the
+        # unpacked extension so captureInitialCheckpoints() establishes its single-node baseline
+        # deterministically instead of racing with an uncommitted initial navigation.
+        restart_page_tid = None
+        for _ in range(30):
+            pre_load_pages = [t for t in cdp2.send_cmd("Target.getTargets", timeout=10).get("targetInfos", []) if t.get("type") == "page"]
+            match_page = next((t for t in pre_load_pages if "/restart-step3" in t.get("url", "")), None)
+            if match_page:
+                restart_page_tid = match_page["targetId"]
+                break
+            time.sleep(0.25)
+        assert restart_page_tid is not None, "Restarted Chrome must expose /restart-step3 page target before extension load"
+        restart_probe_sid = cdp2.attach_target(restart_page_tid)
+        cdp2.send_cmd("Runtime.enable", session_id=restart_probe_sid, timeout=10)
+        for _ in range(25):
+            ready_info = cdp2.evaluate(restart_probe_sid, "({href: location.href, readyState: document.readyState})")
+            if "/restart-step3" in (ready_info.get("href") or "") and ready_info.get("readyState") == "complete":
+                break
+            time.sleep(0.2)
+        try:
+            cdp2.send_cmd("Target.detachFromTarget", {"sessionId": restart_probe_sid}, timeout=5)
+        except Exception:
+            pass
+        sanitized_pre_load_tabs = [
+            f"{urlsplit(t.get('url', '')).netloc}{urlsplit(t.get('url', '')).path or '/'}"
+            for t in cdp2.send_cmd("Target.getTargets", timeout=10).get("targetInfos", [])
+            if t.get("type") == "page"
+        ]
+        print(f"  Pre-extension-load open page targets: {sanitized_pre_load_tabs}")
 
         # Re-register extension via Extensions.loadUnpacked
         load_res2 = cdp2.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
@@ -1744,6 +1845,11 @@ def run_tests():
 
         # Attach to service worker in restarted Chrome
         sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
+        for _ in range(25):
+            sw_init2 = cdp2.evaluate(sw_sid2, "({initialized: tracker.sessionInitialized, initializing: tracker.sessionInitializing})")
+            if sw_init2.get("initialized") and not sw_init2.get("initializing"):
+                break
+            time.sleep(0.2)
 
         # Open extension map page
         create_map_res = cdp2.send_cmd("Target.createTarget", {"url": f"chrome-extension://{ext_id2}/index.html"})
@@ -1753,14 +1859,61 @@ def run_tests():
         restarted_map_sid = cdp2.attach_target(restarted_map_tid)
         cdp2.send_cmd("Page.enable", session_id=restarted_map_sid)
         cdp2.send_cmd("Runtime.enable", session_id=restarted_map_sid)
-        time.sleep(1.5)
+        time.sleep(1.0)
 
-        # 1. Assert full graph persistence
+        # 1. Assert full graph persistence (with detailed sanitized delta diagnostics if any node is added)
         post_restart_storage = cdp2.evaluate(sw_sid2, "new Promise(resolve => chrome.storage.local.get(null, resolve))", await_promise=True)
+        post_restart_tabs = cdp2.evaluate(sw_sid2, """
+        new Promise(resolve => chrome.tabs.query({}, tabs => resolve(tabs.map(t => {
+            let safeLoc = '';
+            try {
+                const u = new URL(t.url || '');
+                safeLoc = u.origin + u.pathname;
+            } catch (e) {
+                safeLoc = String(t.url || '').slice(0, 64);
+            }
+            return { id: t.id, active: t.active, status: t.status, title: t.title, location: safeLoc };
+        }))))
+        """, await_promise=True)
         stored_nodes_post = post_restart_storage.get("spatial_browser_history_data", {}).get("nodes", {})
+        post_tab_state = post_restart_storage.get("spatial_browser_history_data", {}).get("tabState", {})
         post_restart_count = len(stored_nodes_post)
+        missing_node_ids = sorted(pre_restart_node_ids - set(stored_nodes_post.keys()))
+        added_node_ids = sorted(set(stored_nodes_post.keys()) - pre_restart_node_ids)
         print(f"  Post-restart stored node count in storage: {post_restart_count} (was {pre_restart_count})")
-        assert post_restart_count == pre_restart_count, f"Persistence error: expected {pre_restart_count} nodes in graph, got {post_restart_count}"
+        print(f"  Post-restart open tabs snapshot: {post_restart_tabs}")
+        if added_node_ids:
+            print(f"  [DIAGNOSTIC] Detected {len(added_node_ids)} unexpected added node(s) across restart:")
+            for nid in added_node_ids:
+                n = stored_nodes_post.get(nid, {})
+                parsed = urlsplit(n.get("url") or "")
+                sanitized_loc = f"{parsed.hostname or n.get('originDomain') or 'unavailable'}{parsed.path or ''}"
+                matching_tab_states = [
+                    {
+                        "tabKey": tk,
+                        "tabId": ts.get("tabId"),
+                        "currentNodeId": ts.get("currentNodeId"),
+                        "historyStack": ts.get("historyStack"),
+                        "historyIndex": ts.get("historyIndex"),
+                        "baselineEstablished": ts.get("baselineEstablished"),
+                        "lineageInvalidated": ts.get("lineageInvalidated")
+                    }
+                    for tk, ts in post_tab_state.items()
+                    if ts.get("currentNodeId") == nid or nid in (ts.get("historyStack") or [])
+                ]
+                matching_live_tabs = [
+                    t for t in post_restart_tabs
+                    if any(str(t.get("id")) == str(ts.get("tabId")) for ts in matching_tab_states)
+                ]
+                print(
+                    f"    - addedNode={{id={nid}, nodeType={n.get('nodeType')}, title={n.get('title')!r}, "
+                    f"originDomain={n.get('originDomain')!r}, sanitizedLocation={sanitized_loc!r}, "
+                    f"treeId={n.get('treeId')!r}, parentNodeId={n.get('parentNodeId')!r}, "
+                    f"timestamp={n.get('timestamp')}}}"
+                )
+                print(f"      associatedTabState={matching_tab_states}, matchingLiveTabs={matching_live_tabs}")
+        assert not missing_node_ids, f"Persistence error: missing pre-restart nodes {missing_node_ids}"
+        assert post_restart_count == pre_restart_count, f"Persistence error: expected {pre_restart_count} nodes in graph, got {post_restart_count} (added={added_node_ids})"
         assert step1_node["id"] in stored_nodes_post, "Step 1 node must persist in graph"
         assert step2_node["id"] in stored_nodes_post, "Step 2 node must persist in graph"
         assert step3_node["id"] in stored_nodes_post, "Step 3 node must persist in graph"
@@ -1842,8 +1995,9 @@ def run_tests():
         print("  - Error Telemetry: Exact parity; 0 extension errors, 0 warnings across both live and restart phases.")
 
         cdp2.close()
-        proc2.kill()
-        proc2.wait()
+        cdp2 = None
+        terminate_chrome_tree(proc2)
+        proc2 = None
 
         print("\n" + "=" * 76)
         print(f"ALL EXECUTED GOOGLE CHROME {actual_chrome_version} CDP CHECKS PASSED (0 FAILURES)")
@@ -1856,8 +2010,7 @@ def run_tests():
                 c.close()
         for p in (proc, proc2):
             if p and p.poll() is None:
-                p.kill()
-                p.wait()
+                terminate_chrome_tree(p)
         server.shutdown()
         server.server_close()
         try:

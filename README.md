@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Task 11 is accepted (Section 57). Task 12 Section 6 revisions (Chrome toolbar UIA click + focus check, dynamic version reporting, real Chrome CDP keyboard input, and desktop/narrow responsive screenshots across Google Chrome `157.0.8103.78` and Mozilla Firefox `160.0`) pass build, 59 unit checks, and both sequential E2E runs (**0 failures, 0 errors, 0 warnings**) — pending lead acceptance ([Task 12 report](task%20output%20overview/task-12-output.md#7-revision-summary--fresh-verification-evidence-2026-11-12)).
+> **Active Branch Status (main):** Task 11 is accepted (Section 57). Task 12 passes build, 59 automated checks, Firefox `160.0` E2E, and **two consecutive Chrome `157.0.8103.78` isolated-profile E2E runs** (`12 -> 12` restart persistence, narrow drawer-closed map captures); submitted for lead acceptance in [Section 9](task%20output%20overview/task-12-output.md#9-developer-followup--consecutive-verification-evidence-2026-11-13).
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -12,7 +12,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
 - **Working Towards `v2.0` (Active Development on `main`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
-  - **Pending Lead Acceptance (Milestone 12 / Task 12):** The Explorer UI, 59 automated checks, and fresh isolated-profile E2E suites (dynamically querying runtime **Google Chrome `157.0.8103.78`** via CDP and **Mozilla Firefox `160.0`** via Marionette, real keyboard input parity, and desktop/narrow responsive screenshots) pass with **0 failures, 0 errors, and 0 warnings**. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md).
+  - **Pending Lead Acceptance (Milestone 12 / Task 12):** The Explorer UI, 59 automated checks, Firefox `160.0` E2E, and two consecutive Chrome `157.0.8103.78` isolated-profile E2E runs (`12 -> 12` restart persistence, 0 errors/warnings) pass after addressing Section 8 feedback. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**

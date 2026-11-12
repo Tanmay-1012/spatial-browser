@@ -1,0 +1,18 @@
+============================================================================
+TASK 12: GOOGLE CHROME RUNTIME ACCEPTANCE RUN
+Timestamp: 2026-11-12 23:13:18
+Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
+Declared Manifest Minimum Floor: Chrome 109+
+============================================================================
+[INIT] Local test HTTP server started at http://127.0.0.1:51296 (and http://localhost:51296)
+[INIT] Local CDN HTTP server started at http://127.0.0.1:51297
+
+--- STEP 1: Chrome Process Startup & Unpacked Extension Loading ---
+[INIT] Connected to Google Chrome 157.0.8103.78 (x64 Windows) via CDP: ws://127.0.0.1:51298/devtools/browser/bbc16183-6acc-4482-a893-1f0bf8a9b430
+       User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36
+       Declared Support Floor: Chrome 109+
+[PASS] Unpacked extension loaded successfully from D:\Projects\HCI Project\outputs\chrome\unpacked
+       Extension ID: edhmggcmhhmlbfmidpeamoiffebfijah
+[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome 157.0.8103.78.
+  [WARN] CDPClient _recv_loop stopped: Connection to remote host was lost.
+  [NOTE] Service worker attach attempt 1 retrying: socket is already closed.

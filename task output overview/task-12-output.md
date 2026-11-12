@@ -1,6 +1,6 @@
 # Task 12 Output — Research Tree Explorer Overview & Detail UI
 
-**Status:** Revision Submitted — Pending Lead Acceptance (all Section 6 items addressed & verified)
+**Status:** Revision Submitted — Pending Lead Acceptance (Consecutive Chrome & Firefox E2E Passed; awaiting lead sign-off)
 **Milestone:** 12 (Research Tree Explorer Overview & Detail UI — Task 10 v15 Sections 51–52)  
 **Browser Runtime Targets:** Google Chrome `157.0.8103.78` (x64 Windows; declared min `109+`) & Mozilla Firefox `160.0` (x64 Windows; `strict_min_version: 115.0`)  
 **Execution Date:** 2026-11-12  
@@ -160,3 +160,71 @@ All 8 live captures were visually inspected and verified with zero horizontal ov
 - **Mozilla Firefox `160.0` Isolated-Profile E2E:** **0 failures** ([`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log)); **0 extension errors, 0 warnings, 0 info** across `5` pre-restart Gecko records ([`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json)) and `24` post-restart Gecko records ([`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json)).
 
 Task 12 revision is submitted for lead review. Task 13 remains unstarted pending lead acceptance.
+
+## 8. Lead Review — Revision Required (2026-11-13)
+
+**Decision:** Task 12 remains open. The developer's Section 7 evidence closes most of the requested harness and UI checks, but my independent Chrome rerun did not pass the restart-persistence check.
+
+### Independent rerun results
+
+- `npm.cmd run build` and `npm.cmd test` pass; the automated suite reports **59 passed, 0 failed**.
+- The fresh Firefox `160.0` run completed all navigation, Explorer UI, real keyboard, responsive viewport, and restart scenarios with **0 failures**.
+- On the requested retry after the user said Chrome was no longer in use, Chrome `157.0.8103.78` passed startup, toolbar open/focus, navigation, Explorer UI, real keyboard, and responsive checks. At restart, storage held **12 nodes before restart and 13 afterward**, so the suite failed before its final acceptance checks. The run used the harness's isolated temporary profile.
+- Two earlier Chrome retries also failed during service-worker/CDP attachment after the harness relaunched Chrome. I saved the lead-run diagnostics at [`chrome-e2e-lead-review-2026-11-12.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-lead-review-2026-11-12.log), [`chrome-e2e-lead-review-retry-2-2026-11-13.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-lead-review-retry-2-2026-11-13.log), and [`chrome-e2e-lead-review-restart-count-2026-11-13.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-lead-review-restart-count-2026-11-13.log). The last log contains the 12-to-13 failure.
+- I inspected the eight screenshots. Overview cards and the desktop branch map are clear. The narrow Detail screenshots show the full-width details drawer covering the map; add a narrow Detail capture with the drawer closed so the branch layout and its close/reopen behavior can also be reviewed.
+
+### Required follow-up
+
+1. Diagnose the extra post-restart node. Before the persistence assertion, log the added node's ID, type, title, sanitized URL/domain, `treeId`, parent ID, timestamp, and associated tab state. Determine whether the harness created an additional checkpoint or the extension duplicated a visit during restart. Preserve assertions that every pre-restart node survives; if the harness intentionally creates a new node, identify and assert that specific expected node separately rather than weakening the count check.
+2. Stabilize the Chrome relaunch/service-worker attachment path so a clean isolated-profile run does not lose CDP or time out while enabling the worker. Keep the real toolbar, keyboard, responsive, and restart checks enabled.
+3. Add a narrow Detail screenshot with the drawer closed and verify that the close button exposes the map and that the user can reopen node details.
+4. Run the complete Chrome suite twice consecutively with fresh isolated profiles. Both runs must complete the restart and final error audit. Keep the successful logs and audits in `docs/test-results/`, update this report and `docs/TEST_PLAN.md`, and change the task status to Accepted only after both runs pass.
+
+Do not change tracking, storage schema, permissions, or manifests for this correction. If fixing the extra node requires a locked tracking/storage change, document the specific mismatch and stop for lead review. Do not start Task 13 until Task 12 is accepted.
+
+---
+
+## 9. Developer Follow-Up & Consecutive Verification Evidence (2026-11-13)
+
+All four follow-up items requested in Section 8 have been implemented in the test harnesses only (`scripts/e2e-chrome-verification.py` and `scripts/e2e-firefox-verification.py`). No changes were made to `src/shared/tracker.js`, `src/shared/storage.js`, manifests, permissions, or the regular user Chrome profile, and Task 13 has not been started.
+
+### 9.1 Diagnosis of Extra Post-Restart Node (`12 -> 13`) & Harness Timing Race
+
+- **Inspection of Section 8 Evidence & Restart Sequence:** Re-examining `Step 8c` in `scripts/e2e-chrome-verification.py` alongside [`src/shared/tracker.js`](file:///D:/Projects/HCI%20Project/src/shared/tracker.js) (`captureInitialCheckpoints()` and `_processUrlChange()`) identified a test-harness launch race (not an extension tracking bug):
+  1. Chrome 2 was launched via `subprocess.Popen(chrome_cmd + [f"{base_url}/restart-step3"])`, slept `0.5s`, and immediately called `Extensions.loadUnpacked` *before* verifying that the `/restart-step3` tab had finished committing (`document.readyState === "complete"`). Unlike Firefox's harness (which executes synchronous `WebDriver:Navigate` to `/restart-step3` prior to `Addon:Install`), launching the extension while the initial tab's URL was still uncommitted (`""` / `about:blank`) allowed `captureInitialCheckpoints()` to find zero trackable tabs, mark `sessionInitialized = true`, and clear prior `tabState`, so the subsequent `webNavigation.onCommitted` for `/restart-step3` fell through to Section 3 (ordinary navigation) and created a 13th root checkpoint node.
+  2. Additionally, `proc.kill()` only terminated the Chrome parent PID before relaunching immediately on the same `profile_dir` / debugging port.
+- **Harness Fixes Applied Without Weakening Assertions:**
+  - `Step 8c` now waits until the CLI-opened `/restart-step3` page target appears, attaches, and reports `location.href` includes `/restart-step3` with `document.readyState === "complete"` **before** calling `Extensions.loadUnpacked`, then waits for `tracker.sessionInitialized && !tracker.sessionInitializing`.
+  - Added `terminate_chrome_tree(process)` (`kill()` + `wait()` + Windows `taskkill /F /T /PID`) for both the Preferences-pinning relaunch (`Step 1`) and the persistence restart (`Step 8c`).
+  - Added full sanitized restart-delta diagnostics before the strict persistence assertion (`missing_node_ids == []` AND `post_restart_count == pre_restart_count`): if any added node ever appears across restart, the harness logs `post_restart_tabs` (`chrome.tabs.query({})` sanitized `origin + pathname`) plus every added node's `id`, `nodeType`, `title`, `originDomain`, sanitized `hostname + path`, `treeId`, `parentNodeId`, `timestamp`, and matching `tabState`.
+
+### 9.2 Stabilization of Chrome Relaunch & Service-Worker CDP Attachment
+
+- Diagnosed the Section 8 attachment failures (`Timeout waiting for response to Log.enable` / `Runtime.enable` and `Connection to remote host was lost` in `chrome-e2e-lead-review-2026-11-12.log` and `chrome-e2e-lead-review-retry-2-2026-11-13.log`):
+  1. `attach_extension_service_worker()` previously called `Log.enable` (`6s` timeout) before `Runtime.enable` and, on any exception, re-invoked `Extensions.loadUnpacked` inside the retry loop—destroying and reloading the extension mid-attach and severing the CDP socket.
+  2. `attach_extension_service_worker()` now enables `Runtime.enable` (`timeout=12`) first, runs `Runtime.evaluate("typeof tracker")` (`timeout=12`), treats `Log.enable` (`timeout=3`) as best-effort optional on service worker targets (since `Runtime.enable` already captures SW exceptions and console warnings/errors), removes the destructive `Extensions.loadUnpacked` reload on retry, and synchronizes WebSocket frame writes via `CDPClient.send_lock`.
+- Both consecutive isolated-profile runs connected to the MV3 service worker on **attempt 1 with zero retries and zero CDP disconnects**.
+
+### 9.3 Narrow Detail (`420x800`) Drawer-Closed Map Captures & Reopen Checks
+
+- Added narrow (`420x800`) drawer-closed verification to both `Step 6.5f` steps in `scripts/e2e-chrome-verification.py` and `scripts/e2e-firefox-verification.py`:
+  1. After capturing the open-drawer narrow view (`*-detail-narrow.png`), the harness clicks `#details-close-btn`, asserts `#details-panel.hidden === true`, resets pan/zoom (`#zoom-reset`), verifies `#map-svg` and branch `.map-node` elements (`>= 2`) are visibly rendered with zero horizontal overflow (`scrollWidth <= innerWidth`), and captures the map-only screenshots:
+     - [`docs/test-results/chrome-detail-narrow-map.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-detail-narrow-map.png)
+     - [`docs/test-results/firefox-detail-narrow-map.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-detail-narrow-map.png)
+  2. Both screenshots were visually inspected: top bar controls wrap cleanly, the full 6-node `/wiki` branch graph (including `Source A`/`Source B` siblings and attributed download `research_paper.pdf` labeled `Downloaded from localhost`) is clearly exposed on dark canvas, and zero clipping/horizontal overflow occurs.
+  3. Clicking `.map-node.is-download` immediately reopens `#details-panel` (`hidden === false`) displaying `Downloaded from localhost`.
+
+### 9.4 Build, Unit Suite & Fresh Isolated-Profile E2E Results (2 Consecutive Chrome Runs + Firefox)
+
+- **`npm.cmd run build` & `npm.cmd test`:** **59 passed, 0 failed** (`12` build/manifest/archive, `35` tracker/storage/provenance, `12` Explorer UI/security/contrast).
+- **Consecutive Chrome `157.0.8103.78` Isolated-Profile Run 1 (`2026-11-13`):** **0 failures** — zero SW attach retries; toolbar UIA click open/focus, navigation, Explorer UI, real CDP keyboard, desktop/narrow open + closed-drawer captures, and restart persistence (`Pre-restart: 12` $\to$ `Post-restart: 12`, live tab `[step3]` single-node baseline, `Pre-extension-load open page targets: ['127.0.0.1:.../restart-step3']`) all passed.
+  - Log: [`docs/test-results/chrome-e2e-run1.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-run1.log)
+  - Audits: [`chrome-errors-pre-restart-run1.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart-run1.json) (`266` CDP records: **0 errors, 0 warnings**), [`chrome-errors-post-restart-run1.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart-run1.json) (`18` CDP records: **0 errors, 0 warnings**).
+- **Consecutive Chrome `157.0.8103.78` Isolated-Profile Run 2 (`2026-11-13`):** **0 failures** — zero SW attach retries; `Pre-restart: 12` $\to$ `Post-restart: 12`, live tab `[step3]` single-node baseline, `3 Research Trees · 9 Visits` post-restart Overview & `3` nodes Detail reconciliation all passed.
+  - Logs: [`docs/test-results/chrome-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e.log) & [`docs/test-results/chrome-e2e-run2.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-run2.log)
+  - Audits: [`chrome-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart.json) (`271` CDP records: **0 errors, 0 warnings**), [`chrome-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart.json) (`18` CDP records: **0 errors, 0 warnings**).
+- **Mozilla Firefox `160.0` Isolated-Profile Run (`2026-11-13`):** **0 failures** — includes narrow drawer-closed map capture & reopen check plus `12 -> 12` SQLite restart persistence and `[step3]` baseline recovery.
+  - Log: [`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log)
+  - Audits: [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json) (`6` Gecko records: **0 errors, 0 warnings**), [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json) (`24` Gecko records: **0 errors, 0 warnings**).
+
+Task 12 remains held pending lead review acceptance; Task 13 has not been started.

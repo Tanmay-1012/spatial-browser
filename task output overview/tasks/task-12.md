@@ -1,6 +1,6 @@
 # Task 12 — Research Tree Explorer Overview & Detail UI
 
-**Status:** Revision Submitted — Pending Lead Acceptance (see Task 12 output, Section 7). Do not start another task until lead acceptance.
+**Status:** Revision Submitted — Pending Lead Acceptance (see Task 12 output, Section 9). Do not start another task until lead acceptance.
 **Milestone:** 12 (Research Tree Explorer UI)  
 **Design authority:** Approved v15 proposal and acceptance matrix in Section 51 of [Task 10 output](../task-10-output.md); approval recorded in Section 52. Task 11 is accepted in Section 57 of [Task 11 output](../task-11-output.md).
 
@@ -90,4 +90,4 @@ Task 12 is ready for lead review when every applicable item below is demonstrate
 
 ## Lead Review Gate
 
-The initial implementation is submitted, but lead acceptance is withheld. Complete the revision checklist in [Task 12 output, Section 6](../task-12-output.md#6-lead-review--revisions-required) before closing this task. Keep all work within Task 12; do not begin Task 13.
+Section 8 follow-up items have been addressed with two consecutive isolated-profile Chrome passes and updated narrow map-only captures in Section 9 of [Task 12 output](../task-12-output.md#9-developer-followup--consecutive-verification-evidence-2026-11-13). Task 12 remains pending lead acceptance; do not begin Task 13.

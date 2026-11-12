@@ -1,0 +1,21 @@
+============================================================================
+TASK 12: GOOGLE CHROME RUNTIME ACCEPTANCE RUN
+Timestamp: 2026-11-13 00:03:16
+Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
+Declared Manifest Minimum Floor: Chrome 109+
+============================================================================
+[INIT] Local test HTTP server started at http://127.0.0.1:58228 (and http://localhost:58228)
+[INIT] Local CDN HTTP server started at http://127.0.0.1:58229
+
+--- STEP 1: Chrome Process Startup & Unpacked Extension Loading ---
+[INIT] Connected to Google Chrome 157.0.8103.78 (x64 Windows) via CDP: ws://127.0.0.1:58230/devtools/browser/5f4e3f12-3307-4130-9ece-0213ca265d97
+       User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36
+       Declared Support Floor: Chrome 109+
+[PASS] Unpacked extension loaded successfully from D:\Projects\HCI Project\outputs\chrome\unpacked
+       Extension ID: edhmggcmhhmlbfmidpeamoiffebfijah
+[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome 157.0.8103.78.
+  [NOTE] Service worker attach attempt 1 retrying: Timeout waiting for response to Runtime.enable (id: 9)
+  [NOTE] Service worker attach attempt 2 retrying: Timeout waiting for response to Log.enable (id: 14)
+  [NOTE] Service worker attach attempt 3 retrying: Timeout waiting for response to Log.enable (id: 19)
+  [WARN] CDPClient _recv_loop stopped: Connection to remote host was lost.
+  [NOTE] Service worker attach attempt 4 retrying: Timeout waiting for response to Log.enable (id: 24)

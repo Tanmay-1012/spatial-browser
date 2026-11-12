@@ -1639,6 +1639,43 @@ def run_tests():
         )
         print(f"  [Firefox Responsive Detail Narrow] {ff_detail_narrow}")
 
+        # Close drawer at narrow viewport, verify visible map + nodes, capture map-only screenshot, and reopen details
+        ff_closed_drawer = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            document.getElementById('details-close-btn').click();
+            document.getElementById('zoom-reset').click();
+            const svg = document.getElementById('map-svg');
+            const sr = svg ? svg.getBoundingClientRect() : null;
+            return {
+                panelHidden: document.getElementById('details-panel').hidden,
+                nodeCount: document.querySelectorAll('.map-node').length,
+                svgVisible: !!(sr && sr.width > 0 && sr.height > 0)
+            };
+            """
+        })["value"]
+        assert ff_closed_drawer["panelHidden"] is True, "Close button must hide #details-panel at Firefox 420x800"
+        assert ff_closed_drawer["nodeCount"] >= 2 and ff_closed_drawer["svgVisible"] is True, "Visible map and branch nodes must be exposed when narrow drawer is closed"
+        time.sleep(0.25)
+        ff_detail_narrow_map = verify_responsive_and_capture_firefox(
+            client, 420, 800, "detail",
+            os.path.join(ff_results_dir, "firefox-detail-narrow-map.png")
+        )
+        print(f"  [Firefox Responsive Detail Map-Only 420x800] {ff_detail_narrow_map}")
+        ff_reopened_drawer = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            const dlNode = document.querySelector('.map-node.is-download[data-id="' + arguments[0] + '"]');
+            if (dlNode) dlNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            return {
+                foundNode: !!dlNode,
+                panelHidden: document.getElementById('details-panel').hidden,
+                sourceText: document.getElementById('details-source').textContent
+            };
+            """,
+            "args": [cdn_dl_node["id"]]
+        })["value"]
+        assert ff_reopened_drawer["foundNode"] is True and ff_reopened_drawer["panelHidden"] is False, "Clicking a node on Firefox narrow map must reopen #details-panel"
+        assert ff_reopened_drawer["sourceText"] == "Downloaded from localhost", "Firefox reopened drawer must show 'Downloaded from localhost'"
+
         back_portal_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
         client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_portal_el)})
         time.sleep(0.4)
