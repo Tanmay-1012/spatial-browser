@@ -1,6 +1,6 @@
 # Task 13 Output — Release Candidate Readiness & Evidence Closeout
 
-**Status:** Completed & Submitted for Lead Review  
+**Status:** Accepted — Task 13 complete (Section 7)
 **Milestone:** 13 (Quality & Handoff)  
 **Prerequisite:** Task 12 accepted in Section 12 of [`task output overview/task-12-output.md`](task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13)  
 **Browser Runtime Targets:** Google Chrome `157.0.8103.78` (x64 Windows; declared min `109+`) & Mozilla Firefox `160.0` (x64 Windows; `strict_min_version: 115.0`)  
@@ -16,7 +16,7 @@ Task 13 is a quality, packaging, and evidence closeout task to verify that the r
 2. **Reproducible Build & Package Audit:** Rebuilt packages via `npm.cmd run build` and executed the automated suite via `npm.cmd test` (**61 passed, 0 failed**). Inspected unpacked extensions and archive packages (`.zip` and `.xpi`) against checked-in source files; verified byte-level parity, manifest permissions, and `SHA256SUMS` checksums. Audited packages for clean boundaries: zero test profiles, databases, fixtures, credentials, or machine-specific paths were found in any package.
 3. **Browser Behavior Reconfirmation:** Executed both full isolated-profile E2E test suites against freshly built packages. Google Chrome `157.0.8103.78` and Mozilla Firefox `160.0` passed all 10 acceptance steps with zero errors, zero warnings, `12 -> 12` restart node persistence, and clean process teardown.
 4. **Handoff Records Alignment:** Verified that `README.md`, `docs/TEST_PLAN.md`, `task output overview/README.md`, `task output overview/tasks/README.md`, and `task-12.md` consistently reflect Task 12 acceptance (Section 12) and Task 13 active assignment. All prior review checkpoints are preserved.
-5. **Release Constraints Respected:** No release has been tagged, published, pushed, or distributed. Task 14 remains unstarted pending lead review.
+5. **Release Constraints Respected:** No release has been tagged, published, pushed, or distributed. At the time of developer submission, Task 14 remained unstarted; the later lead review and Task 14 assignment are recorded in Section 7.
 
 ---
 
@@ -178,25 +178,25 @@ Both full isolated-profile browser E2E test suites were re-executed against the 
 - **Execution Log:** [`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log)
 - **Test Summary:** **10 steps executed, 0 failures**.
 - **Measured Viewport:** Requested `420x800`; Windows Win32 window manager constrained outer window to $514\text{px}$, measuring inner viewport at $\mathbf{500 \times 800\text{px}}$ (canvas $500 \times 674\text{px}$). Enters responsive reflow layout ($<= 900\text{px}$).
-- **Narrow Reflow Legibility:** `fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 20.4px` across all 6 nodes (`allReadable = True`). Zoom in (`scale(1.26)`) and Fit (`scale(1.05)`) navigability verified. Drawer-closed map screenshot captured cleanly.
+- **Narrow Reflow Legibility:** `fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, latest `renderedTitleHeight = 20.4px` across all 6 nodes (`allReadable = True`). Zoom in (`scale(1.26)`) and Fit (`scale(1.05)`) navigability verified. Drawer-closed map screenshot captured cleanly.
 - **Restart Persistence & Process Cleanup:** Pre-restart: 12 nodes $\to$ Post-restart: 12 nodes in SQLite. Live tab collapsed to single-node baseline `[step3]`. Isolated process tree cleaned up via `terminate_firefox_tree`. Exited with code `0`.
-- **Telemetry:** Pre-restart audit evaluated 6 Gecko records (**0 errors, 0 warnings**, [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json)); Post-restart audit evaluated 24 Gecko records (**0 errors, 0 warnings**, [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json)).
+- **Telemetry:** Latest lead rerun evaluated 14 Gecko records before restart (**0 errors, 0 warnings**, [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json)); 25 after restart (**0 errors, 0 warnings**, [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json)).
 
 ---
 
-## 5. Documentation & Task Index Alignment
+## 5. Documentation & Task Index Alignment at Submission
 
 Checked documentation and task indexes across the workspace:
-- **`README.md`:** Accurately reflects Task 11 accepted, Task 12 accepted (Section 12), and Task 13 assigned for quality audit without publication.
+- **`README.md`:** At submission, reflected Task 11 and Task 12 acceptance and Task 13's active quality-audit assignment without publication.
 - **`docs/TEST_PLAN.md`:** Records Task 12 acceptance (Section 12), 61 automated tests, and current Chrome 157 / Firefox 160 E2E results.
-- **`task output overview/README.md`:** Updated index shows Task 12 accepted (Section 12) and Task 13 assigned.
+- **`task output overview/README.md`:** At submission, showed Task 12 accepted (Section 12) and Task 13 as the active assignment.
 - **`task output overview/tasks/README.md`:** Lists Task 12 accepted and Task 13 as active assignment.
 - **`task output overview/tasks/task-12.md`:** Status updated to Accepted per Section 12.
 - **`task output overview/tasks/task-13.md`:** Contains complete Task 13 assignment specification.
 
 ---
 
-## 6. Acceptance Status & Handoff Gate
+## 6. Developer Submission Checklist (Historical Checkpoint)
 
 Every Task 13 requirement is satisfied:
 - [x] Lead review focus restoration and E2E harness corrections are preserved and committed locally (`0cdf773`).
@@ -206,6 +206,19 @@ Every Task 13 requirement is satisfied:
 - [x] Fresh Chrome `157.0.8103.78` and Firefox `160.0` isolated-profile E2E runs passed all 10 steps with `12 -> 12` restart persistence, zero errors, and zero warnings.
 - [x] Documentation, test plan, and task indexes are completely aligned.
 - [x] No release was tagged, pushed, published, or distributed.
-- [x] Task 14 remains strictly unstarted.
+- [x] Task 14 was unstarted at developer submission; its subsequent assignment is recorded in Section 7.
 
-Task 13 is complete and submitted for lead review.
+At the time of submission, Task 13 was complete and submitted for lead review. The lead decision is recorded in Section 7.
+
+## 7. Lead Review — Task 13 Accepted; Task 14 Assigned (2026-11-13)
+
+### Independent verification and correction
+
+- Confirmed the two local commits are present (`0cdf773` and `c258c6f`), the working tree was clean before this review, `npm.cmd test` passes **61 tests, 0 failed**, and each listed package checksum matches its archive.
+- Reviewed the final Chrome and Firefox E2E logs. The final Chrome run passes its 10 steps with `12 -> 12` restart persistence and zero errors/warnings. I independently reran the full Firefox suite after correcting its summary line to report the measured viewport rather than a stale approximation. Firefox `160.0` passed all 10 steps; the requested `420x800` viewport measured `500x800`, narrow-map title height measured `20.4px` across all six nodes, restart persistence remained `12 -> 12`, process cleanup succeeded, and pre/post audits reported zero errors and warnings.
+- An earlier Task 13 log measured `19.2px`; the final independent rerun measured `20.4px`. Both exceed the assignment's readability threshold. The report and test plan now use the final rerun's measurement and audit counts. The Firefox E2E summary now prints the actual measured viewport (`500x800`) instead of an inaccurate approximate width.
+- `python -m py_compile scripts/e2e-firefox-verification.py` passed, and the complete Firefox E2E run passed after that summary correction.
+
+### Decision
+
+**Task 13 is accepted and complete.** Its checks cover package contents, checksums, source parity, current-browser runtime behavior, and local commit hygiene. The accepted report and this review are authoritative over the submission's earlier status statements in Sections 1 and 6. No release was published or pushed. Task 14 is assigned in [`tasks/task-14.md`](tasks/task-14.md); no work on it should begin until the developer reads its assignment.

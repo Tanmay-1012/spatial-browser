@@ -5,9 +5,10 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 ## Current assignment
 
 - [Task 12 — Research Tree Explorer Overview & Detail UI](task-12.md) ([Report: `task-12-output.md`](../task-12-output.md)) — Accepted (Section 12)
-- [Task 13 — Release Candidate Readiness & Evidence Closeout](task-13.md) ([Report: `task-13-output.md`](../task-13-output.md)) — Current assignment
+- [Task 13 — Release Candidate Readiness & Evidence Closeout](task-13.md) ([Report: `task-13-output.md`](../task-13-output.md)) — Accepted (Section 7)
+- [Task 14 — Minimum-Supported Browser Compatibility Audit](task-14.md) ([Report: `task-14-output.md`](../task-14-output.md)) — Current assignment
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12 of its output. Task 13 is the current assignment; do not begin another task until lead review.
+Task 10 v15 is approved. Task 11 is accepted per Section 57, Task 12 per Section 12, and Task 13 per Section 7 of their respective output reports. Task 14 is the current assignment; do not begin another task until lead review.
 
 ## Reporting workflow
 

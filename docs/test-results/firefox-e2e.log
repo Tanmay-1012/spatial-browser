@@ -1,15 +1,15 @@
 ============================================================================
 TASK 12: MOZILLA FIREFOX RUNTIME ACCEPTANCE RUN
-Timestamp: 2026-11-13 20:28:57
+Timestamp: 2026-11-13 21:37:56
 Declared Manifest Minimum Floor: Firefox 115.0+
 ============================================================================
-[INIT] Local test HTTP server started at http://127.0.0.1:52330 (and http://localhost:52330)
-[INIT] Secondary CDN file server started at http://127.0.0.1:52331
+[INIT] Local test HTTP server started at http://127.0.0.1:63924 (and http://localhost:63924)
+[INIT] Secondary CDN file server started at http://127.0.0.1:63925
 [INIT] Connected to Mozilla Firefox 160.0 (x64 Windows) via Marionette (Declared Floor: Firefox 115.0+).
 
 --- STEP 1: Unpacked Extension Installation & Toolbar Setup ---
 [PASS] Temporary unpacked extension installed successfully (Addon ID: spatial-browser-history@term-project.local).
-[PASS] Toolbar action button pinned to nav-bar (Element ID: c568f3c7-854e-43fb-bc44-7c79c67cdb17).
+[PASS] Toolbar action button pinned to nav-bar (Element ID: 85a14067-09fc-4b42-9b07-c05597a61431).
 
 --- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---
 [PASS] Browser Action 1 (WebDriver:ElementClick): totalTabs=2 (was 1), selected='moz-extension://d14e130f-9ddc-4a9b-8f3e-spatial000001/index.html'
@@ -24,45 +24,45 @@ Declared Manifest Minimum Floor: Firefox 115.0+
   [3f] Updating location.hash to #section1...
   [3g] History API route update (pushState to /target/spa-route)...
   [3h] Navigating to /opener and opening /child tab...
-  [3h] Child tab confirmed at http://127.0.0.1:52330/child. Closing child tab...
+  [3h] Child tab confirmed at http://127.0.0.1:63924/child. Closing child tab...
   [3i] Navigating via unknown/closed opener from untracked about:blank...
-  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:52330/unknown-parent. Closing child tab...
+  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:63924/unknown-parent. Closing child tab...
 
 [VISIT COUNT AUDIT - PRE-REOPEN]
   Stored visits in local storage: 7
-    - [node_1794569346044_9ccybl] url=http://127.0.0.1:52330/page1, parent=None, children=['node_1794569347125_wq4ugf'], checkpoint=True, title='Page One'
-    - [node_1794569347125_wq4ugf] url=http://127.0.0.1:52330/page2, parent=node_1794569346044_9ccybl, children=['node_1794569348151_21qpnt'], checkpoint=False, title='Page Two'
-    - [node_1794569348151_21qpnt] url=http://127.0.0.1:52330/target#section1, parent=node_1794569347125_wq4ugf, children=['node_1794569351191_ffupg9'], checkpoint=False, title='Updated Target Title'
-    - [node_1794569351191_ffupg9] url=http://127.0.0.1:52330/target/spa-route, parent=node_1794569348151_21qpnt, children=['node_1794569352216_9iw7pn'], checkpoint=False, title='Updated Target Title'
-    - [node_1794569352216_9iw7pn] url=http://127.0.0.1:52330/opener, parent=node_1794569351191_ffupg9, children=['node_1794569353329_kchzu0'], checkpoint=False, title='Opener Page'
-    - [node_1794569353329_kchzu0] url=http://127.0.0.1:52330/child, parent=node_1794569352216_9iw7pn, children=[], checkpoint=False, title='Child Page'
-    - [node_1794569357147_tj9tsd] url=http://127.0.0.1:52330/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
+    - [node_1794573488960_085dmj] url=http://127.0.0.1:63924/page1, parent=None, children=['node_1794573490639_dzd1oj'], checkpoint=True, title='Page One'
+    - [node_1794573490639_dzd1oj] url=http://127.0.0.1:63924/page2, parent=node_1794573488960_085dmj, children=['node_1794573491785_14j0zz'], checkpoint=False, title='Page Two'
+    - [node_1794573491785_14j0zz] url=http://127.0.0.1:63924/target#section1, parent=node_1794573490639_dzd1oj, children=['node_1794573494922_27w77z'], checkpoint=False, title='Updated Target Title'
+    - [node_1794573494922_27w77z] url=http://127.0.0.1:63924/target/spa-route, parent=node_1794573491785_14j0zz, children=['node_1794573496020_d9vxh0'], checkpoint=False, title='Updated Target Title'
+    - [node_1794573496020_d9vxh0] url=http://127.0.0.1:63924/opener, parent=node_1794573494922_27w77z, children=['node_1794573497246_d9cguo'], checkpoint=False, title='Opener Page'
+    - [node_1794573497246_d9cguo] url=http://127.0.0.1:63924/child, parent=node_1794573496020_d9vxh0, children=[], checkpoint=False, title='Child Page'
+    - [node_1794573501450_l47dto] url=http://127.0.0.1:63924/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
 [PASS] Verified Page 1: Root checkpoint with parentNodeId: null.
 [PASS] Verified same-tab navigation: Page 2 parent is Page 1, Page 1 childNodeIds includes Page 2.
 [PASS] Verified redirect destination: /target parent is Page 2.
 [PASS] Verified reload deduplication: Exactly 1 node stored for /target despite reload.
 [PASS] Verified dynamic title update: node title updated in place to 'Updated Target Title'.
-[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:52330/target#section1' without creating extra visit.
+[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:63924/target#section1' without creating extra visit.
 [PASS] Verified SPA route (pushState): /target/spa-route parent is /target.
-[PASS] Verified opener relationship: /child parent is /opener (node_1794569352216_9iw7pn), opener children include child.
+[PASS] Verified opener relationship: /child parent is /opener (node_1794573496020_d9vxh0), opener children include child.
 [PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).
   Overview state before reopen: {'overviewHidden': False, 'detailHidden': True, 'zoomHidden': True, 'cardCount': 2, 'badge': '2 Research Trees · 7 Visits'}
-  Opened Detail View for tree_node_1794569346044_9ccybl: rendered SVG nodes=6
+  Opened Detail View for tree_node_1794573488960_085dmj: rendered SVG nodes=6
 
 --- STEP 4: Select Closed Child Node via Browser Input & Explicitly Audit Reopened Visit Count ---
   Child node position after fit view: (1151.2416381835938, 501.20001220703125)
-[PASS] Selected closed child node via browser pointer click: title='Child Page', url='http://127.0.0.1:52330/child'
-[PASS] Reopened saved URL in new tab: http://127.0.0.1:52330/child
+[PASS] Selected closed child node via browser pointer click: title='Child Page', url='http://127.0.0.1:63924/child'
+[PASS] Reopened saved URL in new tab: http://127.0.0.1:63924/child
 
 [VISIT COUNT AUDIT - POST-REOPEN]
   Stored visits in local storage: 8 (initial: 7, +1 from reopened tab)
-  New visit recorded: [node_1794569362069_uhf3dl] url=http://127.0.0.1:52330/child, parent=None
+  New visit recorded: [node_1794573507065_pporyg] url=http://127.0.0.1:63924/child, parent=None
   Overview after reopen: 3 tree cards (3 Research Trees · 8 Visits)
 [PASS] Explicit visit-count change & strict tree isolation proven: 7 visits (2 trees) -> 8 visits (3 trees), Detail View stays scoped to 6 nodes.
 
 --- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---
   [Overview Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...
-  Base active visit count inside tree_node_1794569346044_9ccybl: 6
+  Base active visit count inside tree_node_1794573488960_085dmj: 6
   [Detail Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...
   [Detail Search 'target'] Input: 'target', Badge: '2 of 6 matching (+2 context)', matches: 2, context ancestors: 2
   [Clear Search] Input value: '', Restored badge: '6 nodes', node count: 6
@@ -93,9 +93,9 @@ Declared Manifest Minimum Floor: Firefox 115.0+
 
 --- STEP 6.5: Task 11 Core Scenarios: Sibling Branching & Download Provenance ---
   [6.5a] Exercising Sibling Branching: /wiki -> /source-a -> Back -> /source-b...
-[PASS] Sibling Branching Proven: Source A (node_1794569381000_97tky7) and Source B (node_1794569386968_9382lj) are siblings under Wikipedia (node_1794569379968_vk0621) in tree tree_node_1794569379968_vk0621.
+[PASS] Sibling Branching Proven: Source A (node_1794573527226_knkfew) and Source B (node_1794573530061_pb1eit) are siblings under Wikipedia (node_1794573526051_265098) in tree tree_node_1794573526051_265098.
   [6.5b] Exercising Distinct-Host Download Provenance from http://localhost/download-portal to http://127.0.0.1 CDN...
-[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794569388030_wr2kt1 (originDomain: localhost), raw URL/CDN omitted.
+[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794573531328_gy8jxy (originDomain: localhost), raw URL/CDN omitted.
   [6.5c] Exercising Unattributed Download (no referrer)...
 [PASS] Unattributed Download Proven: dataset.zip recorded with parentNodeId: null, originDomain: 'Source unavailable'.
   [6.5d] Exercising Ambiguous Referrer Download (|M|=2 matches)...
@@ -108,37 +108,37 @@ Declared Manifest Minimum Floor: Firefox 115.0+
 --- STEP 6.5f: Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots ---
   [Firefox Responsive Detail Desktop] {'vw': 1280, 'vh': 800, 'scrollWidth': 1280, 'clipped': [], 'headerSearch': {'left': 536, 'top': 10, 'width': 340, 'height': 31}, 'timeFilter': {'left': 888, 'top': 10, 'width': 165, 'height': 31}, 'clearBtn': {'left': 1181, 'top': 13, 'width': 79, 'height': 26}, 'details': {'backBtn': {'left': 20, 'top': 12, 'width': 133, 'height': 26}, 'zoomControls': {'left': 1065, 'top': 11, 'width': 103, 'height': 30}, 'mapContainer': {'left': 0, 'top': 52, 'width': 1280, 'height': 748}, 'detailsPanelVisible': True, 'detailsPanel': {'left': 920, 'top': 52, 'width': 360, 'height': 748}}}
   [Firefox Responsive Detail Narrow] {'vw': 500, 'vh': 800, 'scrollWidth': 500, 'clipped': [], 'headerSearch': {'left': 14, 'top': 46, 'width': 299, 'height': 31}, 'timeFilter': {'left': 321, 'top': 46, 'width': 165, 'height': 31}, 'clearBtn': {'left': 125, 'top': 88, 'width': 79, 'height': 26}, 'details': {'backBtn': {'left': 14, 'top': 10, 'width': 133, 'height': 26}, 'zoomControls': {'left': 14, 'top': 86, 'width': 103, 'height': 30}, 'mapContainer': {'left': 0, 'top': 126, 'width': 500, 'height': 674}, 'detailsPanelVisible': True, 'detailsPanel': {'left': 0, 'top': 126, 'width': 500, 'height': 674}}}
-  [Firefox Detail Map Legibility 500x800] fitScale=1.05, effectiveTitleFont=13.7px, renderedTitleHeight=19.2px
-  [Firefox Responsive Detail Map-Only 420x800] {'vw': 500, 'vh': 800, 'scrollWidth': 500, 'clipped': [], 'headerSearch': {'left': 14, 'top': 46, 'width': 299, 'height': 31}, 'timeFilter': {'left': 321, 'top': 46, 'width': 165, 'height': 31}, 'clearBtn': {'left': 125, 'top': 88, 'width': 79, 'height': 26}, 'details': {'backBtn': {'left': 14, 'top': 10, 'width': 133, 'height': 26}, 'zoomControls': {'left': 14, 'top': 86, 'width': 103, 'height': 30}, 'mapContainer': {'left': 0, 'top': 126, 'width': 500, 'height': 674}, 'detailsPanelVisible': False, 'renderedTitleHeight': 19.2, 'effectiveTitleFontSize': 13.7, 'fitScale': 1.05}}
-  [Firefox Narrow Detail Map Navigability] {'initialTransform': 'translate(71.5, 118.39998779296874) scale(1.05)', 'zoomedTransform': 'translate(35.80000000000001, 74.71998779296877) scale(1.26)', 'fitTransform': 'translate(71.5, 118.39998779296874) scale(1.05)', 'zoomedDifferent': True, 'allReadable': True, 'renderedHeights': [19.2, 19.2, 19.2, 19.2, 19.2, 19.2]}
+  [Firefox Detail Map Legibility 500x800] fitScale=1.05, effectiveTitleFont=13.7px, renderedTitleHeight=20.4px
+  [Firefox Responsive Detail Map-Only 420x800] {'vw': 500, 'vh': 800, 'scrollWidth': 500, 'clipped': [], 'headerSearch': {'left': 14, 'top': 46, 'width': 299, 'height': 31}, 'timeFilter': {'left': 321, 'top': 46, 'width': 165, 'height': 31}, 'clearBtn': {'left': 125, 'top': 88, 'width': 79, 'height': 26}, 'details': {'backBtn': {'left': 14, 'top': 10, 'width': 133, 'height': 26}, 'zoomControls': {'left': 14, 'top': 86, 'width': 103, 'height': 30}, 'mapContainer': {'left': 0, 'top': 126, 'width': 500, 'height': 674}, 'detailsPanelVisible': False, 'renderedTitleHeight': 20.4, 'effectiveTitleFontSize': 13.7, 'fitScale': 1.05}}
+  [Firefox Narrow Detail Map Navigability] {'initialTransform': 'translate(71.5, 118.39998779296874) scale(1.05)', 'zoomedTransform': 'translate(35.80000000000001, 74.71998779296877) scale(1.26)', 'fitTransform': 'translate(71.5, 118.39998779296874) scale(1.05)', 'zoomedDifferent': True, 'allReadable': True, 'renderedHeights': [20.4, 20.4, 20.4, 20.4, 20.4, 20.4]}
   [Firefox Responsive Overview Desktop] {'vw': 1280, 'vh': 800, 'scrollWidth': 1280, 'clipped': [], 'headerSearch': {'left': 652, 'top': 10, 'width': 340, 'height': 31}, 'timeFilter': {'left': 1004, 'top': 10, 'width': 165, 'height': 31}, 'clearBtn': {'left': 1181, 'top': 13, 'width': 79, 'height': 26}, 'details': {'cardsCount': 2, 'firstCard': {'left': 50, 'top': 110, 'width': 383, 'height': 230}, 'firstOpenBtn': {'left': 69, 'top': 298, 'width': 345, 'height': 26}}}
   [Firefox Responsive Overview Narrow] {'vw': 500, 'vh': 800, 'scrollWidth': 500, 'clipped': [], 'headerSearch': {'left': 14, 'top': 45, 'width': 212, 'height': 31}, 'timeFilter': {'left': 234, 'top': 45, 'width': 165, 'height': 31}, 'clearBtn': {'left': 407, 'top': 48, 'width': 79, 'height': 26}, 'details': {'cardsCount': 2, 'firstCard': {'left': 14, 'top': 138, 'width': 472, 'height': 229}, 'firstOpenBtn': {'left': 33, 'top': 324, 'width': 434, 'height': 26}}}
 [PASS] Verified Task 12 UI Explorer across live Firefox storage, sibling geometry, attributed downloads, unattributed shelf, and responsive desktop/narrow viewports.
 
 --- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---
   [SAVED] Pre-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\firefox-errors-pre-restart.json
-  Evaluated 6 Gecko console records prior to restart.
+  Evaluated 14 Gecko console records prior to restart.
   Extension Errors: 0, Warnings: 0, Info: 0
 [PASS] Pre-restart error audit passed with 0 errors and 0 warnings.
 
 --- STEP 8: Browser Process Restart & Multi-Node Session Persistence ---
   [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...
   Pre-restart node count stored in SQLite: 12
-  Pre-restart tab 8 historyStack: ['node_1794569404891_fcf1x5', 'node_1794569405955_p88n7q', 'node_1794569406991_fnkdl1'] (length 3)
+  Pre-restart tab 8 historyStack: ['node_1794573552539_pemv3f', 'node_1794573553851_3so6tr', 'node_1794573555005_5qgkdm'] (length 3)
 [PASS] Pre-restart multi-node baseline verified: tab 8 has 3-node history stack.
   [8b] Terminating Firefox process for full browser restart...
   Firefox process terminated cleanly.
   Relaunching Firefox with persistent profile and live tab...
   Reconnected to restarted Mozilla Firefox 160.0.
   Post-restart stored node count in SQLite: 12 (was 12)
-  Post-restart live tab state: stack=['node_1794569406991_fnkdl1'], index=0, baselineEstablished=True
+  Post-restart live tab state: stack=['node_1794573555005_5qgkdm'], index=0, baselineEstablished=True
 [PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.
-  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794569404891_fcf1x5: 3 nodes (3 nodes)
+  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794573552539_pemv3f: 3 nodes (3 nodes)
 [PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.
 
 --- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---
   [SAVED] Post-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\firefox-errors-post-restart.json
-  Evaluated 24 Gecko console records in restarted session.
+  Evaluated 25 Gecko console records in restarted session.
   Post-Restart Extension Errors: 0, Warnings: 0, Info: 0
 [PASS] Post-restart error audit passed with 0 errors and 0 warnings.
 
@@ -155,7 +155,7 @@ Declared Manifest Minimum Floor: Firefox 115.0+
     attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.
   - Real WebDriver Keyboard Navigation & Focus Trapping: Pan (ArrowRight/ArrowDown), zoom, fit, node Enter & Space selection,
     Overview card Enter activation & Back Enter focus return, and Clear Modal Tab / Shift+Tab wrap.
-  - Responsive Viewport Checks: Desktop (1280x800) and Narrow (420px requested, ~450px browser minimum innerWidth <=900px breakpoint) screenshots verified.
+  - Responsive Viewport Checks: Desktop (1280x800) and Narrow (420x800 requested, 500x800 measured inner viewport) screenshots verified.
   - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.
   - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.
   - Task 11 Download Provenance: Exact parity; completed download from 127.0.0.1 CDN host attributes strictly to source page hostname (localhost).

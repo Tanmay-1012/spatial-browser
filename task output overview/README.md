@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved, Task 11 is accepted, and Task 12 is accepted in Section 12 of its output. Task 13 is the current assignment.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved; Tasks 11, 12, and 13 are accepted. Task 14 is the current assignment.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -18,6 +18,7 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`task-10.md`](tasks/task-10.md) · [`task-10-output.md`](task-10-output.md) | Task 10: Research Tree Explorer & Branching Proposal | Milestone 10 (Research Tree Explorer) | Design Approved (v15) |
 | [task-11.md](tasks/task-11.md) · [task-11-output.md](task-11-output.md) | Task 11: V2 Storage, Branch Tracking, Session Safety & Downloads | Milestone 11 (V2 Core Implementation) | Completed & Accepted (Section 57) |
 | [`task-12.md`](tasks/task-12.md) · [`task-12-output.md`](task-12-output.md) | Task 12: Research Tree Explorer Overview & Detail UI | Milestone 12 (Research Tree Explorer UI) | Accepted (Section 12) |
-| [`tasks/task-13.md`](tasks/task-13.md) · [`task-13-output.md`](task-13-output.md) | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Submitted for Lead Review |
+| [`tasks/task-13.md`](tasks/task-13.md) · [`task-13-output.md`](task-13-output.md) | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Accepted (Section 7) |
+| [`tasks/task-14.md`](tasks/task-14.md) · `task-14-output.md` | Task 14: Minimum-Supported Browser Compatibility Audit | Milestone 14 (Compatibility Floor) | Assigned |
 
 

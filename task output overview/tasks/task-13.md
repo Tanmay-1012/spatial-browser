@@ -1,6 +1,6 @@
 # Task 13 — Release Candidate Readiness & Evidence Closeout
 
-**Status:** Submitted for Lead Review — Verification and Quality Audit Complete (see [Task 13 output](../task-13-output.md)). Do not publish or start another task until lead acceptance.  
+**Status:** Accepted — Task 13 complete per Section 7 of [Task 13 output](../task-13-output.md#7-lead-review--task-13-accepted-task-14-assigned-2026-11-13).
 **Milestone:** 13 (Quality & Handoff)  
 **Prerequisite:** Task 12 accepted in Section 12 of [Task 12 output](../task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
 
@@ -35,7 +35,7 @@ Preserve the lead-verified Task 12 corrections, then perform a final local quali
 - No new user-facing features or schema changes.
 - Do not change permissions, manifest behavior, minimum browser versions, or download privacy rules.
 - Do not tag, publish, upload, or distribute a release. No release version is assigned by this task.
-- Do not begin Task 14. Wait for lead review of Task 13.
+- Task 14 was held until lead review of this task; it is now assigned in [task-14.md](task-14.md).
 
 ## Deliverables
 

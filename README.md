@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Task 11 is accepted (Section 57) and Task 12 is accepted (Section 12), after 61 automated checks and fresh Chrome `157.0.8103.78` / Firefox `160.0` E2E runs (`12 -> 12` restart persistence, zero errors/warnings). Task 13 Release Candidate Readiness & Evidence Closeout is assigned in [`tasks/task-13.md`](task%20output%20overview/tasks/task-13.md).
+> **Active Branch Status (main):** Task 11 is accepted (Section 57), Task 12 is accepted (Section 12), and Task 13 release-candidate readiness is accepted (Section 7) after package/checksum audits and fresh Chrome `157.0.8103.78` / Firefox `160.0` E2E runs. Task 14 minimum-supported-browser compatibility audit is assigned in [`tasks/task-14.md`](task%20output%20overview/tasks/task-14.md).
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -13,7 +13,8 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
 - **Working Towards `v2.0` (Active Development on `main`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
   - **Accepted Narrow-Map Legibility (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [Task 12 acceptance](task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
-  - **Task 13 (Assigned):** Final release-candidate readiness audit and evidence closeout. This task does not authorize tagging, publishing, or distributing a release.
+  - **Accepted Milestone (Milestone 13 / Task 13):** Release-candidate package, checksum, privacy-boundary, and current-browser runtime audit accepted in Section 7 of the [Task 13 report](task%20output%20overview/task-13-output.md).
+  - **Task 14 (Assigned):** Verify runtime compatibility at the declared Chrome 109 and Firefox 115 support floors using isolated profiles.
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**

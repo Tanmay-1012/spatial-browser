@@ -2008,7 +2008,7 @@ def run_tests():
         print("    attributed download provenance ('Downloaded from localhost', hidden reopen/URL), and Back-to-Overview focus/filter restoration.")
         print("  - Real WebDriver Keyboard Navigation & Focus Trapping: Pan (ArrowRight/ArrowDown), zoom, fit, node Enter & Space selection,")
         print("    Overview card Enter activation & Back Enter focus return, and Clear Modal Tab / Shift+Tab wrap.")
-        print("  - Responsive Viewport Checks: Desktop (1280x800) and Narrow (420px requested, ~450px browser minimum innerWidth <=900px breakpoint) screenshots verified.")
+        print(f"  - Responsive Viewport Checks: Desktop (1280x800) and Narrow (420x800 requested, {ff_detail_narrow_map['vw']}x{ff_detail_narrow_map['vh']} measured inner viewport) screenshots verified.")
         print("  - Storage Clearing: Exact parity; cancel preserves graph, confirm resets storage and map to 0 visits.")
         print("  - Task 11 Sibling Branching: Exact parity; Wikipedia -> Source A -> Back -> Source B produces A and B as siblings under Wikipedia.")
         print("  - Task 11 Download Provenance: Exact parity; completed download from 127.0.0.1 CDN host attributes strictly to source page hostname (localhost).")
