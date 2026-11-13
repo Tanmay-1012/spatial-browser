@@ -403,26 +403,32 @@ def filter_extension_errors(raw_errors, addon_id):
     return filtered
 
 def terminate_chrome_tree(process):
-    if not process:
+    """Stop the isolated Chrome process and all its child renderer/utility processes."""
+    if not process or process.poll() is not None:
         return
     pid = process.pid
-    try:
-        if process.poll() is None:
-            process.kill()
-            process.wait(timeout=5)
-    except Exception:
-        pass
     try:
         if os.name == "nt":
             subprocess.run(
                 ["taskkill", "/F", "/T", "/PID", str(pid)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                check=False
+                check=False,
+                timeout=10,
             )
+        elif process.poll() is None:
+            process.terminate()
     except Exception:
         pass
-    time.sleep(0.4)
+    try:
+        process.wait(timeout=5)
+    except Exception:
+        try:
+            process.kill()
+            process.wait(timeout=5)
+        except Exception:
+            pass
+    time.sleep(0.5)
 
 def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
     sw_target = None
@@ -674,14 +680,14 @@ def run_tests():
         
         # Connect to browser WebSocket
         ws_url = None
-        for _ in range(25):
+        for _ in range(60):
             try:
                 ver_req = urllib.request.urlopen(f"http://127.0.0.1:{cdp_port}/json/version")
                 ver_data = json.loads(ver_req.read().decode('utf-8'))
                 ws_url = ver_data['webSocketDebuggerUrl']
                 break
             except Exception:
-                time.sleep(0.3)
+                time.sleep(0.5)
         assert ws_url is not None, "Could not obtain Chrome browser WebSocket debugger URL"
 
         cdp = CDPClient(ws_url)
@@ -707,6 +713,8 @@ def run_tests():
         cdp.close()
         cdp = None
         terminate_chrome_tree(proc)
+        proc = None
+        time.sleep(1.0)
 
         preferences_path = os.path.join(default_profile_dir, "Preferences")
         with open(preferences_path, "r", encoding="utf-8") as f:
@@ -718,14 +726,14 @@ def run_tests():
 
         proc = subprocess.Popen(chrome_cmd)
         ws_url = None
-        for _ in range(25):
+        for _ in range(60):
             try:
                 ver_req = urllib.request.urlopen(f"http://127.0.0.1:{cdp_port}/json/version")
                 ver_data = json.loads(ver_req.read().decode("utf-8"))
                 ws_url = ver_data["webSocketDebuggerUrl"]
                 break
             except Exception:
-                time.sleep(0.3)
+                time.sleep(0.5)
         assert ws_url is not None, "Could not reconnect to Chrome after pinning the extension action"
         cdp = CDPClient(ws_url)
         ver_info = cdp.send_cmd("Browser.getVersion")
@@ -1839,6 +1847,7 @@ def run_tests():
         cdp = None
         terminate_chrome_tree(proc)
         proc = None
+        time.sleep(1.0)
         print("  Chrome process terminated cleanly.")
 
         # Relaunch Chrome with the persistent profile and restored live tab
@@ -1847,14 +1856,14 @@ def run_tests():
         proc2 = subprocess.Popen(chrome_cmd_restart)
         
         ws_url2 = None
-        for _ in range(30):
+        for _ in range(60):
             try:
                 ver_req = urllib.request.urlopen(f"http://127.0.0.1:{cdp_port}/json/version")
                 ver_data = json.loads(ver_req.read().decode('utf-8'))
                 ws_url2 = ver_data['webSocketDebuggerUrl']
                 break
             except Exception:
-                time.sleep(0.3)
+                time.sleep(0.5)
         assert ws_url2 is not None, "Could not reconnect to restarted Chrome"
 
         cdp2 = CDPClient(ws_url2)

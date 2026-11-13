@@ -18,6 +18,6 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`task-10.md`](tasks/task-10.md) · [`task-10-output.md`](task-10-output.md) | Task 10: Research Tree Explorer & Branching Proposal | Milestone 10 (Research Tree Explorer) | Design Approved (v15) |
 | [task-11.md](tasks/task-11.md) · [task-11-output.md](task-11-output.md) | Task 11: V2 Storage, Branch Tracking, Session Safety & Downloads | Milestone 11 (V2 Core Implementation) | Completed & Accepted (Section 57) |
 | [`task-12.md`](tasks/task-12.md) · [`task-12-output.md`](task-12-output.md) | Task 12: Research Tree Explorer Overview & Detail UI | Milestone 12 (Research Tree Explorer UI) | Accepted (Section 12) |
-| [`tasks/task-13.md`](tasks/task-13.md) · `task-13-output.md` | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Assigned |
+| [`tasks/task-13.md`](tasks/task-13.md) · [`task-13-output.md`](task-13-output.md) | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Submitted for Lead Review |
 
 
