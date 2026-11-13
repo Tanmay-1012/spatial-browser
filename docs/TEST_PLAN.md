@@ -4,7 +4,7 @@ This record separates automated source-level checks from manual browser behavior
 
 ## Task 11 & Task 12 status (2026-11-13)
 
-Task 11 core backend implementation, unit tests, and distinct-host browser provenance verification were accepted by lead review on 2026-11-12 (Section 57). **Task 12** narrow detail-map legibility & navigability have been resolved via responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`) and verified across 61 automated tests and fresh Chrome/Firefox isolated-profile E2E runs; submitted for lead review in Section 11 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md#11-developer-follow-up--narrow-detail-map-legibility--navigability-verification-2026-11-13).
+Task 11 core backend implementation, unit tests, and distinct-host browser provenance verification were accepted by lead review on 2026-11-12 (Section 57). **Task 12 is accepted** per Section 12 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13). Its responsive reflow is verified across 61 automated tests and fresh Chrome/Firefox isolated-profile E2E runs. Task 13 release-candidate readiness and evidence closeout is assigned in [`task output overview/tasks/task-13.md`](../task%20output%20overview/tasks/task-13.md).
 ## Test record
 
 - **Declared support floors:** Chrome 109+, Firefox 115.0+ (selected project targets; Firefox ESR 115 baseline).
@@ -122,7 +122,7 @@ Full verification run output preserved in [`docs/test-results/chrome-e2e.log`](t
 - **Firefox (`160.0` runtime vs `115.0+` floor):** The latest isolated-profile E2E run exited `0` after all scenarios, including narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 20.4px`), zoom/fit navigability, download drawer reopen, `12 -> 12` SQLite restart persistence, clean process-tree cleanup (`terminate_firefox_tree`), and zero errors/warnings.
 - **Chrome (`157.0.8103.78` runtime vs `109+` floor):** The isolated-profile E2E run exited `0`; all scenarios passed with narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 17.6px`), zoom/fit navigability, `12 -> 12` restart persistence, real CDP keyboard input, and zero errors/warnings.
 - **Narrow Map Usability Verified:** The responsive reflow layout (`layoutMode: 'reflow'`) maintains full `220x44px` node dimensions and vertical sibling fanning under Fit view, providing crisp, fully readable titles and domains at normal viewing size without initial zoom.
-- **Task 11 & Task 12 Status:** Task 11 accepted per Section 57 of `task output overview/task-11-output.md`. Task 12 submitted for lead review in Section 11 of `task output overview/task-12-output.md`; Task 13 has not been started.
+- **Task 11–13 Status:** Task 11 accepted per Section 57 of `task output overview/task-11-output.md`; Task 12 accepted per Section 12 of `task output overview/task-12-output.md`; Task 13 is assigned in `task output overview/tasks/task-13.md`.
 
 
 

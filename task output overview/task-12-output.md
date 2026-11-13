@@ -1,6 +1,6 @@
 # Task 12 Output — Research Tree Explorer Overview & Detail UI
 
-**Status:** Lead Revision Required — Narrow Detail Map Readability (Section 10; Task 12 remains open)
+**Status:** Accepted — Task 12 complete (Section 12; earlier review decisions remain preserved below)
 **Milestone:** 12 (Research Tree Explorer Overview & Detail UI — Task 10 v15 Sections 51–52)  
 **Browser Runtime Targets:** Google Chrome `157.0.8103.78` (x64 Windows; declared min `109+`) & Mozilla Firefox `160.0` (x64 Windows; `strict_min_version: 115.0`)  
 **Execution Date:** 2026-11-12  
@@ -364,4 +364,26 @@ Drawer-closed narrow map screenshots were captured and visually verified in both
 With responsive reflow layout implemented, label legibility verified ($\text{fitScale} = 1.05$, $\text{effectiveTitleFont} = 13.7\text{px}$, $\text{renderedHeight} \ge 10\text{px}$), 61 automated tests passing, both full isolated-profile browser suites passing with $12 \to 12$ restart persistence, zero errors/warnings, and clean process teardown, Task 12 is submitted for final lead acceptance.
 
 **Task 13 remains strictly unstarted.**
+
+## 12. Lead Acceptance — Task 12 Complete; Task 13 Assigned (2026-11-13)
+
+I independently reviewed the Section 11 report, the final Chrome and Firefox logs, the current narrow-map screenshots, the test plan, and the submitted Task 12 assignment. The responsive reflow addresses the narrow-map readability issue: the full-size node cards remain legible, sibling branches are visibly grouped under their parent, and the selected tree remains navigable at narrow widths.
+
+### Independent verification
+
+- `npm.cmd run build` completed successfully for the Chrome and Firefox packages.
+- `npm.cmd test` passed **61 tests, 0 failed**: 12 build/manifest, 35 tracker/storage, and 14 UI checks.
+- Fresh isolated-profile Chrome `157.0.8103.78` E2E completed successfully, including toolbar interaction, keyboard focus restoration, filtering, downloads, narrow-map readability and navigation, and `12 -> 12` restart persistence. The latest pre- and post-restart audits report zero errors and warnings.
+- Fresh isolated-profile Firefox `160.0` E2E completed successfully, including the same core scenarios and `12 -> 12` restart persistence. The actual measured narrow viewport was `500x800` because of the Windows window-size floor; it correctly enters the reflow layout. The latest audits report zero errors and warnings.
+- I inspected the latest Chrome and Firefox narrow-map screenshots. Titles, domains, download provenance, and sibling relationships are readable without an initial zoom adjustment.
+
+### Lead-review corrections retained for integration
+
+The independent Chrome run exposed a timing issue when returning from a tree to the overview: focus restoration could occur before the newly rendered overview button was available. I corrected `src/shared/app.js` to restore focus after the synchronous render, with a safe fallback, and reran the complete Chrome and Firefox suites successfully. I also corrected the Chrome E2E harness to allow screenshot capture more time and to read the combined detail-filter state atomically, avoiding a race between separate observations. Python syntax validation passed.
+
+These review corrections and the regenerated latest browser evidence are currently present as **uncommitted working-tree changes**. Task 13 must preserve and include them; do not revert them or replace them with stale copies. The changed files are visible in `git status` and include `src/shared/app.js`, both E2E scripts, and the latest browser logs, audits, and screenshots.
+
+### Decision
+
+**Task 12 is accepted and complete.** The earlier “not accepted” and “submitted” statements in Sections 10–11 are historical review checkpoints; this Section 12 decision supersedes them. Task 13 is assigned in [`tasks/task-13.md`](tasks/task-13.md). No external release or publication is authorized by this acceptance.
 

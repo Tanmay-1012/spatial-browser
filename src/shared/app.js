@@ -632,20 +632,17 @@
     needsInitialFit = true;
     applyFiltersAndRender();
 
-    requestAnimationFrame(() => {
-      if (elOverviewView && !elOverviewView.hidden) {
-        elOverviewView.scrollTop = overviewFilters.scrollTop || 0;
-        if (overviewFilters.focusedTreeId) {
-          const cardBtn = Array.from(elTreesGrid.querySelectorAll('.tree-open-btn'))
-            .find((btn) => btn.getAttribute('data-tree-id') === overviewFilters.focusedTreeId);
-          if (cardBtn) {
-            cardBtn.focus({ preventScroll: true });
-            return;
-          }
-        }
-        elOverviewView.focus({ preventScroll: true });
+    if (!elOverviewView || elOverviewView.hidden) return;
+    elOverviewView.scrollTop = overviewFilters.scrollTop || 0;
+    if (overviewFilters.focusedTreeId) {
+      const cardBtn = Array.from(elTreesGrid.querySelectorAll('.tree-open-btn'))
+        .find((btn) => btn.getAttribute('data-tree-id') === overviewFilters.focusedTreeId);
+      if (cardBtn) {
+        cardBtn.focus({ preventScroll: true });
+        return;
       }
-    });
+    }
+    elOverviewView.focus({ preventScroll: true });
   }
 
   function renderDetailView() {

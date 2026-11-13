@@ -350,7 +350,7 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
                 const titleBox = titleNode ? titleNode.getBoundingClientRect() : null;
                 const vp = document.getElementById('map-viewport');
                 const tform = vp ? (vp.getAttribute('transform') || '') : '';
-                const m = tform.match(/scale\(([\d.]+)\)/);
+                const m = tform.match(/scale\\(([\\d.]+)\\)/);
                 const scaleVal = m ? parseFloat(m[1]) : 1.0;
                 checks.renderedTitleHeight = titleBox ? Math.round(titleBox.height * 10) / 10 : 0;
                 checks.effectiveTitleFontSize = Math.round(13 * scaleVal * 10) / 10;
@@ -381,7 +381,7 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
         assert eff_title >= 11.0, f"Effective title font size must be >=11px, got {eff_title}px"
         assert h_rendered >= 10.0, f"Rendered title height must be >=10px, got {h_rendered}px"
 
-    shot = cdp.send_cmd("Page.captureScreenshot", {"format": "png"}, session_id=session_id)
+    shot = cdp.send_cmd("Page.captureScreenshot", {"format": "png"}, session_id=session_id, timeout=45)
     os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
     with open(screenshot_path, "wb") as f:
         f.write(base64.b64decode(shot["data"]))
@@ -1166,14 +1166,23 @@ def run_tests():
         search_badge = ""
         search_matches = 0
         search_context = 0
+        context_banner_hidden = True
         for _ in range(12):
             time.sleep(0.25)
-            search_badge = cdp.evaluate(map_sid, "document.getElementById('detail-count-badge').textContent")
-            search_matches = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node.is-search-match').length")
-            search_context = cdp.evaluate(map_sid, "document.querySelectorAll('.map-node.is-context-ancestor').length")
-            if search_matches == 2:
+            search_state = cdp.evaluate(map_sid, """
+            (() => ({
+                badge: document.getElementById('detail-count-badge').textContent,
+                matches: document.querySelectorAll('.map-node.is-search-match').length,
+                context: document.querySelectorAll('.map-node.is-context-ancestor').length,
+                bannerHidden: document.getElementById('detail-context-banner').hidden
+            }))()
+            """)
+            search_badge = search_state["badge"]
+            search_matches = search_state["matches"]
+            search_context = search_state["context"]
+            context_banner_hidden = search_state["bannerHidden"]
+            if "2 of 6 matching" in search_badge and search_matches == 2 and search_context == 2 and not context_banner_hidden:
                 break
-        context_banner_hidden = cdp.evaluate(map_sid, "document.getElementById('detail-context-banner').hidden")
         print(f"  [Detail Search 'target'] Badge: '{search_badge}', matches: {search_matches}, context ancestors: {search_context}")
         assert "2 of 6 matching" in search_badge, f"Detail badge must show '2 of 6 matching', got '{search_badge}'"
         assert search_matches == 2, f"Expected 2 matching nodes for 'target', got {search_matches}"

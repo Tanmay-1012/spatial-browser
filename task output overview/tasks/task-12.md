@@ -1,6 +1,6 @@
 # Task 12 — Research Tree Explorer Overview & Detail UI
 
-**Status:** Submitted for Lead Review — Narrow Detail Map Legibility & Navigability Verified (see Task 12 output, Section 11). Do not start another task until lead acceptance.
+**Status:** Accepted — Task 12 complete per Section 12 of [Task 12 output](../task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
 **Milestone:** 12 (Research Tree Explorer UI)  
 **Design authority:** Approved v15 proposal and acceptance matrix in Section 51 of [Task 10 output](../task-10-output.md); approval recorded in Section 52. Task 11 is accepted in Section 57 of [Task 11 output](../task-11-output.md).
 
@@ -98,4 +98,4 @@ Section 8 and Section 10 follow-up items have been fully addressed and verified 
 - **Readability & Navigability Regression Checks:** Added 2 new tests to `tests/test-ui.mjs` (total **61 passed, 0 failed**). Step 6.5f asserts `fitScale >= 0.85`, `effectiveTitleFontSize >= 11px`, `renderedTitleHeight >= 10px`, and zoom/fit navigability.
 - **Fresh Screenshots Inspected:** Captured drawer-closed map screenshots in Chrome (`420x800`) and Firefox (`500x800` measured inner width; `514x800` outer window constrained by Windows Win32 window manager). All 6 node titles and domains are fully readable at normal viewing size without initial zoom.
 - **Browser E2E Parity & Restart Persistence:** Chrome `157.0.8103.78` and Firefox `160.0` passed all E2E steps with `12 -> 12` node restart persistence, clean process cleanup (`terminate_firefox_tree`), and zero extension errors/warnings.
-- Task 12 is submitted for lead review. Task 13 remains strictly unstarted.
+- Task 12 was accepted per Section 12 of [Task 12 output](../task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13). The active assignment is Task 13 in [task-13.md](task-13.md).

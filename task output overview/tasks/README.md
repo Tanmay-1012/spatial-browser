@@ -4,9 +4,10 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 
 ## Current assignment
 
-- [Task 12 — Research Tree Explorer Overview & Detail UI](task-12.md) ([Report: `task-12-output.md`](../task-12-output.md))
+- [Task 12 — Research Tree Explorer Overview & Detail UI](task-12.md) ([Report: `task-12-output.md`](../task-12-output.md)) — Accepted (Section 12)
+- [Task 13 — Release Candidate Readiness & Evidence Closeout](task-13.md) ([Report: `task-13-output.md`](../task-13-output.md)) — Current assignment
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 narrow detail-map legibility & navigability are verified across 61 automated tests and fresh Chrome/Firefox isolated-profile E2E runs (Section 11); submitted for final lead acceptance. Keep Task 13 unstarted until lead acceptance.
+Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12 of its output. Task 13 is the current assignment; do not begin another task until lead review.
 
 ## Reporting workflow
 

@@ -379,7 +379,7 @@ def verify_responsive_and_capture_firefox(client, target_width, target_height, m
                 let titleBox = titleNode ? titleNode.getBoundingClientRect() : null;
                 let vp = document.getElementById('map-viewport');
                 let tform = vp ? (vp.getAttribute('transform') || '') : '';
-                let m = tform.match(/scale\(([\d.]+)\)/);
+                let m = tform.match(/scale\\(([\\d.]+)\\)/);
                 let scaleVal = m ? parseFloat(m[1]) : 1.0;
                 details.renderedTitleHeight = titleBox ? Math.round(titleBox.height * 10) / 10 : 0;
                 details.effectiveTitleFontSize = Math.round(13 * scaleVal * 10) / 10;

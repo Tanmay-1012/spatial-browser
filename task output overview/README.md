@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved and Task 11 is accepted. Task 12 narrow detail-map legibility & navigability are verified across 61 automated tests and fresh Chrome/Firefox isolated-profile E2E runs (Section 11); submitted for final lead acceptance. Task 13 has not started.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved, Task 11 is accepted, and Task 12 is accepted in Section 12 of its output. Task 13 is the current assignment.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -17,6 +17,7 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`task-9-output.md`](task-9-output.md) | Task 9: Final Release Handoff & Checksum Verification | Milestone 9 (Release v0.1.0 Handoff) | Completed & Delivered |
 | [`task-10.md`](tasks/task-10.md) · [`task-10-output.md`](task-10-output.md) | Task 10: Research Tree Explorer & Branching Proposal | Milestone 10 (Research Tree Explorer) | Design Approved (v15) |
 | [task-11.md](tasks/task-11.md) · [task-11-output.md](task-11-output.md) | Task 11: V2 Storage, Branch Tracking, Session Safety & Downloads | Milestone 11 (V2 Core Implementation) | Completed & Accepted (Section 57) |
-| [`task-12.md`](tasks/task-12.md) · [`task-12-output.md`](task-12-output.md) | Task 12: Research Tree Explorer Overview & Detail UI | Milestone 12 (Research Tree Explorer UI) | Submitted for Lead Review — Narrow Map Legibility Verified (Section 11) |
+| [`task-12.md`](tasks/task-12.md) · [`task-12-output.md`](task-12-output.md) | Task 12: Research Tree Explorer Overview & Detail UI | Milestone 12 (Research Tree Explorer UI) | Accepted (Section 12) |
+| [`tasks/task-13.md`](tasks/task-13.md) · `task-13-output.md` | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Assigned |
 
 
