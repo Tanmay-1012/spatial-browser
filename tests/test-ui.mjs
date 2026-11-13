@@ -381,6 +381,93 @@ test('Clear-history message uses the background storage queue and resets graph p
   assert.deepStrictEqual(Object.keys(state.tabState), []);
 });
 
+test('Narrow responsive reflow layout produces readable node bounding boxes and preserves sibling & download hierarchy', () => {
+  const now = 1730000600000;
+  const state = {
+    schemaVersion: 2,
+    nodes: {
+      wiki: { id: 'wiki', treeId: 'tree_wiki', nodeType: 'page', title: 'Wikipedia Portal', url: 'http://localhost/wiki', timestamp: now - 5000, parentNodeId: null, childNodeIds: ['srcA', 'srcB'] },
+      srcA: { id: 'srcA', treeId: 'tree_wiki', nodeType: 'page', title: 'Source A Document', url: 'http://localhost/source-a', timestamp: now - 4000, parentNodeId: 'wiki', childNodeIds: [] },
+      srcB: { id: 'srcB', treeId: 'tree_wiki', nodeType: 'page', title: 'Source B Document', url: 'http://localhost/source-b', timestamp: now - 3000, parentNodeId: 'wiki', childNodeIds: ['dlPortal'] },
+      dlPortal: { id: 'dlPortal', treeId: 'tree_wiki', nodeType: 'page', title: 'Download Portal', url: 'http://localhost/download-portal', timestamp: now - 2000, parentNodeId: 'srcB', childNodeIds: ['pdf', 'ambig'] },
+      pdf: { id: 'pdf', treeId: 'tree_wiki', nodeType: 'download', filename: 'research_paper.pdf', originDomain: 'localhost', timestamp: now - 1000, parentNodeId: 'dlPortal', childNodeIds: [], downloadId: 201 },
+      ambig: { id: 'ambig', treeId: 'tree_wiki', nodeType: 'page', title: 'Ambiguous Page', url: 'http://localhost/ambiguous-page', timestamp: now - 500, parentNodeId: 'dlPortal', childNodeIds: [] }
+    },
+    tabState: {}
+  };
+
+  const detail = uiLogic.buildTreeDetailView(state, 'tree_wiki', { now });
+  assert.strictEqual(detail.nodesMap.size, 6);
+
+  const reflow = uiLogic.computeGraphLayout(detail.nodesMap, { layoutMode: 'reflow' });
+  assert.strictEqual(reflow.layoutNodes.length, 6, 'Must layout all 6 nodes in reflow mode');
+  assert.strictEqual(reflow.layoutEdges.length, 5, 'Must maintain all 5 parent-child edges');
+
+  const byId = Object.fromEntries(reflow.layoutNodes.map((n) => [n.id, n]));
+  // Siblings have identical indent and distinct Y positions
+  assert.strictEqual(byId.srcA.x, byId.srcB.x, 'Source A and Source B siblings must have identical indentation');
+  assert(byId.srcA.x > byId.wiki.x, 'Source A and B must be indented relative to Wikipedia root');
+  assert(byId.srcA.y < byId.srcB.y, 'Source A and Source B must occupy distinct vertical rows');
+  assert.strictEqual(byId.pdf.x, byId.ambig.x, 'Download and sibling page must share indentation under Download Portal');
+  assert(byId.pdf.x > byId.dlPortal.x, 'Download node must be indented relative to Download Portal parent');
+  assert(byId.pdf.y < byId.ambig.y, 'Download and sibling must occupy distinct vertical rows');
+
+  // Verify bounding box and legible Fit scale at 420x800 container
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const n of reflow.layoutNodes) {
+    minX = Math.min(minX, n.x - 110);
+    maxX = Math.max(maxX, n.x + 110);
+    minY = Math.min(minY, n.y - 22);
+    maxY = Math.max(maxY, n.y + 22);
+  }
+  const graphW = maxX - minX + 48;
+  const graphH = maxY - minY + 48;
+  const containerW = 420;
+  const containerH = 640;
+  const scale = Math.min(Math.min(containerW / graphW, containerH / graphH), 1.05);
+
+  assert(scale >= 0.95, `Reflow scale at 420x800 must be >= 0.95 for full legibility, got ${scale}`);
+  const effectiveTitlePx = 13 * scale;
+  const effectiveSubPx = 10.5 * scale;
+  assert(effectiveTitlePx >= 12.0, `Effective title font size must be >= 12px, got ${effectiveTitlePx}px`);
+  assert(effectiveSubPx >= 9.8, `Effective sub font size must be >= 9.8px, got ${effectiveSubPx}px`);
+  assert(maxX <= containerW, `Max X (${maxX}) must not exceed narrow container width (420)`);
+});
+
+test('Large and deep trees in narrow reflow layout maintain bounded horizontal indents and valid navigation coordinates', () => {
+  const nodesMap = new Map();
+  // Build an 8-level deep tree with 14 nodes and branching
+  nodesMap.set('r0', { id: 'r0', treeId: 'tree_deep', timestamp: 100, parentNodeId: null, childNodeIds: ['c1_a', 'c1_b'] });
+  nodesMap.set('c1_a', { id: 'c1_a', treeId: 'tree_deep', timestamp: 200, parentNodeId: 'r0', childNodeIds: [] });
+  nodesMap.set('c1_b', { id: 'c1_b', treeId: 'tree_deep', timestamp: 300, parentNodeId: 'r0', childNodeIds: ['c2'] });
+  nodesMap.set('c2', { id: 'c2', treeId: 'tree_deep', timestamp: 400, parentNodeId: 'c1_b', childNodeIds: ['c3_a', 'c3_b'] });
+  nodesMap.set('c3_a', { id: 'c3_a', treeId: 'tree_deep', timestamp: 500, parentNodeId: 'c2', childNodeIds: [] });
+  nodesMap.set('c3_b', { id: 'c3_b', treeId: 'tree_deep', timestamp: 600, parentNodeId: 'c2', childNodeIds: ['c4'] });
+  nodesMap.set('c4', { id: 'c4', treeId: 'tree_deep', timestamp: 700, parentNodeId: 'c3_b', childNodeIds: ['c5'] });
+  nodesMap.set('c5', { id: 'c5', treeId: 'tree_deep', timestamp: 800, parentNodeId: 'c4', childNodeIds: ['c6'] });
+  nodesMap.set('c6', { id: 'c6', treeId: 'tree_deep', timestamp: 900, parentNodeId: 'c5', childNodeIds: ['c7_a', 'c7_b'] });
+  nodesMap.set('c7_a', { id: 'c7_a', treeId: 'tree_deep', timestamp: 1000, parentNodeId: 'c6', childNodeIds: [] });
+  nodesMap.set('c7_b', { id: 'c7_b', treeId: 'tree_deep', timestamp: 1100, parentNodeId: 'c6', childNodeIds: ['c8'] });
+  nodesMap.set('c8', { id: 'c8', treeId: 'tree_deep', timestamp: 1200, parentNodeId: 'c7_b', childNodeIds: ['c9_dl'] });
+  nodesMap.set('c9_dl', { id: 'c9_dl', treeId: 'tree_deep', nodeType: 'download', filename: 'deep_asset.zip', originDomain: 'deep.org', timestamp: 1300, parentNodeId: 'c8', childNodeIds: [], downloadId: 901 });
+
+  const reflow = uiLogic.computeGraphLayout(nodesMap, { layoutMode: 'reflow', maxIndent: 130 });
+  assert.strictEqual(reflow.layoutNodes.length, 13);
+  assert.strictEqual(reflow.layoutEdges.length, 12);
+
+  // Assert maximum horizontal indent bound is enforced
+  for (const n of reflow.layoutNodes) {
+    const rightEdge = n.x + 110;
+    assert(rightEdge <= 400, `Right edge ${rightEdge} must not exceed bounded width (400px)`);
+    assert(Number.isFinite(n.x) && Number.isFinite(n.y), 'Coordinates must be finite numbers');
+  }
+
+  // Row Y coordinates strictly increase
+  for (let i = 1; i < reflow.layoutNodes.length; i++) {
+    assert(reflow.layoutNodes[i].y > reflow.layoutNodes[i - 1].y, 'Reflow layout nodes must be vertically ordered');
+  }
+});
+
 await Promise.all(pendingTests);
 console.log(`\nUI Test Verification Complete: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) process.exit(1);

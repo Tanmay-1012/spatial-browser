@@ -1,6 +1,6 @@
 # Task 12 — Research Tree Explorer Overview & Detail UI
 
-**Status:** Revision Submitted — Pending Lead Acceptance (see Task 12 output, Section 9). Do not start another task until lead acceptance.
+**Status:** Submitted for Lead Review — Narrow Detail Map Legibility & Navigability Verified (see Task 12 output, Section 11). Do not start another task until lead acceptance.
 **Milestone:** 12 (Research Tree Explorer UI)  
 **Design authority:** Approved v15 proposal and acceptance matrix in Section 51 of [Task 10 output](../task-10-output.md); approval recorded in Section 52. Task 11 is accepted in Section 57 of [Task 11 output](../task-11-output.md).
 
@@ -90,4 +90,12 @@ Task 12 is ready for lead review when every applicable item below is demonstrate
 
 ## Lead Review Gate
 
-Section 8 follow-up items have been addressed with two consecutive isolated-profile Chrome passes and updated narrow map-only captures in Section 9 of [Task 12 output](../task-12-output.md#9-developer-followup--consecutive-verification-evidence-2026-11-13). Task 12 remains pending lead acceptance; do not begin Task 13.
+Section 8 and Section 10 follow-up items have been fully addressed and verified in Section 11 of [Task 12 output](../task-12-output.md#11-developer-follow-up--narrow-detail-map-legibility--navigability-verification-2026-11-13):
+
+### Re-review revision — Narrow map readability (Verified 2026-11-13)
+
+- **Responsive Reflow Layout:** Implemented DFS indented column reflow layout (`layoutMode: 'reflow'`) in `src/shared/ui-logic.js` and `src/shared/app.js` when `window.innerWidth <= 900`. Nodes retain full `220x44px` dimensions; indents cap at `130px`; siblings fan vertically sharing depth indent; orthogonal curved edges route cleanly. Under Fit view, `scale = 1.05`, `effectiveTitleFontSize = 13.7px`, and `renderedTitleHeight >= 10px` (`17.6px` in Chrome, `20.4px` in Firefox).
+- **Readability & Navigability Regression Checks:** Added 2 new tests to `tests/test-ui.mjs` (total **61 passed, 0 failed**). Step 6.5f asserts `fitScale >= 0.85`, `effectiveTitleFontSize >= 11px`, `renderedTitleHeight >= 10px`, and zoom/fit navigability.
+- **Fresh Screenshots Inspected:** Captured drawer-closed map screenshots in Chrome (`420x800`) and Firefox (`500x800` measured inner width; `514x800` outer window constrained by Windows Win32 window manager). All 6 node titles and domains are fully readable at normal viewing size without initial zoom.
+- **Browser E2E Parity & Restart Persistence:** Chrome `157.0.8103.78` and Firefox `160.0` passed all E2E steps with `12 -> 12` node restart persistence, clean process cleanup (`terminate_firefox_tree`), and zero extension errors/warnings.
+- Task 12 is submitted for lead review. Task 13 remains strictly unstarted.

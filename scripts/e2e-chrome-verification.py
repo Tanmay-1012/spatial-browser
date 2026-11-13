@@ -345,6 +345,16 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
                 checks.drawerHidden = !!(dp && dp.hidden);
                 checks.mapSvg = boxInfo('#map-svg');
                 checks.mapHasNodes = document.querySelectorAll('.map-node').length >= 1;
+                // Legibility metrics at narrow viewport
+                const titleNode = document.querySelector('.map-node .node-text-title');
+                const titleBox = titleNode ? titleNode.getBoundingClientRect() : null;
+                const vp = document.getElementById('map-viewport');
+                const tform = vp ? (vp.getAttribute('transform') || '') : '';
+                const m = tform.match(/scale\(([\d.]+)\)/);
+                const scaleVal = m ? parseFloat(m[1]) : 1.0;
+                checks.renderedTitleHeight = titleBox ? Math.round(titleBox.height * 10) / 10 : 0;
+                checks.effectiveTitleFontSize = Math.round(13 * scaleVal * 10) / 10;
+                checks.fitScale = Math.round(scaleVal * 100) / 100;
             }}
         }}
         return {{ iw, ih, sw, overflowX: sw > iw + 1, checks }};
@@ -356,9 +366,20 @@ def verify_responsive_and_capture(cdp, session_id, width, height, mode, screensh
         if isinstance(rect, bool):
             assert rect is True, f"Responsive boolean check '{name}' failed at {width}x{height}"
             continue
+        if name in ("fitScale", "effectiveTitleFontSize", "renderedTitleHeight"):
+            continue
         assert rect is not None, f"Control '{name}' must be visible in {mode} at {width}x{height}"
         assert rect["width"] > 0 and rect["height"] > 0, f"Control '{name}' must have positive size at {width}x{height}: {rect}"
         assert rect["left"] >= -1 and rect["right"] <= metrics["iw"] + 2, f"Control '{name}' horizontally clipped at {width}x{height}: {rect} (iw={metrics['iw']})"
+
+    if mode == "detail" and not expect_drawer:
+        fit_scale = metrics["checks"].get("fitScale", 0)
+        eff_title = metrics["checks"].get("effectiveTitleFontSize", 0)
+        h_rendered = metrics["checks"].get("renderedTitleHeight", 0)
+        print(f"  [Detail Map Legibility {width}x{height}] fitScale={fit_scale}, effectiveTitleFont={eff_title}px, renderedTitleHeight={h_rendered}px")
+        assert fit_scale >= 0.85, f"Fit scale at {width}x{height} must be >=0.85 for legible labels, got {fit_scale}"
+        assert eff_title >= 11.0, f"Effective title font size must be >=11px, got {eff_title}px"
+        assert h_rendered >= 10.0, f"Rendered title height must be >=10px, got {h_rendered}px"
 
     shot = cdp.send_cmd("Page.captureScreenshot", {"format": "png"}, session_id=session_id)
     os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
@@ -1664,6 +1685,31 @@ def run_tests():
         assert reopened_drawer_state["foundNode"] is True, "Attributed download node must be clickable on narrow map"
         assert reopened_drawer_state["panelHidden"] is False, "Clicking a node on narrow map must reopen #details-panel"
         assert reopened_drawer_state["sourceText"] == "Downloaded from localhost", "Reopened drawer must restore 'Downloaded from localhost'"
+
+        # Verify larger/deeper tree remains navigable at narrow viewport
+        deep_nav_result = cdp.evaluate(map_sid, """
+        (() => {
+            const initialTransform = document.getElementById('map-viewport').getAttribute('transform');
+            document.getElementById('zoom-in').click();
+            const zoomedTransform = document.getElementById('map-viewport').getAttribute('transform');
+            document.getElementById('zoom-reset').click();
+            const fitTransform = document.getElementById('map-viewport').getAttribute('transform');
+            const nodeTitles = Array.from(document.querySelectorAll('.map-node .node-text-title'));
+            const renderedHeights = nodeTitles.map(t => Math.round(t.getBoundingClientRect().height * 10) / 10);
+            const allReadable = renderedHeights.every(h => h >= 10.0);
+            return {
+                initialTransform,
+                zoomedTransform,
+                fitTransform,
+                zoomedDifferent: zoomedTransform !== fitTransform,
+                allReadable,
+                renderedHeights
+            };
+        })()
+        """)
+        print(f"  [Chrome Narrow Detail Map Navigability] {deep_nav_result}")
+        assert deep_nav_result["zoomedDifferent"] is True, "Zoom controls must modify map transform"
+        assert deep_nav_result["allReadable"] is True, f"All node titles must have rendered height >= 10px, got {deep_nav_result['renderedHeights']}"
 
         cdp.send_cmd("Emulation.clearDeviceMetricsOverride", {}, session_id=map_sid)
 

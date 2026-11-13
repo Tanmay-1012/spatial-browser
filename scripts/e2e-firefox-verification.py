@@ -133,7 +133,7 @@ class MarionetteClient:
         self.sock = None
         self.msg_id = 1
 
-    def connect(self, timeout=20):
+    def connect(self, timeout=40):
         start = time.time()
         while time.time() - start < timeout:
             try:
@@ -194,6 +194,34 @@ def find_free_local_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as port_probe:
         port_probe.bind(("127.0.0.1", 0))
         return port_probe.getsockname()[1]
+
+def terminate_firefox_tree(process):
+    """Stop the isolated Firefox process and its content processes before profile cleanup."""
+    if not process or process.poll() is not None:
+        return
+    pid = process.pid
+    try:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=10,
+            )
+        elif process.poll() is None:
+            process.terminate()
+    except Exception:
+        pass
+    try:
+        process.wait(timeout=5)
+    except Exception:
+        try:
+            process.kill()
+            process.wait(timeout=5)
+        except Exception:
+            pass
+    time.sleep(0.4)
 
 def extract_element_id(resp):
     if isinstance(resp, dict):
@@ -346,6 +374,16 @@ def verify_responsive_and_capture_firefox(client, target_width, target_height, m
             details.detailsPanelVisible = panel && !panel.hidden;
             if (details.detailsPanelVisible) {
                 details.detailsPanel = checkEl('#details-panel', 'details-panel');
+            } else {
+                let titleNode = document.querySelector('.map-node .node-text-title');
+                let titleBox = titleNode ? titleNode.getBoundingClientRect() : null;
+                let vp = document.getElementById('map-viewport');
+                let tform = vp ? (vp.getAttribute('transform') || '') : '';
+                let m = tform.match(/scale\(([\d.]+)\)/);
+                let scaleVal = m ? parseFloat(m[1]) : 1.0;
+                details.renderedTitleHeight = titleBox ? Math.round(titleBox.height * 10) / 10 : 0;
+                details.effectiveTitleFontSize = Math.round(13 * scaleVal * 10) / 10;
+                details.fitScale = Math.round(scaleVal * 100) / 100;
             }
         }
         return { vw, vh, scrollWidth: sw, clipped, headerSearch, timeFilter, clearBtn, details };
@@ -355,6 +393,17 @@ def verify_responsive_and_capture_firefox(client, target_width, target_height, m
 
     assert metrics["scrollWidth"] <= metrics["vw"] + 1, f"Firefox {mode} {metrics['vw']}x{metrics['vh']} horizontal overflow: scrollWidth={metrics['scrollWidth']} > vw={metrics['vw']}"
     assert len(metrics["clipped"]) == 0, f"Firefox {mode} {metrics['vw']}x{metrics['vh']} clipped/hidden controls: {metrics['clipped']}"
+
+    if mode == "detail":
+        details = metrics.get("details", {})
+        if not details.get("detailsPanelVisible"):
+            fit_scale = details.get("fitScale", 0)
+            eff_title = details.get("effectiveTitleFontSize", 0)
+            h_rendered = details.get("renderedTitleHeight", 0)
+            print(f"  [Firefox Detail Map Legibility {metrics['vw']}x{metrics['vh']}] fitScale={fit_scale}, effectiveTitleFont={eff_title}px, renderedTitleHeight={h_rendered}px")
+            assert fit_scale >= 0.85, f"Firefox fit scale at {metrics['vw']}x{metrics['vh']} must be >=0.85 for legible labels, got {fit_scale}"
+            assert eff_title >= 11.0, f"Firefox effective title font size must be >=11px, got {eff_title}px"
+            assert h_rendered >= 10.0, f"Firefox rendered title height must be >=10px, got {h_rendered}px"
 
     shot_res = client.send_cmd("WebDriver:TakeScreenshot", {"full": False})
     shot_b64 = shot_res["value"] if isinstance(shot_res, dict) and "value" in shot_res else shot_res
@@ -1676,6 +1725,31 @@ def run_tests():
         assert ff_reopened_drawer["foundNode"] is True and ff_reopened_drawer["panelHidden"] is False, "Clicking a node on Firefox narrow map must reopen #details-panel"
         assert ff_reopened_drawer["sourceText"] == "Downloaded from localhost", "Firefox reopened drawer must show 'Downloaded from localhost'"
 
+        # Verify larger/deeper tree remains navigable at narrow viewport in Firefox
+        ff_deep_nav = client.send_cmd("WebDriver:ExecuteScript", {
+            "script": """
+            const initialTransform = document.getElementById('map-viewport').getAttribute('transform');
+            document.getElementById('zoom-in').click();
+            const zoomedTransform = document.getElementById('map-viewport').getAttribute('transform');
+            document.getElementById('zoom-reset').click();
+            const fitTransform = document.getElementById('map-viewport').getAttribute('transform');
+            const nodeTitles = Array.from(document.querySelectorAll('.map-node .node-text-title'));
+            const renderedHeights = nodeTitles.map(t => Math.round(t.getBoundingClientRect().height * 10) / 10);
+            const allReadable = renderedHeights.every(h => h >= 10.0);
+            return {
+                initialTransform,
+                zoomedTransform,
+                fitTransform,
+                zoomedDifferent: zoomedTransform !== fitTransform,
+                allReadable,
+                renderedHeights
+            };
+            """
+        })["value"]
+        print(f"  [Firefox Narrow Detail Map Navigability] {ff_deep_nav}")
+        assert ff_deep_nav["zoomedDifferent"] is True, "Zoom controls must modify map transform in Firefox"
+        assert ff_deep_nav["allReadable"] is True, f"All node titles must have rendered height >= 10px in Firefox, got {ff_deep_nav['renderedHeights']}"
+
         back_portal_el = client.send_cmd("WebDriver:FindElement", {"using": "css selector", "value": "#back-to-overview-btn"})
         client.send_cmd("WebDriver:ElementClick", {"id": extract_element_id(back_portal_el)})
         time.sleep(0.4)
@@ -1784,8 +1858,9 @@ def run_tests():
         # 8b. Browser Process Restart
         print("  [8b] Terminating Firefox process for full browser restart...")
         client.close()
-        proc.kill()
-        proc.wait()
+        terminate_firefox_tree(proc)
+        proc = None
+        client = None
         time.sleep(1.0)
         print("  Firefox process terminated cleanly.")
 
@@ -1800,7 +1875,7 @@ def run_tests():
         ], env=firefox_env)
 
         client2 = MarionetteClient(port=marionette_port)
-        client2.connect()
+        client2.connect(timeout=45)
         client2.send_cmd("WebDriver:NewSession", {"capabilities": {}})
         client2.send_cmd("Marionette:SetContext", {"value": "chrome"})
         actual_firefox_version2 = client2.send_cmd("WebDriver:ExecuteScript", {
@@ -1941,10 +2016,6 @@ def run_tests():
         print("  - Task 11 Multi-Node Session Restart: Exact parity; multi-node history stacks collapse to single-node baselines while stored graph remains intact.")
         print("  - Error Telemetry: Exact parity; 0 extension errors, 0 warnings across both live and restart phases.")
 
-        client2.close()
-        proc2.kill()
-        proc2.wait()
-
         print("\n" + "=" * 76)
         print(f"ALL EXECUTED MOZILLA FIREFOX {actual_firefox_version} INTERACTIVE CHECKS PASSED (0 FAILURES)")
         print("=" * 76)
@@ -1954,9 +2025,7 @@ def run_tests():
             if active_client:
                 active_client.close()
         for active_process in (proc, proc2):
-            if active_process and active_process.poll() is None:
-                active_process.kill()
-                active_process.wait()
+            terminate_firefox_tree(active_process)
         server.shutdown()
         server.server_close()
         try:

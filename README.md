@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Task 11 is accepted (Section 57). Task 12 passes build, 59 automated checks, Firefox `160.0` E2E, and **two consecutive Chrome `157.0.8103.78` isolated-profile E2E runs** (`12 -> 12` restart persistence, narrow drawer-closed map captures); submitted for lead acceptance in [Section 9](task%20output%20overview/task-12-output.md#9-developer-followup--consecutive-verification-evidence-2026-11-13).
+> **Active Branch Status (main):** Task 11 is accepted (Section 57). Task 12 narrow detail-map legibility & navigability are verified across 61 automated tests (`npm test`), Chrome `157.0.8103.78` E2E, and Firefox `160.0` E2E (`12 -> 12` restart persistence, clean process cleanup, 0 errors/warnings); see [Section 11](task%20output%20overview/task-12-output.md#11-developer-follow-up--narrow-detail-map-legibility--navigability-verification-2026-11-13). Submitted for final lead review; Task 13 has not started.
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -12,7 +12,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
 - **Working Towards `v2.0` (Active Development on `main`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
-  - **Pending Lead Acceptance (Milestone 12 / Task 12):** The Explorer UI, 59 automated checks, Firefox `160.0` E2E, and two consecutive Chrome `157.0.8103.78` isolated-profile E2E runs (`12 -> 12` restart persistence, 0 errors/warnings) pass after addressing Section 8 feedback. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md).
+  - **Narrow-Map Legibility Verified (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [task-12-output.md](task%20output%20overview/task-12-output.md#11-developer-follow-up--narrow-detail-map-legibility--navigability-verification-2026-11-13).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**

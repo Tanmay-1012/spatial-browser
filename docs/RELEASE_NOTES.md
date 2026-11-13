@@ -103,13 +103,13 @@ All distribution packages are generated deterministically with zero external dep
 
 ### Automated Test Suite
 Run command: `npm test`  
-Result: **59 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
+Result: **61 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
 - Build, Manifest, CSP, Parity, and Archive Integrity: **12 tests passed**
 - Navigation Tracker, Sibling Branching, Session Safety & Storage V2: **35 tests passed**
-- Research Tree Explorer UI, Forest Layout, Contrast, and Security: **12 tests passed**
+- Research Tree Explorer UI, Reflow Layout, Contrast, and Security: **14 tests passed**
 
 ### Cross-Browser End-to-End Test Records
-Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), Section 56–57 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) (Task 11 accepted), and Sections 7–9 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md) (Task 12 Section 8 revision submitted with two consecutive Chrome passes; pending lead review acceptance).
+Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), Section 56–57 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) (Task 11 accepted), and Sections 7–11 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md) (Task 12 narrow detail-map legibility & navigability verified with responsive reflow layout and submitted for final lead acceptance).
 
 - **Google Chrome `157.0.8103.78` (x64 Windows; declared floor `Chrome 109+`):**
   - Consecutive Full E2E Logs: [`docs/test-results/chrome-e2e-run1.log`](test-results/chrome-e2e-run1.log) & [`docs/test-results/chrome-e2e.log`](test-results/chrome-e2e.log) ([`chrome-e2e-run2.log`](test-results/chrome-e2e-run2.log))

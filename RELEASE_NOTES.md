@@ -103,14 +103,14 @@ All distribution packages are generated deterministically with zero external dep
 
 ### Automated Test Suite
 Run command: `npm test`  
-Result: **59 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
+Result: **61 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
 - Build, Manifest, CSP, Parity, and Archive Integrity: **12 tests passed**
 - Navigation Tracker, Sibling Branching, Session Safety & Storage V2: **35 tests passed**
-- Research Tree Explorer UI, Forest Layout, Contrast, and Security: **12 tests passed**
+- Research Tree Explorer UI, Reflow Layout, Contrast, and Security: **14 tests passed**
 
 ### Cross-Browser End-to-End Test Records
 
-**Task 11 & Task 12 verification status (2026-11-13):** Task 11 backend/provenance is accepted (Section 57). Task 12 Section 8 follow-up items pass build, 59 automated checks, Firefox `160.0` E2E, and **two consecutive Chrome `157.0.8103.78` isolated-profile E2E runs** (`12 -> 12` restart persistence, narrow drawer-closed map captures); submitted for lead acceptance in Section 9 of [`task output overview/task-12-output.md`](task%20output%20overview/task-12-output.md#9-developer-followup--consecutive-verification-evidence-2026-11-13).
+**Task 11 & Task 12 verification status (2026-11-13):** Task 11 backend/provenance is accepted (Section 57). Task 12 narrow detail-map legibility & navigability are verified across 61 automated checks, Firefox `160.0` E2E, and Chrome `157.0.8103.78` isolated-profile E2E runs (`12 -> 12` restart persistence, narrow drawer-closed map captures with `scale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`); submitted for lead acceptance in Section 11 of [`task output overview/task-12-output.md`](task%20output%20overview/task-12-output.md#11-developer-follow-up--narrow-detail-map-legibility--navigability-verification-2026-11-13).
 Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
 - **Google Chrome `157.0.8103.78` (x64 Windows; declared floor `Chrome 109+`):**

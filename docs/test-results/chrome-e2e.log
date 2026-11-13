@@ -1,32 +1,32 @@
 ============================================================================
 TASK 12: GOOGLE CHROME RUNTIME ACCEPTANCE RUN
-Timestamp: 2026-11-13 00:23:39
+Timestamp: 2026-11-13 19:31:04
 Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
 Declared Manifest Minimum Floor: Chrome 109+
 ============================================================================
-[INIT] Local test HTTP server started at http://127.0.0.1:51428 (and http://localhost:51428)
-[INIT] Local CDN HTTP server started at http://127.0.0.1:51429
+[INIT] Local test HTTP server started at http://127.0.0.1:53991 (and http://localhost:53991)
+[INIT] Local CDN HTTP server started at http://127.0.0.1:53992
 
 --- STEP 1: Chrome Process Startup & Unpacked Extension Loading ---
-[INIT] Connected to Google Chrome 157.0.8103.78 (x64 Windows) via CDP: ws://127.0.0.1:51430/devtools/browser/db5a8c4e-5443-44b6-a7e3-4e0134a27e2f
+[INIT] Connected to Google Chrome 157.0.8103.78 (x64 Windows) via CDP: ws://127.0.0.1:53993/devtools/browser/4bc00a3f-08a7-475b-81e9-8cde10e18e3c
        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36
        Declared Support Floor: Chrome 109+
 [PASS] Unpacked extension loaded successfully from D:\Projects\HCI Project\outputs\chrome\unpacked
        Extension ID: edhmggcmhhmlbfmidpeamoiffebfijah
 [PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome 157.0.8103.78.
 [PASS] Service worker discovered: Service Worker chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js (chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js)
-[PASS] Attached to background service worker (Session ID: C744348575EA651426403D40A3E3B390).
+[PASS] Attached to background service worker (Session ID: DD64F24BC15A5910D3B0446802720485).
 [PASS] Background service worker environment: {'hasStorage': True, 'hasTracker': True, 'hasLaunch': True}
 [PASS] Background tracker session state: {'initialized': True, 'initializing': False}
 
 --- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---
   Pages before Action 1: 1
-  Toolbar Action Click 1 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=False|btnRect=799,70,44,43|center=821,92|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
-[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab F25359CDED073C4B5BC626E6696528FC, total pages=2 (was 1)
-  Switched focus to blank tab CBFDABC6620AC0933066DF79EBF2CC14. Pages before Action 2: 3
+  Toolbar Action Click 1 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=False|btnRect=911,70,43,43|center=932,92|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
+[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab D0AEC12F622A36B80455FDC3ED96EB32, total pages=2 (was 1)
+  Switched focus to blank tab 8DD9B70F84181DDA7C8AE260DA72A1C8. Pages before Action 2: 3
   Toolbar Action Click 2 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=False|btnRect=799,70,44,43|center=821,92|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
-  All tabs after Action 2: [{'id': 1219511528, 'active': False, 'winId': 1219511527, 'url': 'chrome://newtab/'}, {'id': 1219511529, 'active': True, 'winId': 1219511527, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}, {'id': 1219511530, 'active': False, 'winId': 1219511527, 'url': 'about:blank'}]
-[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 1219511529, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
+  All tabs after Action 2: [{'id': 695125062, 'active': False, 'winId': 695125061, 'url': 'chrome://newtab/'}, {'id': 695125063, 'active': True, 'winId': 695125061, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}, {'id': 695125064, 'active': False, 'winId': 695125061, 'url': 'about:blank'}]
+[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 695125063, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
 
 --- STEP 3: Exercise Browsing Scenarios & Verify Stored Visits and Parent Relationships ---
   [3a] Navigating to Page 1...
@@ -37,34 +37,34 @@ Declared Manifest Minimum Floor: Chrome 109+
   [3f] Updating location.hash to #section1...
   [3g] History API route update (pushState to /target/spa-route)...
   [3h] Navigating to /opener and opening /child tab...
-  [3h] Child tab confirmed at http://127.0.0.1:51428/child. Closing child tab...
+  [3h] Child tab confirmed at http://127.0.0.1:53991/child. Closing child tab...
   [3i] Navigating via unknown/closed opener to /unknown-parent...
-  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:51428/unknown-parent.
+  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:53991/unknown-parent.
 
 [VISIT COUNT AUDIT - PRE-REOPEN]
   Stored visits in local storage: 7
-    - [node_1794497037746_pddoba] url=http://127.0.0.1:51428/page1, parent=None, children=['node_1794497038807_nqxs60'], checkpoint=True, title='Page One'
-    - [node_1794497038807_nqxs60] url=http://127.0.0.1:51428/page2, parent=node_1794497037746_pddoba, children=['node_1794497039850_yc21pp'], checkpoint=False, title='Page Two'
-    - [node_1794497039850_yc21pp] url=http://127.0.0.1:51428/target#section1, parent=node_1794497038807_nqxs60, children=['node_1794497043037_xfpeyz'], checkpoint=False, title='Updated Target Title'
-    - [node_1794497043037_xfpeyz] url=http://127.0.0.1:51428/target/spa-route, parent=node_1794497039850_yc21pp, children=['node_1794497044152_6eu3bf'], checkpoint=False, title='Updated Target Title'
-    - [node_1794497044152_6eu3bf] url=http://127.0.0.1:51428/opener, parent=node_1794497043037_xfpeyz, children=['node_1794497045226_pyzl0v'], checkpoint=False, title='Opener Page'
-    - [node_1794497045226_pyzl0v] url=http://127.0.0.1:51428/child, parent=node_1794497044152_6eu3bf, children=[], checkpoint=False, title='Child Page'
-    - [node_1794497047776_1n66ot] url=http://127.0.0.1:51428/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
+    - [node_1794565881126_l6qev7] url=http://127.0.0.1:53991/page1, parent=None, children=['node_1794565882176_mt61ly'], checkpoint=True, title='Page One'
+    - [node_1794565882176_mt61ly] url=http://127.0.0.1:53991/page2, parent=node_1794565881126_l6qev7, children=['node_1794565883223_ul52z2'], checkpoint=False, title='Page Two'
+    - [node_1794565883223_ul52z2] url=http://127.0.0.1:53991/target#section1, parent=node_1794565882176_mt61ly, children=['node_1794565886413_cnp5vl'], checkpoint=False, title='Updated Target Title'
+    - [node_1794565886413_cnp5vl] url=http://127.0.0.1:53991/target/spa-route, parent=node_1794565883223_ul52z2, children=['node_1794565887531_hr3fwk'], checkpoint=False, title='Updated Target Title'
+    - [node_1794565887531_hr3fwk] url=http://127.0.0.1:53991/opener, parent=node_1794565886413_cnp5vl, children=['node_1794565888595_b43vk3'], checkpoint=False, title='Opener Page'
+    - [node_1794565888595_b43vk3] url=http://127.0.0.1:53991/child, parent=node_1794565887531_hr3fwk, children=[], checkpoint=False, title='Child Page'
+    - [node_1794565891160_h9a49y] url=http://127.0.0.1:53991/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
 [PASS] Verified Page 1: Root checkpoint with parentNodeId: null.
 [PASS] Verified same-tab navigation: Page 2 parent is Page 1, Page 1 children includes Page 2.
 [PASS] Verified redirect destination: /target parent is Page 2.
 [PASS] Verified reload deduplication: Exactly 1 node stored for /target despite reload.
 [PASS] Verified dynamic title update: node title updated in place to 'Updated Target Title'.
-[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:51428/target#section1' without creating extra visit.
+[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:53991/target#section1' without creating extra visit.
 [PASS] Verified SPA route (pushState): /target/spa-route parent is /target.
-[PASS] Verified opener relationship: /child parent is /opener (node_1794497044152_6eu3bf), opener children include child.
+[PASS] Verified opener relationship: /child parent is /opener (node_1794565887531_hr3fwk), opener children include child.
 [PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).
   Overview state before reopen: {'overviewHidden': False, 'detailHidden': True, 'zoomHidden': True, 'cardCount': 2, 'badge': '2 Research Trees · 7 Visits'}
-  Opened Detail View for tree_node_1794497037746_pddoba: rendered SVG nodes=6, badge='6 nodes'
+  Opened Detail View for tree_node_1794565881126_l6qev7: rendered SVG nodes=6, badge='6 nodes'
 
 --- STEP 4: Select Closed Child Node, Reopen Saved URL & Explicitly Audit Visit Count ---
-[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:51428/child'
-[PASS] Reopened saved URL in new tab: http://127.0.0.1:51428/child
+[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:53991/child'
+[PASS] Reopened saved URL in new tab: http://127.0.0.1:53991/child
 
 [VISIT COUNT AUDIT - POST-REOPEN]
   Stored visits in local storage: 8 (initial: 7, +1 from reopened tab)
@@ -74,7 +74,7 @@ Declared Manifest Minimum Floor: Chrome 109+
 --- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---
   [Overview Search] Typing 'target' into #search-input on Overview...
   [Overview Search 'target'] Badge: '3 Research Trees · 8 Visits', matching tree cards: 1
-  Base active visit count inside tree_node_1794497037746_pddoba: 6
+  Base active visit count inside tree_node_1794565881126_l6qev7: 6
   [Detail Search] Typing 'target' into #search-input inside Detail View...
   [Detail Search 'target'] Badge: '2 of 6 matching (+2 context)', matches: 2, context ancestors: 2
   [Clear Search] Clicking #search-clear-btn...
@@ -102,9 +102,9 @@ Declared Manifest Minimum Floor: Chrome 109+
 
 --- STEP 6.5: Task 11 Core Scenarios: Sibling Branching & Download Provenance ---
   [6.5a] Exercising Sibling Branching: /wiki -> /source-a -> Back -> /source-b...
-[PASS] Sibling Branching Proven: Source A (node_1794497069850_kpfakp) and Source B (node_1794497071966_zpp7ms) are siblings under Wikipedia (node_1794497068790_pj2e00) in tree tree_node_1794497068790_pj2e00.
+[PASS] Sibling Branching Proven: Source A (node_1794565913119_5ycvgs) and Source B (node_1794565915225_3f19c6) are siblings under Wikipedia (node_1794565912070_5z0mvb) in tree tree_node_1794565912070_5z0mvb.
   [6.5b] Exercising Distinct-Host Download Provenance from http://localhost/download-portal to http://127.0.0.1 CDN...
-[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794497073066_mpm9fo (originDomain: localhost), raw URL/CDN omitted.
+[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794565916329_z3p2gg (originDomain: localhost), raw URL/CDN omitted.
   [6.5c] Exercising Unattributed Download (no referrer)...
 [PASS] Unattributed Download Proven: dataset.zip recorded with parentNodeId: null, originDomain: 'Source unavailable'.
   [6.5d] Exercising Ambiguous Referrer Download (|M|=2 matches)...
@@ -122,9 +122,11 @@ Declared Manifest Minimum Floor: Chrome 109+
   [SCREENSHOT] Saved detail (420x800, drawer=True) screenshot to: D:\Projects\HCI Project\docs\test-results\chrome-detail-narrow.png
   [Responsive Detail 420x800] {'iw': 420, 'ih': 800, 'sw': 420, 'overflowX': False, 'checks': {'search': {'left': 14, 'right': 231, 'top': 78, 'bottom': 109, 'width': 217, 'height': 31}, 'timeFilter': {'left': 239, 'right': 406, 'top': 77, 'bottom': 110, 'width': 167, 'height': 33}, 'clearBtn': {'left': 126, 'right': 207, 'top': 120, 'bottom': 146, 'width': 81, 'height': 26}, 'detailView': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'backBtn': {'left': 14, 'right': 151, 'top': 10, 'bottom': 36, 'width': 137, 'height': 26}, 'zoomControls': {'left': 14, 'right': 118, 'top': 118, 'bottom': 148, 'width': 104, 'height': 30}, 'mapContainer': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'detailsPanel': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}}}
   [Responsive detail 420x800 drawer=False] inner=420x800, scrollWidth=420, overflowX=False
+  [Detail Map Legibility 420x800] fitScale=1.05, effectiveTitleFont=13.7px, renderedTitleHeight=17.6px
   [SCREENSHOT] Saved detail (420x800, drawer=False) screenshot to: D:\Projects\HCI Project\docs\test-results\chrome-detail-narrow-map.png
-  [Responsive Detail Map-Only 420x800] {'iw': 420, 'ih': 800, 'sw': 420, 'overflowX': False, 'checks': {'search': {'left': 14, 'right': 231, 'top': 78, 'bottom': 109, 'width': 217, 'height': 31}, 'timeFilter': {'left': 239, 'right': 406, 'top': 77, 'bottom': 110, 'width': 167, 'height': 33}, 'clearBtn': {'left': 126, 'right': 207, 'top': 120, 'bottom': 146, 'width': 81, 'height': 26}, 'detailView': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'backBtn': {'left': 14, 'right': 151, 'top': 10, 'bottom': 36, 'width': 137, 'height': 26}, 'zoomControls': {'left': 14, 'right': 118, 'top': 118, 'bottom': 148, 'width': 104, 'height': 30}, 'mapContainer': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'drawerHidden': True, 'mapSvg': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'mapHasNodes': True}}
+  [Responsive Detail Map-Only 420x800] {'iw': 420, 'ih': 800, 'sw': 420, 'overflowX': False, 'checks': {'search': {'left': 14, 'right': 231, 'top': 78, 'bottom': 109, 'width': 217, 'height': 31}, 'timeFilter': {'left': 239, 'right': 406, 'top': 77, 'bottom': 110, 'width': 167, 'height': 33}, 'clearBtn': {'left': 126, 'right': 207, 'top': 120, 'bottom': 146, 'width': 81, 'height': 26}, 'detailView': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'backBtn': {'left': 14, 'right': 151, 'top': 10, 'bottom': 36, 'width': 137, 'height': 26}, 'zoomControls': {'left': 14, 'right': 118, 'top': 118, 'bottom': 148, 'width': 104, 'height': 30}, 'mapContainer': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'drawerHidden': True, 'mapSvg': {'left': 0, 'right': 420, 'top': 159, 'bottom': 800, 'width': 420, 'height': 641}, 'mapHasNodes': True, 'renderedTitleHeight': 17.6, 'effectiveTitleFontSize': 13.7, 'fitScale': 1.05}}
   [Narrow Detail Drawer Reopen] {'foundNode': True, 'panelHidden': False, 'sourceText': 'Downloaded from localhost'}
+  [Chrome Narrow Detail Map Navigability] {'initialTransform': 'translate(31.5, 102.15624389648437) scale(1.05)', 'zoomedTransform': 'translate(-4.199999999999989, 58.47624389648439) scale(1.26)', 'fitTransform': 'translate(31.5, 102.15624389648437) scale(1.05)', 'zoomedDifferent': True, 'allReadable': True, 'renderedHeights': [17.6, 17.6, 17.6, 17.6, 17.6, 17.6]}
   [Responsive overview 1280x800 drawer=True] inner=1280x800, scrollWidth=1280, overflowX=False
   [SCREENSHOT] Saved overview (1280x800, drawer=True) screenshot to: D:\Projects\HCI Project\docs\test-results\chrome-overview-desktop.png
   [Responsive Overview 1280x800] {'iw': 1280, 'ih': 800, 'sw': 1280, 'overflowX': False, 'checks': {'search': {'left': 648, 'right': 988, 'top': 11, 'bottom': 42, 'width': 340, 'height': 31}, 'timeFilter': {'left': 1000, 'right': 1167, 'top': 10, 'bottom': 43, 'width': 167, 'height': 33}, 'clearBtn': {'left': 1179, 'right': 1260, 'top': 13, 'bottom': 40, 'width': 81, 'height': 26}, 'overviewView': {'left': 0, 'right': 1280, 'top': 54, 'bottom': 800, 'width': 1280, 'height': 746}, 'firstCard': {'left': 50, 'right': 433, 'top': 112, 'bottom': 342, 'width': 383, 'height': 230}, 'firstOpenBtn': {'left': 69, 'right': 414, 'top': 299, 'bottom': 326, 'width': 345, 'height': 26}, 'unattributedSection': {'left': 50, 'right': 1230, 'top': 370, 'bottom': 533, 'width': 1180, 'height': 162}, 'allCardsFit': True}}
@@ -135,33 +137,33 @@ Declared Manifest Minimum Floor: Chrome 109+
 
 --- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---
   [SAVED] Pre-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-errors-pre-restart.json
-  Evaluated 271 CDP event records prior to restart.
+  Evaluated 265 CDP event records prior to restart.
   Extension Errors: 0, Warnings: 0
 [PASS] Pre-restart error audit passed with 0 errors and 0 warnings.
 
 --- STEP 8: Background Suspension & Browser Restart Persistence ---
   [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...
   Pre-restart node count stored in chrome.storage.local: 12
-  Pre-restart tab 1219511541 historyStack: ['node_1794497086542_fkmi4z', 'node_1794497087041_6yt1sw', 'node_1794497087437_lo08vr'] (length 3)
-[PASS] Pre-restart multi-node baseline verified: tab 1219511541 has 3-node history stack.
+  Pre-restart tab 695125075 historyStack: ['node_1794565930085_lyqkrj', 'node_1794565930472_9cjtxg', 'node_1794565930873_jqf87r'] (length 3)
+[PASS] Pre-restart multi-node baseline verified: tab 695125075 has 3-node history stack.
   [8b] Testing service worker stop/suspension...
   [PASS] Service worker suspension signaled via Target.closeTarget.
   [PASS] Service worker re-awakened on demand: 12 node(s) accessible.
   [8c] Terminating Chrome process for full browser restart...
   Chrome process terminated cleanly.
   Relaunching Chrome with persistent profile and restored live tab...
-  Reconnected to restarted Google Chrome 157.0.8103.78: ws://127.0.0.1:51430/devtools/browser/587d664a-c15f-4beb-9cb4-857e6200702a
-  Pre-extension-load open page targets: ['127.0.0.1:51428/restart-step3']
+  Reconnected to restarted Google Chrome 157.0.8103.78: ws://127.0.0.1:53993/devtools/browser/033af993-e680-4313-a769-716ee4cb7f76
+  Pre-extension-load open page targets: ['127.0.0.1:53991/restart-step3']
   Post-restart stored node count in storage: 12 (was 12)
-  Post-restart open tabs snapshot: [{'id': 1219511592, 'active': False, 'status': 'complete', 'title': 'Restart Step 3', 'location': 'http://127.0.0.1:51428/restart-step3'}, {'id': 1219511622, 'active': True, 'status': 'complete', 'title': 'Spatial Browser History', 'location': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}]
-  Post-restart live tab state: stack=['node_1794497087437_lo08vr'], index=0, baselineEstablished=True
+  Post-restart open tabs snapshot: [{'id': 695125128, 'active': False, 'status': 'complete', 'title': 'Restart Step 3', 'location': 'http://127.0.0.1:53991/restart-step3'}, {'id': 695125158, 'active': True, 'status': 'complete', 'title': 'Spatial Browser History', 'location': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}]
+  Post-restart live tab state: stack=['node_1794565930873_jqf87r'], index=0, baselineEstablished=True
 [PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.
-  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794497086542_fkmi4z: 3 nodes (3 nodes)
+  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794565930085_lyqkrj: 3 nodes (3 nodes)
 [PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.
 
 --- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---
   [SAVED] Post-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json
-  Evaluated 18 CDP event records in restarted session.
+  Evaluated 20 CDP event records in restarted session.
   Post-Restart Extension Errors: 0, Warnings: 0
 [PASS] Post-restart error audit passed with 0 errors and 0 warnings.
 

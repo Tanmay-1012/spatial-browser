@@ -6,7 +6,7 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 
 - [Task 12 — Research Tree Explorer Overview & Detail UI](task-12.md) ([Report: `task-12-output.md`](../task-12-output.md))
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12's Section 8 follow-up fixes (SW/CDP attach stability, pre-load `/restart-step3` commit sync, restart delta diagnostics, narrow drawer-closed map captures, and 2 consecutive Chrome passes) are submitted in Section 9 of `task-12-output.md`. Wait for lead acceptance before beginning another task.
+Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 narrow detail-map legibility & navigability are verified across 61 automated tests and fresh Chrome/Firefox isolated-profile E2E runs (Section 11); submitted for final lead acceptance. Keep Task 13 unstarted until lead acceptance.
 
 ## Reporting workflow
 

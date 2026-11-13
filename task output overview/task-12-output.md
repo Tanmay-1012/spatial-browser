@@ -1,6 +1,6 @@
 # Task 12 Output — Research Tree Explorer Overview & Detail UI
 
-**Status:** Revision Submitted — Pending Lead Acceptance (Consecutive Chrome & Firefox E2E Passed; awaiting lead sign-off)
+**Status:** Lead Revision Required — Narrow Detail Map Readability (Section 10; Task 12 remains open)
 **Milestone:** 12 (Research Tree Explorer Overview & Detail UI — Task 10 v15 Sections 51–52)  
 **Browser Runtime Targets:** Google Chrome `157.0.8103.78` (x64 Windows; declared min `109+`) & Mozilla Firefox `160.0` (x64 Windows; `strict_min_version: 115.0`)  
 **Execution Date:** 2026-11-12  
@@ -221,10 +221,147 @@ All four follow-up items requested in Section 8 have been implemented in the tes
   - Log: [`docs/test-results/chrome-e2e-run1.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-run1.log)
   - Audits: [`chrome-errors-pre-restart-run1.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart-run1.json) (`266` CDP records: **0 errors, 0 warnings**), [`chrome-errors-post-restart-run1.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart-run1.json) (`18` CDP records: **0 errors, 0 warnings**).
 - **Consecutive Chrome `157.0.8103.78` Isolated-Profile Run 2 (`2026-11-13`):** **0 failures** — zero SW attach retries; `Pre-restart: 12` $\to$ `Post-restart: 12`, live tab `[step3]` single-node baseline, `3 Research Trees · 9 Visits` post-restart Overview & `3` nodes Detail reconciliation all passed.
-  - Logs: [`docs/test-results/chrome-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e.log) & [`docs/test-results/chrome-e2e-run2.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-run2.log)
-  - Audits: [`chrome-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart.json) (`271` CDP records: **0 errors, 0 warnings**), [`chrome-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart.json) (`18` CDP records: **0 errors, 0 warnings**).
+  - Log: [`docs/test-results/chrome-e2e-run2.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e-run2.log)
+  - Audits: [`chrome-errors-pre-restart-run2.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart-run2.json) (`271` CDP records: **0 errors, 0 warnings**), [`chrome-errors-post-restart-run2.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart-run2.json) (`18` CDP records: **0 errors, 0 warnings**).
 - **Mozilla Firefox `160.0` Isolated-Profile Run (`2026-11-13`):** **0 failures** — includes narrow drawer-closed map capture & reopen check plus `12 -> 12` SQLite restart persistence and `[step3]` baseline recovery.
   - Log: [`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log)
-  - Audits: [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json) (`6` Gecko records: **0 errors, 0 warnings**), [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json) (`24` Gecko records: **0 errors, 0 warnings**).
+  - Audits: [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json) (`13` Gecko records: **0 errors, 0 warnings**), [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json) (`25` Gecko records: **0 errors, 0 warnings**). The current files hold the lead's clean rerun described in Section 10; it supersedes the report's earlier Firefox run evidence.
 
-Task 12 remains held pending lead review acceptance; Task 13 has not been started.
+Task 12 remains held pending the narrow-map readability correction in Section 10; Task 13 has not been started.
+
+---
+
+## 10. Lead Re-review: Runtime Passes, Narrow Map Readability Revision Required (2026-11-13)
+
+### 10.1 Independent runtime verification
+
+- **Chrome `157.0.8103.78`:** The lead reran `python scripts/e2e-chrome-verification.py` after the developer's timing and CDP changes. The command exited `0`; the full run passed, including the toolbar click, real keyboard input, tree/detail flow, download provenance, narrow drawer-closed map and drawer reopen, and restart persistence (`12 -> 12`). Audits evaluated `267` CDP records before restart and `20` after restart, with zero errors and warnings. Evidence: [`docs/test-results/chrome-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e.log), [`chrome-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart.json), and [`chrome-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart.json).
+- **Firefox `160.0`:** The first fresh run completed its scenarios but exited `1` while deleting its temporary profile because Firefox still held a SQLite file. The lead updated `scripts/e2e-firefox-verification.py` to terminate only the isolated test process tree before profile cleanup, then reran the complete suite. The final run exited `0`; it passed the new drawer-closed map and reopen check and restart persistence (`12 -> 12`). Audits evaluated `13` Gecko records before restart and `25` after restart, with zero errors and warnings. Evidence: [`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log), [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json), and [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json). Keep the validated `terminate_firefox_tree()` cleanup change in the next developer commit.
+- The independent Chrome run and clean Firefox rerun confirm the browser behavior is passing. The earlier `npm.cmd run build` and `npm.cmd test` also passed; the automated suite reported **59 passed, 0 failed**.
+
+### 10.2 Remaining acceptance issue: narrow detail map labels are too small at Fit
+
+Visual review of the latest map-only screenshots found a usability issue not covered by the current overflow assertions:
+
+- In [`chrome-detail-narrow-map.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-detail-narrow-map.png), at the tested `420x800` viewport, all six nodes are present but the fitted graph is a very small horizontal strip; page titles and domain labels are too small to read at normal viewing size, with most of the vertical map canvas unused.
+- In [`firefox-detail-narrow-map.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-detail-narrow-map.png), the same issue remains at Firefox's measured `500x800` inner viewport (the harness requested `420x800`, but Windows constrained the actual inner width to `500`).
+- The zoom controls and no-overflow checks pass, but requiring a user to discover and repeatedly zoom before they can read the tree does not meet the readable, responsive detail-view requirement.
+
+**Decision:** Task 12 is **not accepted**. Keep Task 13 unstarted.
+
+### 10.3 Developer revision required
+
+1. Improve the narrow detail layout so the six-node reference tree has readable page titles and domain labels at its initial Fit state. Reflow the tree for narrow screens or use another responsive layout that preserves a useful minimum node size; do not solve it by clipping nodes or hiding sibling/download relationships. Keep pan, zoom, Fit, node selection, and the details drawer usable.
+2. Add a regression check for the effective rendered label size or another measurable legibility condition at narrow widths. At minimum, verify the reference tree at Chrome `420x800` and Firefox's actual measured viewport, plus a larger/deeper tree to ensure responsive layout remains navigable.
+3. Regenerate map-only screenshots for both browsers and visually inspect the labels at their actual viewport sizes. Record Firefox's measured inner width truthfully; if possible, add a supported way to exercise a true `420px` Firefox viewport.
+4. Run `npm.cmd test`, `npm.cmd run build`, and both full isolated-profile E2E suites. Confirm clean process/profile cleanup and preserve the current tree isolation, sibling topology, download privacy, and `12 -> 12` restart assertions.
+5. Update this report, `task-12.md`, `docs/TEST_PLAN.md`, and the relevant task indexes with the new evidence. Do not alter tracking, storage, permissions, or manifests, and do not start Task 13 until this review gate passes.
+
+---
+
+## 11. Developer Follow-up — Narrow Detail Map Legibility & Navigability Verification (2026-11-13)
+
+### 11.1 Problem Analysis: Why Fit View Squashed Node Labels at Narrow Viewports
+
+In Section 10.2, lead visual review identified that at narrow viewports (`420x800` in Chrome and `500x800` in Firefox), the six-node reference tree rendered as an unreadable ~4.7px horizontal strip:
+1. **Desktop Layout Geometry:** The desktop tree layout placed subsequent navigation depth levels strictly horizontally to the right (`x = depth * 270px`). The 6-node reference tree (`/wiki` -> `Source A` / `Source B` -> `Download Portal` -> `research_paper.pdf` / `Ambiguous Page`) spanned 3 depth levels, creating a graph bounding box `1150px` wide and only `150px` tall.
+2. **Horizontal Squashing under Fit View:** At narrow viewport widths (`innerWidth = 420px`), `fitGraphToView` calculated fit scale based strictly on width: $\text{scale} = (420 - 2 \cdot 40) / 1150 \approx 0.295$ (or $\sim 0.365$). The default 13px title font size was scaled down to $\sim 4.7\text{px}$, while over $590\text{px}$ of vertical canvas remained completely empty.
+
+### 11.2 Architectural Solution: Responsive Reflow Layout Algorithm
+
+To solve label legibility without clipping nodes or compromising tree hierarchy, a responsive reflow layout algorithm was implemented in `src/shared/ui-logic.js` and wired dynamically into `src/shared/app.js`:
+
+1. **Responsive Mode Switching (`src/shared/app.js`):**
+   - In `renderTreeDetailView()` and dynamic resize handling (`window.addEventListener('resize')`), the app evaluates `isNarrow = window.innerWidth <= 900`.
+   - On desktop viewports (`> 900px`), `layoutMode: 'horizontal'` is selected, preserving the exact desktop branch-fan layout.
+   - On narrow viewports (`<= 900px`), `layoutMode: 'reflow'` is selected, passing options `{ indentX: 24, rowSpacing: 60, maxIndent: 130, nodeWidth: 220, nodeHeight: 44 }`.
+2. **Indented Column Reflow Algorithm (`src/shared/ui-logic.js`):**
+   - **Full Node Dimensions:** Every node pill retains full readability dimensions (`220px` width $\times$ `44px` height).
+   - **Horizontal Indentation:** Each hierarchy depth level indents horizontally by `indentX = 24px`: $\text{x} = \text{marginLeft} + \min(\text{depth} \times 24, 130) + 110$. The cap (`maxIndent = 130px`) guarantees that deeply nested trees never overflow the narrow canvas width.
+   - **Vertical Stacking & Sibling Alignment:** A depth-first traversal stacks sibling branches vertically (`rowSpacing: 60px`), where each sibling branch shares the exact same horizontal indent:
+     - `Wikipedia Portal` (depth 0): $x = 134, y = 54$.
+     - `Source A Document` (depth 1): $x = 158, y = 114$.
+     - `Source B Document` (depth 1): $x = 158, y = 174$ (sibling aligned directly beneath Source A).
+     - `Download Portal` (depth 2): $x = 182, y = 234$.
+     - `research_paper.pdf` (depth 3, download): $x = 206, y = 294$.
+     - `Ambiguous Page` (depth 3, page): $x = 206, y = 354$.
+   - **Total Graph Bounding Box:** The reflow graph measures $340\text{px}$ wide by $392\text{px}$ high.
+3. **Orthogonal SVG Edge Routing (`src/shared/app.js`):**
+   - Edges route from the bottom center of the parent's icon circle (`startX = p.x - NODE_WIDTH/2 + 16`, `startY = p.y + NODE_HEIGHT/2`), drop vertically down the left-hand gutter, curve smoothly $90^\circ$ right with a rounded radius (`R = 6`), and enter the left edge of the child pill (`endX = c.x - NODE_WIDTH/2`, `endY = c.y`) terminated with an SVG `#branch-arrow` marker.
+4. **Tight Padding & Scale Cap under Fit View:**
+   - In reflow mode, `fitGraphToView()` uses tighter padding (`24px`) and caps `maxFitScale` at `1.05`.
+   - On both `420x800` and `500x800` viewports, the $340 \times 392\text{px}$ tree fits comfortably within the canvas ($420 \times 641\text{px}$ / $500 \times 674\text{px}$), yielding an optimal fit scale of **$1.05$**.
+   - **Effective Title Font Size:** $13\text{px} \times 1.05 = \mathbf{13.65\text{px}}$ (rendered bounding box height = $17.6\text{px}$ in Chrome, $20.4\text{px}$ in Firefox).
+   - **Effective Subtitle/Domain Font Size:** $10.5\text{px} \times 1.05 = \mathbf{11.0\text{px}}$.
+   - Page titles, domain labels, timestamps, and download badges are $100\%$ legible at normal viewing size without requiring initial user zoom.
+
+### 11.3 Sibling Branches, Downloads, Selection, Pan/Zoom/Fit & Drawer Usability
+
+- **Sibling Geometry:** Sibling nodes (`Source A Document` and `Source B Document`) align at identical horizontal indent ($x = 158$) and stack cleanly on separate vertical rows ($y = 114$ and $y = 174$).
+- **Download Provenance Node:** `research_paper.pdf` renders with distinct `.is-download` styling (dashed emerald border, emerald icon circle) and explicit label `Downloaded from localhost` (never leaking `127.0.0.1`).
+- **Interactive Drawer & Map Exposure:**
+  - Clicking any node opens `#details-panel` (or Enter/Space keyboard selection).
+  - Clicking `#details-close-btn` closes the drawer, exposing the visible branch map without clipping or horizontal overflow.
+  - Clicking `.map-node.is-download` on the narrow map reopens `#details-panel` displaying `Downloaded from localhost` with raw URL and reopen action hidden.
+- **Navigability on Narrow Map:** Pan (pointer drag & keyboard arrow keys), Zoom In (`#zoom-in`), Zoom Out (`#zoom-out`), and Fit (`#zoom-reset`) all work seamlessly, modifying the viewport transform without layout degradation.
+
+### 11.4 Automated Regression Checks (`tests/test-ui.mjs`)
+
+Two new automated regression tests were added to `tests/test-ui.mjs`, expanding the test suite to **61 passed, 0 failed** (`12` verify-builds, `35` test-tracker, `14` test-ui):
+
+1. **`Narrow responsive reflow layout produces readable node bounding boxes and preserves sibling & download hierarchy`:**
+   - Evaluates the 6-node reference tree in `layoutMode: 'reflow'`.
+   - Asserts 6 nodes and 5 edges are positioned with valid bounding box width $\le 420\text{px}$.
+   - Asserts sibling horizontal alignment: $\text{srcA.x} == \text{srcB.x} > \text{wiki.x}$, with vertical separation: $\text{srcA.y} < \text{srcB.y}$.
+   - Asserts download node positioning: $\text{dl.x} > \text{portal.x}$, $\text{dl.y} > \text{portal.y}$.
+   - Asserts label legibility thresholds under Fit view: $\text{scale} = 1.05 \ge 0.95$, $\text{effectiveTitlePx} = 13.65\text{px} \ge 12.0\text{px}$, and $\text{effectiveSubPx} = 11.0\text{px} \ge 9.8\text{px}$.
+2. **`Large and deep trees in narrow reflow layout maintain bounded horizontal indents and valid navigation coordinates`:**
+   - Constructs an 8-level, 13-node tree with deep nesting and multiple sibling branches.
+   - Asserts all 13 nodes receive positive finite coordinates with right edges $\le 400\text{px}$, proving that large/deep trees never exceed container width in narrow viewports.
+
+### 11.5 Chrome & Firefox Runtime E2E Evidence
+
+Both browser verification suites were executed against freshly built extension packages in isolated browser profiles:
+
+- **Google Chrome `157.0.8103.78` (x64 Windows; declared floor `Chrome 109+`):**
+  - **Full E2E Run:** **0 failures, 0 errors, 0 warnings** across all 10 steps.
+  - **Narrow Viewport Metrics (`420x800` viewport, inner canvas `420x641`):**
+    - `scrollWidth = 420` (`overflowX = False`, zero horizontal overflow).
+    - `fitScale = 1.05` ($\ge 0.85$ threshold).
+    - `effectiveTitleFontSize = 13.7px` ($\ge 11.0\text{px}$ threshold).
+    - `renderedTitleHeight = 17.6px` across all 6 nodes (`renderedHeights = [17.6, 17.6, 17.6, 17.6, 17.6, 17.6]`, `allReadable = True`).
+  - **Narrow Map Navigability:** `#zoom-in` modified transform from `translate(31.5, 102.2) scale(1.05)` to `translate(-4.2, 58.5) scale(1.26)`, and `#zoom-reset` restored `scale(1.05)`.
+  - **Restart Persistence:** Pre-restart: 12 nodes $\to$ Post-restart: 12 nodes intact in `chrome.storage.local`. Live tab `[step3]` collapsed to single-node baseline. Post-restart Overview rendered 3 cards (`3 Research Trees · 9 Visits`).
+  - **Error Audits:** [`chrome-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-pre-restart.json) (`0` errors, `0` warnings) and [`chrome-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-errors-post-restart.json) (`0` errors, `0` warnings).
+  - **Evidence Log:** [`docs/test-results/chrome-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-e2e.log).
+
+- **Mozilla Firefox `160.0` (x64 Windows; declared floor `Firefox 115.0+`):**
+  - **Full E2E Run:** **0 failures, 0 errors, 0 warnings** across all 10 steps.
+  - **Measured Viewport Dimensions:** The harness requested `420x800`. On Windows, the Win32 window manager enforces a minimum outer window width of $514\text{px}$, resulting in a measured inner viewport of $\mathbf{500 \times 800\text{px}}$ (canvas $500 \times 674\text{px}$). Both $420\text{px}$ and $500\text{px}$ fall strictly below the `@media (max-width: 900px)` breakpoint and trigger the reflow layout.
+  - **Narrow Viewport Metrics (`500x800` viewport, inner canvas `500x674`):**
+    - `scrollWidth = 500` (`overflowX = False`, zero horizontal overflow).
+    - `fitScale = 1.05` ($\ge 0.85$ threshold).
+    - `effectiveTitleFontSize = 13.7px` ($\ge 11.0\text{px}$ threshold).
+    - `renderedTitleHeight = 20.4px` across all 6 nodes (`renderedHeights = [20.4, 20.4, 20.4, 20.4, 20.4, 20.4]`, `allReadable = True`).
+  - **Narrow Map Navigability:** `#zoom-in` modified transform from `translate(71.5, 118.4) scale(1.05)` to `translate(35.8, 74.7) scale(1.26)`, and `#zoom-reset` restored `scale(1.05)`.
+  - **Process Cleanup & Restart Persistence:** Retained the lead's `terminate_firefox_tree()` helper, added a 1.0s OS socket settling delay, and set `MarionetteClient.connect(timeout=45)`. Pre-restart: 12 nodes $\to$ Post-restart: 12 nodes intact in SQLite storage. Live tab collapsed to single-node baseline. Post-restart Overview rendered 3 cards (`3 Research Trees · 9 Visits`). Process tree and profile cleaned up cleanly with exit code `0`.
+  - **Error Audits:** [`firefox-errors-pre-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-pre-restart.json) (`0` errors, `0` warnings) and [`firefox-errors-post-restart.json`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-errors-post-restart.json) (`0` errors, `0` warnings).
+  - **Evidence Log:** [`docs/test-results/firefox-e2e.log`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-e2e.log).
+
+### 11.6 Visual Screenshot Inspection
+
+Drawer-closed narrow map screenshots were captured and visually verified in both browsers:
+
+1. **Google Chrome (`420x800`):**
+   - File: [`docs/test-results/chrome-detail-narrow-map.png`](file:///D:/Projects/HCI%20Project/docs/test-results/chrome-detail-narrow-map.png)
+   - Visual Verification: Header controls (`Back to Overview`, search input, time filter dropdown, `+`, `-`, `Fit`, `Clear Map`) wrap cleanly without clipping. The six-node reflow tree occupies $340 \times 392\text{px}$ of the $420 \times 641\text{px}$ canvas. Page titles ("Wikipedia Portal", "Source A Document", "Source B Document", "Download Portal", "research_paper.pdf", "Ambiguous Page") and domains are rendered at $13.7\text{px}$ effective font size with crisp, high-contrast, fully readable text. Sibling branches and download provenance styling are prominently visible.
+2. **Mozilla Firefox (`500x800` measured):**
+   - File: [`docs/test-results/firefox-detail-narrow-map.png`](file:///D:/Projects/HCI%20Project/docs/test-results/firefox-detail-narrow-map.png)
+   - Visual Verification: Header controls wrap cleanly without clipping. Node pills, fonts, orthogonal curved connector edges, arrows, and download badges render identically to Chrome with $20.4\text{px}$ rendered title bounding box height. All labels are crystal clear and readable at normal viewing size.
+
+### 11.7 Acceptance Status
+
+With responsive reflow layout implemented, label legibility verified ($\text{fitScale} = 1.05$, $\text{effectiveTitleFont} = 13.7\text{px}$, $\text{renderedHeight} \ge 10\text{px}$), 61 automated tests passing, both full isolated-profile browser suites passing with $12 \to 12$ restart persistence, zero errors/warnings, and clean process teardown, Task 12 is submitted for final lead acceptance.
+
+**Task 13 remains strictly unstarted.**
+

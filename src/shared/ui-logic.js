@@ -270,23 +270,94 @@
   }
 
   function computeGraphLayout(nodesMap, options = {}) {
+    const layoutMode = options.layoutMode || 'horizontal';
     const {
       horizontalSpacing = 270,
       verticalSpacing = 68,
       treeVerticalGap = 54,
-      marginLeft = 80,
-      marginTop = 80
+      marginLeft = (layoutMode === 'reflow' ? 24 : 80),
+      marginTop = (layoutMode === 'reflow' ? 36 : 80),
+      nodeWidth = 220,
+      nodeHeight = 44,
+      indentX = 24,
+      rowSpacing = 58,
+      maxIndent = 132
     } = options;
     const layoutNodes = [];
     const layoutEdges = [];
     if (!(nodesMap instanceof Map) || nodesMap.size === 0) {
-      return { layoutNodes, layoutEdges };
+      return { layoutNodes, layoutEdges, layoutMode };
     }
 
     const roots = Array.from(nodesMap.values())
       .filter((node) => !node.parentNodeId || !nodesMap.has(node.parentNodeId))
       .sort(compareNodesAsc);
     const visited = new Set();
+
+    if (layoutMode === 'reflow') {
+      let currentRow = 0;
+
+      function layoutReflowSubtree(node, depth, forcedRoot = false) {
+        visited.add(node.id);
+        const effectiveIndent = Math.min(depth * indentX, maxIndent);
+        const x = marginLeft + effectiveIndent + (nodeWidth / 2);
+        const y = marginTop + currentRow * rowSpacing + (nodeHeight / 2);
+        currentRow++;
+
+        const children = (Array.isArray(node.childNodeIds) ? node.childNodeIds : [])
+          .map((childId) => nodesMap.get(childId))
+          .filter((child) => child && !visited.has(child.id) && child.parentNodeId === node.id)
+          .sort(compareNodesAsc);
+
+        const result = {
+          id: node.id,
+          treeId: node.treeId || null,
+          nodeType: isDownloadNode(node) ? 'download' : 'page',
+          url: node.url || '',
+          title: node.title || '',
+          filename: node.filename || '',
+          originDomain: node.originDomain || '',
+          downloadId: node.downloadId,
+          timestamp: node.timestamp,
+          isCheckpoint: Boolean(node.isCheckpoint || forcedRoot || !node.parentNodeId || !nodesMap.has(node.parentNodeId)),
+          isContextAncestor: Boolean(node.isContextAncestor),
+          isActiveHead: Boolean(node.isActiveHead),
+          isMatch: node.isMatch !== undefined ? Boolean(node.isMatch) : true,
+          parentNodeId: node.parentNodeId,
+          childNodeIds: node.childNodeIds,
+          depth,
+          x,
+          y
+        };
+        layoutNodes.push(result);
+
+        for (const child of children) {
+          layoutEdges.push({ parentId: node.id, childId: child.id });
+          layoutReflowSubtree(child, depth + 1);
+        }
+
+        return result;
+      }
+
+      for (const root of roots) {
+        if (!visited.has(root.id)) {
+          layoutReflowSubtree(root, 0, true);
+          currentRow++;
+        }
+      }
+
+      const remaining = Array.from(nodesMap.values()).sort(compareNodesAsc);
+      for (const node of remaining) {
+        if (!visited.has(node.id)) {
+          layoutReflowSubtree(node, 0, true);
+          currentRow++;
+        }
+      }
+
+      layoutNodes.sort((a, b) => a.y - b.y || a.x - b.x || compareNodesAsc(a, b));
+      return { layoutNodes, layoutEdges, layoutMode };
+    }
+
     let currentY = marginTop;
 
     function layoutSubtree(node, depth, forcedRoot = false) {
@@ -326,6 +397,7 @@
         isMatch: node.isMatch !== undefined ? Boolean(node.isMatch) : true,
         parentNodeId: node.parentNodeId,
         childNodeIds: node.childNodeIds,
+        depth,
         x,
         y
       };
@@ -353,7 +425,7 @@
     // Keep SVG and keyboard focus order spatially predictable: top-to-bottom,
     // with ancestors before descendants when they share a row.
     layoutNodes.sort((a, b) => a.y - b.y || a.x - b.x || compareNodesAsc(a, b));
-    return { layoutNodes, layoutEdges };
+    return { layoutNodes, layoutEdges, layoutMode };
   }
 
   function isSafeHttpUrl(rawUrl) {

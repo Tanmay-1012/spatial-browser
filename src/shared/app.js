@@ -43,6 +43,7 @@
   let activeNodesMap = new Map();
   let layoutNodes = [];
   let layoutEdges = [];
+  let currentLayoutMode = 'horizontal';
   let selectedNodeId = null;
 
   // Viewport transform state (detail view)
@@ -314,6 +315,22 @@
     elZoomIn.addEventListener('click', () => zoomBy(1.2));
     elZoomOut.addEventListener('click', () => zoomBy(0.83));
     elZoomReset.addEventListener('click', () => fitGraphToView());
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (viewMode === 'detail' && selectedTreeId) {
+          const wasNarrow = currentLayoutMode === 'reflow';
+          const isNarrow = window.innerWidth <= 900;
+          if (wasNarrow !== isNarrow) {
+            renderDetailView();
+          } else {
+            fitGraphToView();
+          }
+        }
+      }, 100);
+    });
   }
 
   function syncHeaderAndInputs() {
@@ -724,12 +741,20 @@
   }
 
   function computeGraphLayout() {
+    const isNarrow = window.innerWidth <= 900;
+    currentLayoutMode = isNarrow ? 'reflow' : 'horizontal';
     const layout = uiLogic.computeGraphLayout(activeNodesMap, {
+      layoutMode: currentLayoutMode,
       horizontalSpacing: HORIZONTAL_SPACING,
       verticalSpacing: VERTICAL_SPACING,
       treeVerticalGap: TREE_VERTICAL_GAP,
-      marginLeft: MARGIN_LEFT,
-      marginTop: MARGIN_TOP
+      marginLeft: isNarrow ? 24 : MARGIN_LEFT,
+      marginTop: isNarrow ? 36 : MARGIN_TOP,
+      nodeWidth: NODE_WIDTH,
+      nodeHeight: NODE_HEIGHT,
+      indentX: 24,
+      rowSpacing: 60,
+      maxIndent: 130
     });
     layoutNodes = layout.layoutNodes;
     layoutEdges = layout.layoutEdges;
@@ -749,13 +774,27 @@
       const c = nodeCoords.get(edge.childId);
       if (!p || !c) continue;
 
-      const startX = p.x + (NODE_WIDTH / 2);
-      const startY = p.y;
-      const endX = c.x - (NODE_WIDTH / 2);
-      const endY = c.y;
+      let d;
+      if (currentLayoutMode === 'reflow') {
+        const startX = p.x - (NODE_WIDTH / 2) + 16;
+        const startY = p.y + (NODE_HEIGHT / 2);
+        const endX = c.x - (NODE_WIDTH / 2);
+        const endY = c.y;
+        if (endX >= startX + 6) {
+          const r = Math.min(10, Math.max(3, endX - startX));
+          d = `M ${startX} ${startY} L ${startX} ${endY - r} Q ${startX} ${endY} ${startX + r} ${endY} L ${endX} ${endY}`;
+        } else {
+          d = `M ${startX} ${startY} C ${startX} ${startY + (endY - startY) * 0.5}, ${startX} ${endY}, ${endX} ${endY}`;
+        }
+      } else {
+        const startX = p.x + (NODE_WIDTH / 2);
+        const startY = p.y;
+        const endX = c.x - (NODE_WIDTH / 2);
+        const endY = c.y;
 
-      const deltaX = (endX - startX) * 0.5;
-      const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
+        const deltaX = (endX - startX) * 0.5;
+        d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
+      }
 
       const pathEl = document.createElementNS(SVG_NS, 'path');
       pathEl.setAttribute('d', d);
@@ -1047,13 +1086,15 @@
 
     const containerRect = elMapContainer.getBoundingClientRect();
     if (containerRect.width <= 0 || containerRect.height <= 0) return false;
-    const padding = 60;
+    const padding = currentLayoutMode === 'reflow' ? 24 : 60;
     const graphWidth = maxX - minX + padding * 2;
     const graphHeight = maxY - minY + padding * 2;
 
     const scaleX = containerRect.width / graphWidth;
     const scaleY = containerRect.height / graphHeight;
-    scale = Math.min(Math.max(0.003, Math.min(scaleX, scaleY)), 1.25);
+    const maxFitScale = currentLayoutMode === 'reflow' ? 1.05 : 1.25;
+    const rawScale = Math.min(scaleX, scaleY);
+    scale = Math.min(Math.max(0.003, rawScale), maxFitScale);
 
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
