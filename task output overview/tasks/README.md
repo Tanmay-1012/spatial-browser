@@ -6,9 +6,10 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 
 - [Task 12 — Research Tree Explorer Overview & Detail UI](task-12.md) ([Report: `task-12-output.md`](../task-12-output.md)) — Accepted (Section 12)
 - [Task 13 — Release Candidate Readiness & Evidence Closeout](task-13.md) ([Report: `task-13-output.md`](../task-13-output.md)) — Accepted (Section 7)
-- [Task 14 — Minimum-Supported Browser Compatibility Audit](task-14.md) ([Report: `task-14-output.md`](../task-14-output.md)) — Completed (submitted for lead review)
+- [Task 14 — Minimum-Supported Browser Compatibility Audit](task-14.md) ([Report: `task-14-output.md`](../task-14-output.md)) — Accepted with limitation (Section 9; branded Chrome 109 unverified)
+- [Task 15 — Branded Chrome 109 Verification or Support-Floor Decision](task-15.md) ([Report: `task-15-output.md`](../task-15-output.md)) — Current assignment
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57, Task 12 per Section 12, and Task 13 per Section 7 of their respective output reports. Task 14 is completed and submitted for lead review; do not begin another task until lead review.
+Task 10 v15 is approved. Task 11 is accepted per Section 57, Task 12 per Section 12, and Task 13 per Section 7. Task 14 is accepted with its Chrome 109 evidence limitation recorded in Section 9. Task 15 is the current assignment; do not begin another task until lead review.
 
 ## Reporting workflow
 

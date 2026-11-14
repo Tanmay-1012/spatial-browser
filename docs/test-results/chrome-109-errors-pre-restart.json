@@ -1,9 +1,9 @@
 {
   "phase": "Pre-Restart Phase",
-  "browserTarget": "Google Chrome 109.0.5414.0 (x64 Windows)",
+  "browserTarget": "Chromium 109 snapshot (unbranded) 109.0.5414.0 (x64 Windows)",
   "addonId": "edhmggcmhhmlbfmidpeamoiffebfijah",
-  "timestamp": "2026-11-14T11:38:24Z",
-  "totalEventsEvaluated": 238,
+  "timestamp": "2026-11-14T12:10:50Z",
+  "totalEventsEvaluated": 237,
   "errorCount": 0,
   "warningCount": 0,
   "extensionErrors": [],

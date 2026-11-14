@@ -1,33 +1,34 @@
 ============================================================================
-TASK 12: GOOGLE CHROME RUNTIME ACCEPTANCE RUN
-Timestamp: 2026-11-14 20:37:13
+TASK 12: CHROMIUM 109 SNAPSHOT (UNBRANDED) RUNTIME ACCEPTANCE RUN
+Timestamp: 2026-11-14 21:09:31
 Extension Path: D:\Projects\HCI Project\outputs\chrome\unpacked
 Declared Manifest Minimum Floor: Chrome 109+
 ============================================================================
-[INIT] Local test HTTP server started at http://127.0.0.1:55813 (and http://localhost:55813)
-[INIT] Local CDN HTTP server started at http://127.0.0.1:55814
+[INIT] Local test HTTP server started at http://127.0.0.1:57799 (and http://localhost:57799)
+[INIT] Local CDN HTTP server started at http://127.0.0.1:57800
 
 --- STEP 1: Chrome Process Startup & Unpacked Extension Loading ---
-[INIT] Connected to Google Chrome 109.0.5414.0 (x64 Windows) via CDP: ws://127.0.0.1:55815/devtools/browser/b76a20cb-1a88-4678-b5d9-59aba533e965
+[INIT] Connected to Chromium 109 snapshot (unbranded) 109.0.5414.0 (x64 Windows) via CDP: ws://127.0.0.1:57801/devtools/browser/0a44cb48-85ed-4e1a-a374-d4a85521c8ff
        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36
        Declared Support Floor: Chrome 109+
 [PASS] Unpacked extension loaded successfully from D:\Projects\HCI Project\outputs\chrome\unpacked
+       Load method: --load-extension command-line flag
        Extension ID: edhmggcmhhmlbfmidpeamoiffebfijah
   [WARN] CDPClient _recv_loop stopped: Connection to remote host was lost.
-[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome 109.0.5414.0.
+[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chromium 109 snapshot (unbranded) 109.0.5414.0.
 [PASS] Service worker discovered: Service Worker chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js (chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/background.js)
-[PASS] Attached to background service worker (Session ID: 25DA681A7A3944004B51136B98E5B56A).
+[PASS] Attached to background service worker (Session ID: 16969F151574CA4DC0BA0EE6FE0C0887).
 [PASS] Background service worker environment: {'hasStorage': True, 'hasTracker': True, 'hasLaunch': True}
 [PASS] Background tracker session state: {'initialized': True, 'initializing': False}
 
 --- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---
   Pages before Action 1: 1
-  Toolbar Action Click 1 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=False|btnRect=1035,66,20,20|center=1045,76|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
-[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab 23F2E6823557059B459050E3E3E9EECF, total pages=2 (was 1)
-  Switched focus to blank tab 5FCB6069A6339D4B9C3C7DBDF26CBC87. Pages before Action 2: 3
-  Toolbar Action Click 2 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=False|btnRect=1035,66,20,20|center=1045,76|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
-  All tabs after Action 2: [{'id': 955692929, 'active': False, 'winId': 955692928, 'url': 'chrome://newtab/'}, {'id': 955692930, 'active': True, 'winId': 955692928, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}, {'id': 955692931, 'active': False, 'winId': 955692928, 'url': 'about:blank'}]
-[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 955692930, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
+  Toolbar Action Click 1 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=True|btnRect=1035,66,20,20|center=1045,76|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
+[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab AD3F0F78606CC7D1E6854199F0568612, total pages=2 (was 1)
+  Switched focus to blank tab BB2EACF30B998B2CAF1A0BC351A3EB54. Pages before Action 2: 3
+  Toolbar Action Click 2 diagnostics: CLICK_SUCCESS|dpiSet=True|winDpi=120|fgOk=True|btnRect=1035,66,20,20|center=1045,76|hr=0|accName=Spatial Browser History|accOk=True|method=accDoDefaultAction
+  All tabs after Action 2: [{'id': 2050597617, 'active': False, 'winId': 2050597616, 'url': 'chrome://newtab/'}, {'id': 2050597618, 'active': True, 'winId': 2050597616, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}, {'id': 2050597619, 'active': False, 'winId': 2050597616, 'url': 'about:blank'}]
+[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {'id': 2050597618, 'url': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}) without opening duplicate tab
 
 --- STEP 3: Exercise Browsing Scenarios & Verify Stored Visits and Parent Relationships ---
   [3a] Navigating to Page 1...
@@ -38,34 +39,34 @@ Declared Manifest Minimum Floor: Chrome 109+
   [3f] Updating location.hash to #section1...
   [3g] History API route update (pushState to /target/spa-route)...
   [3h] Navigating to /opener and opening /child tab...
-  [3h] Child tab confirmed at http://127.0.0.1:55813/child. Closing child tab...
+  [3h] Child tab confirmed at http://127.0.0.1:57799/child. Closing child tab...
   [3i] Navigating via unknown/closed opener to /unknown-parent...
-  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:55813/unknown-parent.
+  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:57799/unknown-parent.
 
 [VISIT COUNT AUDIT - PRE-REOPEN]
   Stored visits in local storage: 7
-    - [node_1794656256037_0tvfm7] url=http://127.0.0.1:55813/page1, parent=None, children=['node_1794656257092_4zlkc9'], checkpoint=True, title='Page One'
-    - [node_1794656257092_4zlkc9] url=http://127.0.0.1:55813/page2, parent=node_1794656256037_0tvfm7, children=['node_1794656258142_mkpn9p'], checkpoint=False, title='Page Two'
-    - [node_1794656258142_mkpn9p] url=http://127.0.0.1:55813/target#section1, parent=node_1794656257092_4zlkc9, children=['node_1794656261326_cxq8qk'], checkpoint=False, title='Updated Target Title'
-    - [node_1794656261326_cxq8qk] url=http://127.0.0.1:55813/target/spa-route, parent=node_1794656258142_mkpn9p, children=['node_1794656262443_ywjqc1'], checkpoint=False, title='Updated Target Title'
-    - [node_1794656262443_ywjqc1] url=http://127.0.0.1:55813/opener, parent=node_1794656261326_cxq8qk, children=['node_1794656263511_314q9g'], checkpoint=False, title='Opener Page'
-    - [node_1794656263511_314q9g] url=http://127.0.0.1:55813/child, parent=node_1794656262443_ywjqc1, children=[], checkpoint=False, title='Child Page'
-    - [node_1794656266066_uujj5k] url=http://127.0.0.1:55813/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
+    - [node_1794658199943_lc4pxu] url=http://127.0.0.1:57799/page1, parent=None, children=['node_1794658201037_2xq3oz'], checkpoint=True, title='Page One'
+    - [node_1794658201037_2xq3oz] url=http://127.0.0.1:57799/page2, parent=node_1794658199943_lc4pxu, children=['node_1794658202086_vpvbzc'], checkpoint=False, title='Page Two'
+    - [node_1794658202086_vpvbzc] url=http://127.0.0.1:57799/target#section1, parent=node_1794658201037_2xq3oz, children=['node_1794658205237_tq3v1a'], checkpoint=False, title='Updated Target Title'
+    - [node_1794658205237_tq3v1a] url=http://127.0.0.1:57799/target/spa-route, parent=node_1794658202086_vpvbzc, children=['node_1794658209211_xw0up0'], checkpoint=False, title='Updated Target Title'
+    - [node_1794658209211_xw0up0] url=http://127.0.0.1:57799/opener, parent=node_1794658205237_tq3v1a, children=['node_1794658210251_6xp97k'], checkpoint=False, title='Opener Page'
+    - [node_1794658210251_6xp97k] url=http://127.0.0.1:57799/child, parent=node_1794658209211_xw0up0, children=[], checkpoint=False, title='Child Page'
+    - [node_1794658212811_0gugkr] url=http://127.0.0.1:57799/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
 [PASS] Verified Page 1: Root checkpoint with parentNodeId: null.
 [PASS] Verified same-tab navigation: Page 2 parent is Page 1, Page 1 children includes Page 2.
 [PASS] Verified redirect destination: /target parent is Page 2.
 [PASS] Verified reload deduplication: Exactly 1 node stored for /target despite reload.
 [PASS] Verified dynamic title update: node title updated in place to 'Updated Target Title'.
-[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:55813/target#section1' without creating extra visit.
+[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:57799/target#section1' without creating extra visit.
 [PASS] Verified SPA route (pushState): /target/spa-route parent is /target.
-[PASS] Verified opener relationship: /child parent is /opener (node_1794656262443_ywjqc1), opener children include child.
+[PASS] Verified opener relationship: /child parent is /opener (node_1794658209211_xw0up0), opener children include child.
 [PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).
   Overview state before reopen: {'overviewHidden': False, 'detailHidden': True, 'zoomHidden': True, 'cardCount': 2, 'badge': '2 Research Trees · 7 Visits'}
-  Opened Detail View for tree_node_1794656256037_0tvfm7: rendered SVG nodes=6, badge='6 nodes'
+  Opened Detail View for tree_node_1794658199943_lc4pxu: rendered SVG nodes=6, badge='6 nodes'
 
 --- STEP 4: Select Closed Child Node, Reopen Saved URL & Explicitly Audit Visit Count ---
-[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:55813/child'
-[PASS] Reopened saved URL in new tab: http://127.0.0.1:55813/child
+[PASS] Selected closed child node: title='Child Page', url='http://127.0.0.1:57799/child'
+[PASS] Reopened saved URL in new tab: http://127.0.0.1:57799/child
 
 [VISIT COUNT AUDIT - POST-REOPEN]
   Stored visits in local storage: 8 (initial: 7, +1 from reopened tab)
@@ -75,7 +76,7 @@ Declared Manifest Minimum Floor: Chrome 109+
 --- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---
   [Overview Search] Typing 'target' into #search-input on Overview...
   [Overview Search 'target'] Badge: '3 Research Trees · 8 Visits', matching tree cards: 1
-  Base active visit count inside tree_node_1794656256037_0tvfm7: 6
+  Base active visit count inside tree_node_1794658199943_lc4pxu: 6
   [Detail Search] Typing 'target' into #search-input inside Detail View...
   [Detail Search 'target'] Badge: '2 of 6 matching (+2 context)', matches: 2, context ancestors: 2
   [Clear Search] Clicking #search-clear-btn...
@@ -103,9 +104,9 @@ Declared Manifest Minimum Floor: Chrome 109+
 
 --- STEP 6.5: Task 11 Core Scenarios: Sibling Branching & Download Provenance ---
   [6.5a] Exercising Sibling Branching: /wiki -> /source-a -> Back -> /source-b...
-[PASS] Sibling Branching Proven: Source A (node_1794656287766_fm8guv) and Source B (node_1794656289868_khczg7) are siblings under Wikipedia (node_1794656286715_utwgpf) in tree tree_node_1794656286715_utwgpf.
+[PASS] Sibling Branching Proven: Source A (node_1794658234509_wzch9g) and Source B (node_1794658236634_v4kruj) are siblings under Wikipedia (node_1794658233466_foetx2) in tree tree_node_1794658233466_foetx2.
   [6.5b] Exercising Distinct-Host Download Provenance from http://localhost/download-portal to http://127.0.0.1 CDN...
-[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794656290973_2nw95p (originDomain: localhost), raw URL/CDN omitted.
+[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794658237749_rewrzi (originDomain: localhost), raw URL/CDN omitted.
   [6.5c] Exercising Unattributed Download (no referrer)...
 [PASS] Unattributed Download Proven: dataset.zip recorded with parentNodeId: null, originDomain: 'Source unavailable'.
   [6.5d] Exercising Ambiguous Referrer Download (|M|=2 matches)...
@@ -138,15 +139,15 @@ Declared Manifest Minimum Floor: Chrome 109+
 
 --- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---
   [SAVED] Pre-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\chrome-109-errors-pre-restart.json
-  Evaluated 238 CDP event records prior to restart.
+  Evaluated 237 CDP event records prior to restart.
   Extension Errors: 0, Warnings: 0
 [PASS] Pre-restart error audit passed with 0 errors and 0 warnings.
 
 --- STEP 8: Background Suspension & Browser Restart Persistence ---
   [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...
   Pre-restart node count stored in chrome.storage.local: 12
-  Pre-restart tab 955692942 historyStack: ['node_1794656305235_v7lcfv', 'node_1794656305646_3poqbs', 'node_1794656306047_519xjy'] (length 3)
-[PASS] Pre-restart multi-node baseline verified: tab 955692942 has 3-node history stack.
+  Pre-restart tab 2050597630 historyStack: ['node_1794658251788_o560b7', 'node_1794658252206_3knc0p', 'node_1794658252637_qndgct'] (length 3)
+[PASS] Pre-restart multi-node baseline verified: tab 2050597630 has 3-node history stack.
   [8b] Testing service worker stop/suspension...
   [PASS] Service worker suspension signaled via Target.closeTarget.
   [PASS] Service worker re-awakened on demand: 12 node(s) accessible.
@@ -154,13 +155,13 @@ Declared Manifest Minimum Floor: Chrome 109+
   [WARN] CDPClient _recv_loop stopped: Connection to remote host was lost.
   Chrome process terminated cleanly.
   Relaunching Chrome with persistent profile and restored live tab...
-  Reconnected to restarted Google Chrome 109.0.5414.0: ws://127.0.0.1:55815/devtools/browser/76b2a35a-2a93-404b-9985-8a4da3e41352
-  Pre-extension-load open page targets: ['127.0.0.1:55813/restart-step3']
+  Reconnected to restarted Chromium 109 snapshot (unbranded) 109.0.5414.0: ws://127.0.0.1:57801/devtools/browser/5339b88b-ed21-44d3-914a-37af10e0f067
+  Pre-extension-load open page targets: ['127.0.0.1:57799/restart-step3']
   Post-restart stored node count in storage: 12 (was 12)
-  Post-restart open tabs snapshot: [{'id': 955693014, 'active': False, 'status': 'complete', 'title': 'New Tab', 'location': 'chrome://newtab/'}, {'id': 955693015, 'active': False, 'status': 'complete', 'title': 'Spatial Browser History', 'location': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}, {'id': 955693016, 'active': False, 'status': 'complete', 'title': 'Restart Step 3', 'location': 'http://127.0.0.1:55813/restart-step3'}, {'id': 955693023, 'active': True, 'status': 'complete', 'title': 'Spatial Browser History', 'location': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}]
-  Post-restart live tab state: stack=['node_1794656306047_519xjy'], index=0, baselineEstablished=True
+  Post-restart open tabs snapshot: [{'id': 2050597702, 'active': False, 'status': 'complete', 'title': 'New Tab', 'location': 'chrome://newtab/'}, {'id': 2050597703, 'active': False, 'status': 'complete', 'title': 'Spatial Browser History', 'location': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}, {'id': 2050597704, 'active': False, 'status': 'complete', 'title': 'Restart Step 3', 'location': 'http://127.0.0.1:57799/restart-step3'}, {'id': 2050597711, 'active': True, 'status': 'complete', 'title': 'Spatial Browser History', 'location': 'chrome-extension://edhmggcmhhmlbfmidpeamoiffebfijah/index.html'}]
+  Post-restart live tab state: stack=['node_1794658252637_qndgct'], index=0, baselineEstablished=True
 [PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.
-  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794656305235_v7lcfv: 3 nodes (3 nodes)
+  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794658251788_o560b7: 3 nodes (3 nodes)
 [PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.
 
 --- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---
@@ -170,8 +171,8 @@ Declared Manifest Minimum Floor: Chrome 109+
 [PASS] Post-restart error audit passed with 0 errors and 0 warnings.
 
 --- STEP 10: Cross-Browser Comparison & Evaluation ---
-  [CHROME 109.0.5414.0 RUNTIME EVALUATION (Minimum Supported Floor: Chrome 109+)]
-  - Extension Loading: Validated via Extensions.loadUnpacked in Google Chrome 109.0.5414.0.
+  [CHROMIUM 109 SNAPSHOT (UNBRANDED) 109.0.5414.0 RUNTIME EVALUATION (Declared Chrome Floor: Chrome 109+)]
+  - Extension Loading: Validated via --load-extension command-line flag in Chromium 109 snapshot (unbranded) 109.0.5414.0.
   - Toolbar Action Open-or-Focus: Exact parity; first DPI-aware UI click opens map tab, repeat click focuses existing map without duplication.
   - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,
     SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).
@@ -191,6 +192,7 @@ Declared Manifest Minimum Floor: Chrome 109+
   - Error Telemetry: Exact parity; 0 extension errors, 0 warnings across both live and restart phases.
 
 ============================================================================
-ALL EXECUTED GOOGLE CHROME 109.0.5414.0 CDP CHECKS PASSED (0 FAILURES)
-ALL ACCEPTANCE CRITERIA SATISFIED ACROSS LIVE RUNTIME VERIFICATION.
+ALL EXECUTED CHROMIUM 109 SNAPSHOT (UNBRANDED) 109.0.5414.0 CDP CHECKS PASSED (0 FAILURES)
+ALL EXECUTED CHECKS PASSED FOR CHROMIUM 109 SNAPSHOT (UNBRANDED) 109.0.5414.0.
 ============================================================================
+Lead review clarification: this unbranded snapshot run does not verify Google Chrome 109 stable.

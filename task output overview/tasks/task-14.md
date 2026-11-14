@@ -1,6 +1,6 @@
 # Task 14 — Minimum-Supported Browser Compatibility Audit
 
-**Status:** Completed — submitted for lead review (see [`task output overview/task-14-output.md`](../task-14-output.md)).  
+**Status:** Accepted with limitation — Firefox 115 is verified; branded Google Chrome 109 stable remains unverified per Section 9 of [`task output overview/task-14-output.md`](../task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14).
 **Milestone:** 14 (Compatibility Floor)  
 **Prerequisites:** Tasks 11, 12, and 13 are accepted. The current build declares Chrome `109+` and Firefox `115.0+` support.
 
@@ -36,7 +36,7 @@ Establish whether the current extension actually runs at its declared minimum br
 - Use local synthetic pages and downloads only; do not use real accounts or personal browsing profiles.
 - Do not publish, push, tag, upload, or distribute a release.
 - Do not lower or raise the declared browser floors without lead review.
-- Do not start Task 15 before Task 14 is reviewed and accepted.
+- The Chromium 109 snapshot is proxy evidence only. Task 15 is assigned to close the branded Chrome 109 evidence gap; do not treat the proxy run as a Google Chrome stable verification.
 
 ## Deliverables
 

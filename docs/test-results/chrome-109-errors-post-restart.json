@@ -1,8 +1,8 @@
 {
   "phase": "Post-Restart Phase",
-  "browserTarget": "Google Chrome 109.0.5414.0 (x64 Windows)",
+  "browserTarget": "Chromium 109 snapshot (unbranded) 109.0.5414.0 (x64 Windows)",
   "addonId": "edhmggcmhhmlbfmidpeamoiffebfijah",
-  "timestamp": "2026-11-14T11:38:34Z",
+  "timestamp": "2026-11-14T12:11:01Z",
   "totalEventsEvaluated": 16,
   "errorCount": 0,
   "warningCount": 0,

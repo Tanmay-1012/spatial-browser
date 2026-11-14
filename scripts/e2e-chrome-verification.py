@@ -43,6 +43,9 @@ PRE_RESTART_ERRORS_PATH = os.environ.get("CHROME_PRE_ERRORS_PATH", r"D:\Projects
 POST_RESTART_ERRORS_PATH = os.environ.get("CHROME_POST_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json")
 EXT_DIR = r"D:\Projects\HCI Project\outputs\chrome\unpacked"
 CHROME_EXE = os.environ.get("CHROME_BINARY", r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+CHROME_BROWSER_LABEL = os.environ.get("CHROME_BROWSER_LABEL") or (
+    "Chromium snapshot" if "chromium" in CHROME_EXE.lower() else "Google Chrome"
+)
 SCREENSHOT_PREFIX = os.environ.get("CHROME_SCREENSHOT_PREFIX", "chrome")
 
 # Local test HTTP server
@@ -664,7 +667,7 @@ def run_tests():
     sys.stdout = tee
 
     print("=" * 76)
-    print("TASK 12: GOOGLE CHROME RUNTIME ACCEPTANCE RUN")
+    print(f"TASK 12: {CHROME_BROWSER_LABEL.upper()} RUNTIME ACCEPTANCE RUN")
     print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Extension Path: {EXT_DIR}")
     print(f"Declared Manifest Minimum Floor: Chrome {MANIFEST_MIN_VERSION if 'MANIFEST_MIN_VERSION' in globals() else '109+'}")
@@ -737,7 +740,7 @@ def run_tests():
         cdp = CDPClient(ws_url)
         ver_info = cdp.send_cmd("Browser.getVersion")
         actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "").replace("Chromium/", "")
-        print(f"[INIT] Connected to Google Chrome {actual_chrome_version} (x64 Windows) via CDP: {ws_url}")
+        print(f"[INIT] Connected to {CHROME_BROWSER_LABEL} {actual_chrome_version} (x64 Windows) via CDP: {ws_url}")
         print(f"       User-Agent: {ver_info.get('userAgent', '')}")
         print("       Declared Support Floor: Chrome 109+")
 
@@ -745,8 +748,9 @@ def run_tests():
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
         time.sleep(0.5)
 
-        # Discover extension ID from --load-extension or load via Extensions.loadUnpacked
+        # Discover extension ID from the command-line load or use the CDP fallback.
         ext_id = None
+        extension_load_method = "--load-extension command-line flag"
         targets_info = cdp.send_cmd("Target.getTargets")
         for t in targets_info.get("targetInfos", []):
             if t.get("type") == "service_worker" and "chrome-extension://" in t.get("url", ""):
@@ -757,11 +761,13 @@ def run_tests():
             try:
                 load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
                 ext_id = load_res.get("id")
+                extension_load_method = "CDP Extensions.loadUnpacked fallback"
             except Exception as e:
                 print(f"  [NOTE] Extensions.loadUnpacked fallback note: {e}")
 
         assert ext_id is not None, "Extensions.loadUnpacked / --load-extension must return valid extension ID"
         print(f"[PASS] Unpacked extension loaded successfully from {EXT_DIR}")
+        print(f"       Load method: {extension_load_method}")
         print(f"       Extension ID: {ext_id}")
 
         # Kill Chrome BEFORE modifying Default/Preferences so Chrome cannot overwrite
@@ -819,7 +825,7 @@ def run_tests():
             except Exception:
                 pass
         assert reconnect_ext, "Chrome extension must remain loaded and stable after pinning and restart"
-        print(f"[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome {actual_chrome_version}.")
+        print(f"[PASS] Pinned the discovered extension action in the isolated profile and relaunched {CHROME_BROWSER_LABEL} {actual_chrome_version}.")
 
         # Wait for service worker target registration and attach reliably (preferring auto-attached session)
         sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
@@ -1831,7 +1837,7 @@ def run_tests():
             "Pre-Restart Phase",
             PRE_RESTART_ERRORS_PATH,
             ext_id,
-            browser_target=f"Google Chrome {actual_chrome_version} (x64 Windows)"
+            browser_target=f"{CHROME_BROWSER_LABEL} {actual_chrome_version} (x64 Windows)"
         )
         print(f"  Evaluated {len(cdp.events)} CDP event records prior to restart.")
         print(f"  Extension Errors: {len(pre_ext_errors)}, Warnings: {len(pre_ext_warnings)}")
@@ -1947,7 +1953,7 @@ def run_tests():
         cdp2 = CDPClient(ws_url2)
         ver_info2 = cdp2.send_cmd("Browser.getVersion")
         actual_chrome_version2 = ver_info2.get("product", f"Chrome/{actual_chrome_version}").replace("Chrome/", "").replace("Chromium/", "")
-        print(f"  Reconnected to restarted Google Chrome {actual_chrome_version2}: {ws_url2}")
+        print(f"  Reconnected to restarted {CHROME_BROWSER_LABEL} {actual_chrome_version2}: {ws_url2}")
         cdp2.send_cmd("Target.setDiscoverTargets", {"discover": True})
 
         # Ensure the restored /restart-step3 tab has fully committed
@@ -2117,7 +2123,7 @@ def run_tests():
             "Post-Restart Phase",
             POST_RESTART_ERRORS_PATH,
             ext_id2,
-            browser_target=f"Google Chrome {actual_chrome_version2} (x64 Windows)"
+            browser_target=f"{CHROME_BROWSER_LABEL} {actual_chrome_version2} (x64 Windows)"
         )
         print(f"  Evaluated {len(cdp2.events)} CDP event records in restarted session.")
         print(f"  Post-Restart Extension Errors: {len(post_ext_errors)}, Warnings: {len(post_ext_warnings)}")
@@ -2127,8 +2133,8 @@ def run_tests():
 
         # --- STEP 10: CROSS-BROWSER BEHAVIOR COMPARISON & EVALUATION ---
         print("\n--- STEP 10: Cross-Browser Comparison & Evaluation ---")
-        print(f"  [CHROME {actual_chrome_version} RUNTIME EVALUATION (Minimum Supported Floor: Chrome 109+)]")
-        print(f"  - Extension Loading: Validated via Extensions.loadUnpacked in Google Chrome {actual_chrome_version}.")
+        print(f"  [{CHROME_BROWSER_LABEL.upper()} {actual_chrome_version} RUNTIME EVALUATION (Declared Chrome Floor: Chrome 109+)]")
+        print(f"  - Extension Loading: Validated via {extension_load_method} in {CHROME_BROWSER_LABEL} {actual_chrome_version}.")
         print("  - Toolbar Action Open-or-Focus: Exact parity; first DPI-aware UI click opens map tab, repeat click focuses existing map without duplication.")
         print("  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,")
         print("    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).")
@@ -2153,8 +2159,10 @@ def run_tests():
         proc2 = None
 
         print("\n" + "=" * 76)
-        print(f"ALL EXECUTED GOOGLE CHROME {actual_chrome_version} CDP CHECKS PASSED (0 FAILURES)")
-        print("ALL ACCEPTANCE CRITERIA SATISFIED ACROSS LIVE RUNTIME VERIFICATION.")
+        print(f"ALL EXECUTED {CHROME_BROWSER_LABEL.upper()} {actual_chrome_version} CDP CHECKS PASSED (0 FAILURES)")
+        print(f"ALL EXECUTED CHECKS PASSED FOR {CHROME_BROWSER_LABEL.upper()} {actual_chrome_version}.")
+        if "chromium" in CHROME_BROWSER_LABEL.lower():
+            print("This unbranded snapshot run does not verify Google Chrome 109 stable.")
         print("=" * 76)
 
     finally:

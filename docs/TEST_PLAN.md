@@ -2,9 +2,9 @@
 
 This record separates automated source-level checks from manual browser behavior. Automated mocks and pure logic tests do not prove that an installed extension works end to end.
 
-## Task 11–14 status (2026-11-13)
+## Task 11–15 status (2026-11-14)
 
-Task 11 core backend implementation, unit tests, and distinct-host browser provenance verification were accepted by lead review on 2026-11-12 (Section 57). **Task 12 is accepted** per Section 12 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13). Its responsive reflow is verified across 61 automated tests and fresh Chrome/Firefox isolated-profile E2E runs. **Task 13 is accepted** per Section 7 of [`task output overview/task-13-output.md`](../task%20output%20overview/task-13-output.md#7-lead-review--task-13-accepted-task-14-assigned-2026-11-13). Task 14 minimum-supported-browser compatibility audit is assigned in [`task output overview/tasks/task-14.md`](../task%20output%20overview/tasks/task-14.md).
+Task 11 core backend implementation, unit tests, and distinct-host browser provenance verification were accepted on 2026-11-12 (Section 57). **Task 12 is accepted** per Section 12 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13). **Task 13 is accepted** per Section 7 of [`task output overview/task-13-output.md`](../task%20output%20overview/task-13-output.md#7-lead-review--task-13-accepted-task-14-assigned-2026-11-13). **Task 14 is accepted with an open evidence limitation** per Section 9 of [`task output overview/task-14-output.md`](../task%20output%20overview/task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14): Firefox 115.0 ESR is verified; branded Google Chrome 109 stable is not. Task 15 is assigned to resolve that gap in [`task output overview/tasks/task-15.md`](../task%20output%20overview/tasks/task-15.md).
 ## Test record
 
 - **Declared support floors:** Chrome 109+, Firefox 115.0+ (selected project targets; Firefox ESR 115 baseline).
@@ -119,14 +119,14 @@ Full verification run output preserved in [`docs/test-results/chrome-e2e.log`](t
 
 ## Current acceptance status
 
-- **Minimum-Supported Browser Compatibility (Task 14 Verified Floors):**
-  - **Chromium Floor (`109.0.5414.0` runtime vs `109+` declared floor):** Real isolated-profile run exited `0` across all 10 verification steps. Verified `--load-extension` startup, MSAA toolbar action click (`IAccessible`), distinct-host download provenance, narrow reflow readability ($420\times 800$, `fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 17.6px`), `12 -> 12` node restart persistence with `--restore-last-session`, and zero console errors/warnings ([`chrome-109-e2e.log`](test-results/chrome-109-e2e.log)).
+- **Minimum-Supported Browser Compatibility (Task 14):**
+  - **Chromium 109 Engine Proxy (`109.0.5414.0` vs `109+` declared floor):** Unbranded snapshot E2E run exited `0` across all 10 steps. Verified `--load-extension` startup, toolbar action, download provenance, narrow reflow, `12 -> 12` restart persistence, and zero extension errors/warnings ([`chrome-109-e2e.log`](test-results/chrome-109-e2e.log)). This is engine-proxy evidence only; branded Google Chrome 109 stable remains unverified and is tracked in Task 15.
   - **Firefox Floor (`115.0` ESR runtime vs `115.0+` declared floor):** Real isolated-profile Marionette run exited `0` across all 10 verification steps. Verified `Addon:Install`, Unified Extensions BAP button click, `browser.storage.session` readiness barrier, distinct-host download provenance, narrow reflow ($450\times 800$ measured, `renderedTitleHeight = 17.6px`), `12 -> 12` node restart persistence, clean process-tree cleanup, and zero console errors/warnings ([`firefox-115-e2e.log`](test-results/firefox-115-e2e.log)).
 - **Latest Tested Browser Status:**
   - **Firefox (`160.0` runtime vs `115.0+` floor):** The latest isolated-profile E2E run exited `0` after all scenarios, including narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 20.4px`), zoom/fit navigability, download drawer reopen, `12 -> 12` SQLite restart persistence, clean process-tree cleanup (`terminate_firefox_tree`), and zero errors/warnings.
   - **Chrome (`157.0.8103.78` runtime vs `109+` floor):** The isolated-profile E2E run exited `0`; all scenarios passed with narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 17.6px`), zoom/fit navigability, `12 -> 12` restart persistence, real CDP keyboard input, and zero errors/warnings.
 - **Narrow Map Usability Verified:** The responsive reflow layout (`layoutMode: 'reflow'`) maintains full `220x44px` node dimensions and vertical sibling fanning under Fit view, providing crisp, fully readable titles and domains at normal viewing size without initial zoom across all tested browser versions.
-- **Task 11–14 Status:** Task 11 accepted per Section 57 of `task output overview/task-11-output.md`; Task 12 accepted per Section 12 of `task output overview/task-12-output.md`; Task 13 accepted per Section 7 of `task output overview/task-13-output.md`; Task 14 is completed and submitted for lead review in `task output overview/task-14-output.md`.
+- **Task 11–15 Status:** Task 11 accepted per Section 57; Task 12 per Section 12; Task 13 per Section 7; Task 14 accepted with the Chrome 109 limitation per Section 9; Task 15 is assigned in `task output overview/tasks/task-15.md`.
 
 
 

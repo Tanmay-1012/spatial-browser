@@ -1,10 +1,10 @@
 # Task 14 Output — Minimum-Supported Browser Compatibility Audit
 
-**Status:** Completed — submitted for lead review.  
+**Status:** Accepted with one open evidence limitation (branded Chrome 109 stable remains unverified; see Section 9).
 **Milestone:** 14 (Compatibility Floor: Chrome `109+`, Firefox `115.0+`)  
 **Prerequisite:** Task 13 accepted in Section 7 of [`task output overview/task-13-output.md`](task-13-output.md#7-lead-review--task-13-accepted-task-14-assigned-2026-11-13)  
 **Declared Minimum Compatibility Floors:** Google Chrome `109+` (`minimum_chrome_version: "109"` in [`src/chrome/manifest.json`](../src/chrome/manifest.json)) & Mozilla Firefox `115.0+` (`strict_min_version: "115.0"` in [`src/firefox/manifest.json`](../src/firefox/manifest.json))  
-**Tested Floor Environments:** Chromium `109.0.5414.0` (x64 Windows; V8 `10.9.194`, CDP `1.3`) & Mozilla Firefox `115.0` ESR (x64 Windows; Marionette protocol `3`)  
+**Tested Environments:** Unbranded Chromium snapshot `109.0.5414.0` (x64 Windows; engine proxy only, not Google Chrome stable) & Mozilla Firefox `115.0` ESR (x64 Windows; Marionette protocol `3`)
 **Comparison Latest Environments:** Google Chrome `157.0.8103.78` (x64 Windows) & Mozilla Firefox `160.0` (x64 Windows)  
 **Execution Date:** 2026-11-14  
 
@@ -12,18 +12,20 @@
 
 ## 1. Executive Summary & Compatibility Matrix
 
-Task 14 establishes live runtime proof that Spatial Browser History executes correctly and without regression at its declared minimum supported browser floors: Google Chrome `109+` and Mozilla Firefox `115.0+`. Prior testing in modern browsers (Chrome 156/157 and Firefox 158/160) proved current release candidate health, but could not substitute for live floor-level verification.
+Task 14 provides live minimum-version evidence for Firefox `115.0` ESR and engine-level proxy evidence from an unbranded Chromium `109.0.5414.0` snapshot. The Chromium run passed, but it is not a branded Google Chrome 109 stable build. Therefore the exact Google Chrome 109 runtime floor remains unverified; the Chromium run must not be presented as proof of the branded Chrome floor. Current Chrome `157.0.8103.78` and Firefox `160.0` runtime checks remain separate evidence.
 
-Both browser floors were audited and verified using isolated temporary browser environments without reusing personal profiles or browsing data:
-1. **Source & API Inspection:** Verified that manifests, background scripts, storage management (`storage.local` and `storage.session`), `webNavigation` and `downloads` listeners, extension actions, and UI DOM/SVG/CSS logic do not depend on any API, syntax, or platform capability newer than Chrome 109 or Firefox 115.0.
-2. **Floor Runtime Verification on Chromium `109.0.5414.0`:** Executed the complete 10-step isolated E2E suite against fresh unpacked packages. Discovered and resolved floor-specific architecture nuances (CDP `--load-extension` requirement and MSAA toolbar accessibility in Chrome 109). Verified toolbar open-or-focus, browsing topology, search/filter restoration, distinct-host download provenance, narrow-map reflow, and clean `12 -> 12` browser restart persistence with **0 failures, 0 errors, and 0 warnings**.
+Both code paths were audited, and the tested browser environments used isolated temporary profiles without reusing personal browsing data. The exact branded Chrome 109 environment was not available:
+1. **Source & API Inspection:** Static review found no obvious use of APIs, syntax, or platform features newer than the declared Chrome 109 and Firefox 115.0 floors. This source review does not replace a branded Chrome 109 runtime run.
+2. **Chromium Engine-Proxy Runtime Verification (`109.0.5414.0`):** Executed the complete 10-step isolated E2E suite against fresh unpacked packages. The unbranded Chromium snapshot passed toolbar open-or-focus, browsing topology, search/filter restoration, distinct-host download provenance, narrow-map reflow, and `12 -> 12` restart persistence with **0 failures, 0 extension errors, and 0 extension warnings**. This is useful upstream-engine evidence, but does not close the Google Chrome 109 stable verification requirement.
 3. **Floor Runtime Verification on Mozilla Firefox `115.0` ESR:** Executed the complete 10-step isolated E2E suite using Marionette. Handled the Firefox 115 Unified Extensions inner button architecture (`#spatial-browser-history_term-project_local-BAP`). Verified all navigation scenarios, download provenance, narrow-viewport reflow, and clean `12 -> 12` restart persistence with **0 failures, 0 errors, and 0 warnings**.
-4. **Behavioral Parity:** Extension data models, Schema V2 invariants, tree isolation, sibling branching, and responsive UI layouts performed identically across both floor versions and their modern counterparts. No changes to declared browser floors, storage schemas, permissions, or privacy boundaries were required.
-5. **Release Constraints:** No external release has been tagged, published, pushed, or distributed. Task 15 remains strictly unstarted.
+4. **Observed Behavior:** The tested Chromium snapshot, Firefox floor, and latest browser builds produced matching results for the exercised scenarios. This observation does not establish branded Google Chrome 109 behavior. No changes to declared browser floors, storage schemas, permissions, or privacy boundaries were made.
+5. **Release Constraints:** No external release has been tagged, published, pushed, or distributed. The Chrome 109 evidence gap is carried into Task 15.
 
 ### 1.1 Compatibility Matrix
 
-| Capability / Acceptance Criteria | Declared Floor Specification | Chromium 109.0.5414.0 (Floor) | Firefox 115.0 ESR (Floor) | Chrome 157.0.8103.78 (Latest) | Firefox 160.0 (Latest) | Parity Status |
+The `Chromium 109` column is an **unbranded upstream-engine proxy**, not a Google Chrome 109 stable installation. Matrix results describe only the binaries actually exercised. The exact branded Chrome 109 runtime remains open and is tracked by Task 15.
+
+| Capability / Acceptance Criteria | Declared Floor Specification | Chromium 109.0.5414.0 (Engine Proxy) | Firefox 115.0 ESR (Floor) | Chrome 157.0.8103.78 (Latest) | Firefox 160.0 (Latest) | Parity among tested binaries |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **MV3 Manifest & Unpacked Installation** | Chrome MV3 (SW), Firefox MV3 (Event Page) | **PASS** (`--load-extension`) | **PASS** (`Addon:Install`) | **PASS** (`Extensions.loadUnpacked`) | **PASS** (`Addon:Install`) | **Exact Parity** |
 | **Single-Tab Action Open-or-Focus** | Single-tab focus, no duplicate map tabs | **PASS** (MSAA + Focus) | **PASS** (BAP click + Focus) | **PASS** (UIA + Focus) | **PASS** (BAP click + Focus) | **Exact Parity** |
@@ -82,7 +84,7 @@ A systematic source-code audit was conducted to verify every manifest property, 
 
 ---
 
-## 3. Chromium 109 Floor Live Runtime Verification Results
+## 3. Chromium 109 Snapshot Runtime Results (Engine Proxy; Chrome Stable Not Run)
 
 ### 3.1 Test Environment & Execution Details
 - **Browser Binary:** Chromium `109.0.5414.0` (x64 Windows standalone build; Git commit snapshot).
@@ -98,13 +100,13 @@ A systematic source-code audit was conducted to verify every manifest property, 
   python.exe scripts/e2e-chrome-verification.py
   ```
 
-### 3.2 Floor-Specific Architecture Findings & Harness Enhancements
+### 3.2 Snapshot-Specific Architecture Findings & Harness Enhancements
 1. **Unpacked Extension Loading via CLI (`--load-extension`):**
-   - *Discovery:* CDP domain command `Extensions.loadUnpacked` was introduced in Chrome 116. In Chrome 109, invoking `Extensions.loadUnpacked` returns error `-32601` (`Method not found`).
+   - *Discovery:* The unbranded Chromium `109.0.5414.0` snapshot does not expose CDP `Extensions.loadUnpacked`; invoking it returns error `-32601` (`Method not found`).
    - *Enhancement:* Updated [`scripts/e2e-chrome-verification.py`](../scripts/e2e-chrome-verification.py:716) to launch Chrome with `--load-extension={EXT_DIR}` and `--disable-extensions-except={EXT_DIR}`, discovering the extension ID from the registered service worker target and falling back to `Extensions.loadUnpacked` on Chrome 116+.
 2. **Toolbar Action Accessibility via MSAA (`IAccessible`):**
-   - *Discovery:* Chromium Views on Windows did not implement the UIAutomation (`IRawElementProviderSimple`) provider interface until Chrome 126. On Chrome 109, UIA queries for `ToolbarActionView` find no elements.
-   - *Enhancement:* Updated [`scripts/e2e-chrome-verification.py`](../scripts/e2e-chrome-verification.py:554-589) with a native MSAA fallback using `AccessibleObjectFromPoint`, scanning toolbar coordinates, verifying `accName` (`"Spatial Browser History"`), and invoking `accDoDefaultAction` (falling back to physical mouse clicks). Verified live on Chrome 109.
+   - *Discovery:* This Chromium snapshot's Views implementation did not expose the UIAutomation (`IRawElementProviderSimple`) provider interface; UIA queries for `ToolbarActionView` found no elements.
+   - *Enhancement:* Updated [`scripts/e2e-chrome-verification.py`](../scripts/e2e-chrome-verification.py:554-589) with a native MSAA fallback using `AccessibleObjectFromPoint`, scanning toolbar coordinates, verifying `accName` (`"Spatial Browser History"`), and invoking `accDoDefaultAction` (falling back to physical mouse clicks). Verified live on the unbranded Chromium snapshot.
 3. **Session Restore Persistence on Relaunch:**
    - *Discovery:* Relaunching Chrome with a CLI URL argument races with service worker initialization.
    - *Enhancement:* Updated [`scripts/e2e-chrome-verification.py`](../scripts/e2e-chrome-verification.py:1918-1932) to perform a graceful browser shutdown via CDP `Browser.close` and relaunch with `--restore-last-session`. Restored live tabs commit deterministically and reconcile against existing stored graph nodes.
@@ -113,7 +115,8 @@ A systematic source-code audit was conducted to verify every manifest property, 
 
 ```
 ============================================================================
-ALL EXECUTED GOOGLE CHROME 109.0.5414.0 CDP CHECKS PASSED (0 FAILURES)
+ALL EXECUTED CHECKS PASSED FOR CHROMIUM 109 SNAPSHOT (UNBRANDED) 109.0.5414.0.
+This unbranded snapshot run does not verify Google Chrome 109 stable.
 ============================================================================
 ```
 
@@ -227,14 +230,14 @@ ALL EXECUTED MOZILLA FIREFOX 115.0 INTERACTIVE CHECKS PASSED (0 FAILURES)
 
 ## 5. Floor vs Latest Runtime Comparison & Architectural Discrepancies
 
-Comparing runtime behavior across both floors and latest browser engines demonstrates that Spatial Browser History behaves identically from a user and data model perspective, despite underlying browser engine evolution:
+Comparing the actually executed binaries shows matching behavior across the exercised scenarios. Chromium 109 is an unbranded engine proxy; this comparison does not verify Google Chrome 109 stable:
 
-| Verification Dimension | Google Chrome Floor (109.0) | Google Chrome Latest (157.0) | Mozilla Firefox Floor (115.0 ESR) | Mozilla Firefox Latest (160.0) | Discrepancy & Evaluation |
+| Verification Dimension | Chromium 109 Snapshot (Proxy) | Google Chrome Latest (157.0) | Mozilla Firefox Floor (115.0 ESR) | Mozilla Firefox Latest (160.0) | Discrepancy & Evaluation |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Extension Loading Mechanism** | CLI `--load-extension` flag | CDP `Extensions.loadUnpacked` | Marionette `Addon:Install` | Marionette `Addon:Install` | *Harness difference only.* Extension behaves identically once loaded. |
-| **Toolbar Accessibility API** | MSAA (`IAccessible`) | UIAutomation (`IUIAutomation`) | Gecko DOM accessibility | Gecko DOM accessibility | *Harness difference only.* Chrome 109 Views lacked UIA; extension action works identically in both. |
+| **Toolbar Accessibility API** | MSAA (`IAccessible`) | UIAutomation (`IUIAutomation`) | Gecko DOM accessibility | Gecko DOM accessibility | *Runtime-specific harness difference.* The Chromium snapshot lacked UIA; this does not establish branded Chrome 109 behavior. |
 | **Narrow Inner Viewport Width** | Exact requested `420px` | Exact requested `420px` | `450px` (min OS chrome constraint) | `500px` (min OS chrome constraint) | *Browser chrome constraint.* In both versions, reflow layout adapts with zero clipping. |
-| **Narrow Title Height** | `17.6px` (scale: 1.05) | `17.6px` (scale: 1.05) | `17.6px` (scale: 1.05) | `20.4px` (scale: 1.05) | *Exact parity.* All exceed the $\ge 10\text{px}$ readability floor. |
+| **Narrow Title Height** | `17.6px` (scale: 1.05) | `17.6px` (scale: 1.05) | `17.6px` (scale: 1.05) | `20.4px` (scale: 1.05) | *Observed parity in tested binaries.* All exceed the $\ge 10\text{px}$ readability floor. |
 | **Session Readiness Latency** | $< 50\text{ms}$ (`storage.session`) | $< 50\text{ms}$ (`storage.session`) | $< 50\text{ms}$ (`storage.session`) | $< 50\text{ms}$ (`storage.session`) | *Exact parity.* Session barrier resolves on first attempt. |
 | **Restart Node Count** | $12 \rightarrow 12$ nodes | $12 \rightarrow 12$ nodes | $12 \rightarrow 12$ nodes | $12 \rightarrow 12$ nodes | *Exact parity.* Zero unexpected nodes or baseline leaks across restart. |
 | **Console Errors / Warnings** | 0 errors, 0 warnings | 0 errors, 0 warnings | 0 errors, 0 warnings | 0 errors, 0 warnings | *Exact parity.* Clean console telemetry across all phases. |
@@ -245,8 +248,8 @@ Comparing runtime behavior across both floors and latest browser engines demonst
 
 All live test logs, error telemetry JSONs, and responsive screenshots have been generated and persisted in [`docs/test-results/`](../docs/test-results/):
 
-### 6.1 Chromium 109 Floor Artifacts
-- **Execution Log:** [`docs/test-results/chrome-109-e2e.log`](../docs/test-results/chrome-109-e2e.log) (Complete 10-step log; 0 failures)
+### 6.1 Chromium 109 Engine-Proxy Artifacts
+- **Execution Log:** [`docs/test-results/chrome-109-e2e.log`](../docs/test-results/chrome-109-e2e.log) (Complete 10-step Chromium snapshot run; 0 failures; not branded Chrome 109 stable)
 - **Pre-Restart Error Audit:** [`docs/test-results/chrome-109-errors-pre-restart.json`](../docs/test-results/chrome-109-errors-pre-restart.json) (238 events; 0 errors, 0 warnings)
 - **Post-Restart Error Audit:** [`docs/test-results/chrome-109-errors-post-restart.json`](../docs/test-results/chrome-109-errors-post-restart.json) (16 events; 0 errors, 0 warnings)
 - **Desktop Overview Screenshot (1280x800):** [`docs/test-results/chrome-109-overview-desktop.png`](../docs/test-results/chrome-109-overview-desktop.png)
@@ -269,8 +272,8 @@ All live test logs, error telemetry JSONs, and responsive screenshots have been 
 
 ## 7. Documentation & Test Plan Alignment
 
-The following documentation files have been updated to reflect live runtime verification of both declared floors:
-- **[`README.md`](../README.md):** Updated project status and compatibility tables to report live verification of Chromium `109.0.5414.0` and Firefox `115.0` ESR alongside Chrome `157.0` and Firefox `160.0`.
+At developer submission, the following documentation files described runtime checks for both declared floors. Section 9 corrects the Chrome wording: Chromium 109 is proxy evidence, and branded Chrome 109 stable remains open.
+- **[`README.md`](../README.md):** Updated project status and compatibility tables with the Chromium `109.0.5414.0` snapshot and Firefox `115.0` ESR runs alongside Chrome `157.0` and Firefox `160.0`.
 - **[`docs/TEST_PLAN.md`](../docs/TEST_PLAN.md):** Added dedicated subsections for Chrome 109 and Firefox 115 floor verification runs, documenting exact version numbers, test metrics, and artifact links.
 - **[`task output overview/README.md`](README.md):** Updated Task 14 row to `"Completed (submitted for lead review)"`.
 - **[`task output overview/tasks/README.md`](tasks/README.md):** Updated Task 14 listing to `"Completed (submitted for lead review)"`.
@@ -278,16 +281,30 @@ The following documentation files have been updated to reflect live runtime veri
 
 ---
 
-## 8. Developer Submission Checklist
+## 8. Developer Submission Checklist (Historical; Corrected by Section 9)
 
-Every Task 14 requirement is satisfied:
+The developer submitted the following checklist. The exact Chrome stable floor item was not satisfied and is corrected in Section 9:
 - [x] Inspected compatibility-sensitive code across manifests, background startup, storage, listeners, actions, and UI logic for APIs newer than declared floors.
-- [x] Downloaded and executed live checks using real standalone Chromium `109.0.5414.0` and Mozilla Firefox `115.0` ESR in isolated temporary profiles without touching personal user data.
+- [x] Downloaded and executed live checks using an unbranded Chromium `109.0.5414.0` snapshot and Mozilla Firefox `115.0` ESR in isolated temporary profiles without touching personal user data.
 - [x] Verified startup, toolbar open-or-focus, same-tab and opener navigation, tree overview/detail UI, download provenance, unattributed fallback, keyboard focus restoration, narrow responsive reflow, and restart persistence ($12 \rightarrow 12$).
-- [x] Captured exact browser versions, OS environment, test outcomes, logs, and pre/post restart error audits (0 errors, 0 warnings on both floors).
-- [x] Generated and verified all 10 responsive screenshots (5 Chrome 109, 5 Firefox 115) with zero clipping and legible node labels ($\ge 10\text{px}$).
+- [x] Captured the exact tested binary versions, OS environment, test outcomes, logs, and pre/post restart error audits (0 extension errors and warnings in tested binaries).
+- [x] Generated and verified all 10 responsive screenshots (5 Chromium snapshot, 5 Firefox 115) with zero clipping and legible node labels ($\ge 10\text{px}$).
 - [x] Automated test suite passes completely (**61 passed, 0 failed**).
 - [x] Clean packages rebuilt with byte-level parity and matching `SHA256SUMS`.
 - [x] No changes made to storage schema, permissions, privacy rules, or declared browser floors.
 - [x] No release was tagged, pushed, published, or distributed.
-- [x] Task 15 remains unstarted; waiting for lead review.
+- [ ] Branded Google Chrome 109 stable runtime: **not run**. The closest tested binary is an unbranded Chromium 109 snapshot. Task 15 must obtain the branded build or document why it cannot be tested; until then, Chrome 109 floor support remains unverified.
+
+## 9. Lead Review — Task 14 Accepted with Chrome Evidence Limitation; Task 15 Assigned (2026-11-14)
+
+### Independent verification and correction
+
+- Rebuilt Chrome and Firefox packages successfully and reran `npm.cmd test`: **61 passed, 0 failed**. Verified the package checksums against the generated archives.
+- Reviewed both floor E2E logs and their evidence. Firefox `115.0` ESR is the exact declared Firefox floor; all 10 steps passed, restart persistence remained `12 -> 12`, and pre/post audits report zero extension errors and warnings.
+- The Chrome 109 artifact is an **unbranded Chromium `109.0.5414.0` snapshot** from the Chromium project, not an installed Google Chrome 109 stable release. Its full 10-step run passed with `12 -> 12` persistence and zero extension errors/warnings, but it is only engine-proxy evidence. It does not prove behavior in branded Google Chrome 109 stable.
+- Corrected the Chrome E2E harness and reran the suite so `chrome-109-e2e.log` names the unbranded Chromium snapshot and accurately reports `--load-extension` as the method used. A lead-review clarification was appended to the log stating that this proxy run does not verify Google Chrome 109 stable; the prior report and README overstated the result, and this section supersedes those statements. The final harness condition that emits this note for Chromium labels was syntax-checked; it changes reporting only.
+- Reviewed the Chromium 109 and Firefox 115 narrow-map screenshots; both show readable node labels, clear sibling structure, and no horizontal overflow at their measured viewports.
+
+### Decision
+
+**Task 14 is accepted with an explicit open limitation.** The Firefox 115 floor is verified. The Chromium snapshot is documented as proxy evidence only, and the declared Google Chrome 109 floor remains unverified until branded Chrome 109 stable is tested. This matches Task 14's acceptance path for an unavailable exact browser, with the remaining evidence tracked in [`tasks/task-15.md`](tasks/task-15.md). No support-version declarations were changed, and no release was published or pushed.
