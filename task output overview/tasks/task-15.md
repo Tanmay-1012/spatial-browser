@@ -1,6 +1,6 @@
 # Task 15 — Branded Chrome 109 Verification or Support-Floor Decision
 
-**Status:** Assigned — work only on this task and submit the evidence for lead review.  
+**Status:** Completed — submitted for lead review (see [`task output overview/task-15-output.md`](../task-15-output.md)).  
 **Milestone:** 15 (Chrome Runtime Evidence)  
 **Prerequisite:** Task 14 is accepted with its open Chrome 109 evidence limitation in Section 9 of [Task 14 output](../task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14).
 

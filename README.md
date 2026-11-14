@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Tasks 11, 12, and 13 are accepted. Task 14 is accepted with a limitation: Firefox `115.0` ESR passed, and an unbranded Chromium `109.0.5414.0` snapshot passed as engine-proxy evidence; branded Google Chrome `109` stable remains unverified. Task 15 is assigned to close that evidence gap; see the [Task 14 review](task%20output%20overview/task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14).
+> **Active Branch Status (main):** Tasks 11, 12, and 13 are accepted. Task 14 is accepted with its limitation (Firefox `115.0` ESR verified; Chromium `109.0.5414.0` snapshot is engine-proxy evidence). Task 15 is completed and submitted for lead review in [`task output overview/task-15-output.md`](task%20output%20overview/task-15-output.md), documenting why branded Chrome 109 cannot be run standalone without host installer conflict, keeping the floor unverified, and presenting the owner with decision options.
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -15,7 +15,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - **Accepted Narrow-Map Legibility (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [Task 12 acceptance](task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
   - **Accepted Milestone (Milestone 13 / Task 13):** Release-candidate package, checksum, privacy-boundary, and current-browser runtime audit accepted in Section 7 of the [Task 13 report](task%20output%20overview/task-13-output.md).
   - **Task 14 (Accepted with a limitation):** Firefox `115.0` ESR passed all 10 isolated-profile E2E steps. An unbranded Chromium `109.0.5414.0` snapshot also passed, but it does not prove branded Google Chrome 109 stable compatibility. Task 15 tracks the remaining Chrome evidence gap.
-  - **Task 15 (Assigned):** Obtain a branded Google Chrome 109 stable runtime for isolated verification, or document why it is unavailable and leave the declared floor unverified for owner review.
+  - **Task 15 (Completed & Submitted for Lead Review):** Documented lack of official Google standalone archives for Chrome 109 and host isolation conflict of enterprise installer packages. Kept Google Chrome 109 stable explicitly marked unverified, preserved Chromium 109 as engine-proxy evidence, and presented the owner with three decision choices. See [`task-15-output.md`](task%20output%20overview/task-15-output.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**
