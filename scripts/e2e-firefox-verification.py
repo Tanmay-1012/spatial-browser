@@ -36,7 +36,11 @@ class TeeLogger:
 
 TEST_PORT = 0
 CDN_PORT = 0
-LOG_FILE_PATH = r"D:\Projects\HCI Project\docs\test-results\firefox-e2e.log"
+LOG_FILE_PATH = os.environ.get("FIREFOX_LOG_PATH", r"D:\Projects\HCI Project\docs\test-results\firefox-e2e.log")
+PRE_RESTART_ERRORS_PATH = os.environ.get("FIREFOX_PRE_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\firefox-errors-pre-restart.json")
+POST_RESTART_ERRORS_PATH = os.environ.get("FIREFOX_POST_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\firefox-errors-post-restart.json")
+FIREFOX_EXE = os.environ.get("FIREFOX_BINARY", r"C:\Program Files\Mozilla Firefox\firefox.exe")
+SCREENSHOT_PREFIX = os.environ.get("FIREFOX_SCREENSHOT_PREFIX", "firefox")
 ADDON_UUID = "d14e130f-9ddc-4a9b-8f3e-spatial000001"
 ADDON_ID = "spatial-browser-history@term-project.local"
 
@@ -460,7 +464,7 @@ def run_tests():
     os.makedirs(download_dir, exist_ok=True)
     marionette_port = find_free_local_port()
     ext_dir = r"D:\Projects\HCI Project\outputs\firefox\unpacked"
-    firefox_exe = r"C:\Program Files\Mozilla Firefox\firefox.exe"
+    firefox_exe = FIREFOX_EXE
     proc = None
     proc2 = None
     client = None
@@ -1676,15 +1680,15 @@ def run_tests():
 
         # 6.5f. Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots
         print("\n--- STEP 6.5f: Live Desktop (1280x800) & Narrow (420x800) Responsive Layout Checks & Screenshots ---")
-        ff_results_dir = r"D:\Projects\HCI Project\docs\test-results"
+        ff_results_dir = os.path.dirname(LOG_FILE_PATH)
         ff_detail_desktop = verify_responsive_and_capture_firefox(
             client, 1280, 800, "detail",
-            os.path.join(ff_results_dir, "firefox-detail-desktop.png")
+            os.path.join(ff_results_dir, f"{SCREENSHOT_PREFIX}-detail-desktop.png")
         )
         print(f"  [Firefox Responsive Detail Desktop] {ff_detail_desktop}")
         ff_detail_narrow = verify_responsive_and_capture_firefox(
             client, 420, 800, "detail",
-            os.path.join(ff_results_dir, "firefox-detail-narrow.png")
+            os.path.join(ff_results_dir, f"{SCREENSHOT_PREFIX}-detail-narrow.png")
         )
         print(f"  [Firefox Responsive Detail Narrow] {ff_detail_narrow}")
 
@@ -1707,7 +1711,7 @@ def run_tests():
         time.sleep(0.25)
         ff_detail_narrow_map = verify_responsive_and_capture_firefox(
             client, 420, 800, "detail",
-            os.path.join(ff_results_dir, "firefox-detail-narrow-map.png")
+            os.path.join(ff_results_dir, f"{SCREENSHOT_PREFIX}-detail-narrow-map.png")
         )
         print(f"  [Firefox Responsive Detail Map-Only 420x800] {ff_detail_narrow_map}")
         ff_reopened_drawer = client.send_cmd("WebDriver:ExecuteScript", {
@@ -1756,12 +1760,12 @@ def run_tests():
 
         ff_overview_desktop = verify_responsive_and_capture_firefox(
             client, 1280, 800, "overview",
-            os.path.join(ff_results_dir, "firefox-overview-desktop.png")
+            os.path.join(ff_results_dir, f"{SCREENSHOT_PREFIX}-overview-desktop.png")
         )
         print(f"  [Firefox Responsive Overview Desktop] {ff_overview_desktop}")
         ff_overview_narrow = verify_responsive_and_capture_firefox(
             client, 420, 800, "overview",
-            os.path.join(ff_results_dir, "firefox-overview-narrow.png")
+            os.path.join(ff_results_dir, f"{SCREENSHOT_PREFIX}-overview-narrow.png")
         )
         print(f"  [Firefox Responsive Overview Narrow] {ff_overview_narrow}")
         client.send_cmd("WebDriver:SetWindowRect", {"width": 1296, "height": 880})
@@ -1771,7 +1775,7 @@ def run_tests():
         # --- STEP 7: ERROR AUDIT PRE-RESTART ---
         print("\n--- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---")
         pre_restart_audit = query_console_errors(client, "Pre-Restart Phase", ADDON_UUID)
-        pre_restart_audit_file = r"D:\Projects\HCI Project\docs\test-results\firefox-errors-pre-restart.json"
+        pre_restart_audit_file = PRE_RESTART_ERRORS_PATH
         save_error_audit(
             pre_restart_audit,
             "Pre-Restart Phase",
@@ -1977,7 +1981,7 @@ def run_tests():
         # --- STEP 9: POST-RESTART ERROR AUDIT & PERSISTENCE ---
         print("\n--- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---")
         post_restart_audit = query_console_errors(client2, "Post-Restart Phase", ADDON_UUID)
-        post_restart_audit_file = r"D:\Projects\HCI Project\docs\test-results\firefox-errors-post-restart.json"
+        post_restart_audit_file = POST_RESTART_ERRORS_PATH
         save_error_audit(
             post_restart_audit,
             "Post-Restart Phase",

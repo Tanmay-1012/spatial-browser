@@ -38,11 +38,12 @@ class TeeLogger:
 
 TEST_PORT = 0
 CDN_PORT = 0
-LOG_FILE_PATH = r"D:\Projects\HCI Project\docs\test-results\chrome-e2e.log"
-PRE_RESTART_ERRORS_PATH = r"D:\Projects\HCI Project\docs\test-results\chrome-errors-pre-restart.json"
-POST_RESTART_ERRORS_PATH = r"D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json"
+LOG_FILE_PATH = os.environ.get("CHROME_LOG_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-e2e.log")
+PRE_RESTART_ERRORS_PATH = os.environ.get("CHROME_PRE_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-errors-pre-restart.json")
+POST_RESTART_ERRORS_PATH = os.environ.get("CHROME_POST_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json")
 EXT_DIR = r"D:\Projects\HCI Project\outputs\chrome\unpacked"
-CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+CHROME_EXE = os.environ.get("CHROME_BINARY", r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+SCREENSHOT_PREFIX = os.environ.get("CHROME_SCREENSHOT_PREFIX", "chrome")
 
 # Local test HTTP server
 class TestHTTPHandler(http.server.BaseHTTPRequestHandler):
@@ -542,22 +543,63 @@ for ($j = 0; $j -lt 15; $j++) {
     Start-Sleep -Milliseconds 250
 }
 
-if (-not $btn) {
-    $allToolbarBtns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, "ToolbarActionView")))
-    $names = @()
-    foreach ($tb in $allToolbarBtns) {
-        $names += ($tb.Current.Name + "@" + $tb.Current.BoundingRectangle.ToString())
-    }
-    Write-Error ("ToolbarActionView 'Spatial Browser History' not found (winRect=" + $win.Current.BoundingRectangle.ToString() + ", visibleToolbarActions=[" + ($names -join "; ") + "])")
-    exit 1
-}
-
-$r = $btn.Current.BoundingRectangle
-$cx = [int]($r.X + $r.Width / 2)
-$cy = [int]($r.Y + $r.Height / 2)
+$r = $null
+$cx = 0
+$cy = 0
 $methodUsed = "none"
 $accOk = $false
 $hr = -1
+$accName = ""
+
+if ($btn) {
+    $r = $btn.Current.BoundingRectangle
+    $cx = [int]($r.X + $r.Width / 2)
+    $cy = [int]($r.Y + $r.Height / 2)
+} else {
+    # In older Chrome versions (e.g. Chrome 109), Chrome Views do not expose native UIA.
+    # Scan the toolbar region using MSAA (AccessibleObjectFromPoint).
+    $winRect = $win.Current.BoundingRectangle
+    $top = [int]$winRect.Y
+    $right = [int]($winRect.X + $winRect.Width)
+    for ($y = $top + 55; $y -le $top + 105; $y += 10) {
+        for ($x = $right - 35; $x -ge $right - 450; $x -= 15) {
+            $pt = New-Object System.Drawing.Point($x, $y)
+            $accObj = $null
+            $varChild = $null
+            $hr = $user32::AccessibleObjectFromPoint($pt, [ref]$accObj, [ref]$varChild)
+            if ($hr -eq 0 -and $accObj) {
+                $name = ""
+                try {
+                    $name = $accObj.GetType().InvokeMember("accName", [System.Reflection.BindingFlags]::GetProperty, $null, $accObj, @($varChild))
+                } catch {}
+                if ($name -like "*Spatial Browser History*") {
+                    $cx = $x
+                    $cy = $y
+                    $accName = $name
+                    $r = "$($x - 10),$($y - 10),20,20"
+                    try {
+                        $accObj.GetType().InvokeMember("accDoDefaultAction", [System.Reflection.BindingFlags]::InvokeMethod, $null, $accObj, @($varChild)) | Out-Null
+                        $accOk = $true
+                        $methodUsed = "accDoDefaultAction"
+                    } catch {
+                        $accOk = $false
+                    }
+                    break
+                }
+            }
+        }
+        if ($accOk -or $accName -like "*Spatial Browser History*") { break }
+    }
+    if (-not $r) {
+        $allToolbarBtns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, "ToolbarActionView")))
+        $names = @()
+        foreach ($tb in $allToolbarBtns) {
+            $names += ($tb.Current.Name + "@" + $tb.Current.BoundingRectangle.ToString())
+        }
+        Write-Error ("ToolbarActionView 'Spatial Browser History' not found via UIA or MSAA (winRect=" + $win.Current.BoundingRectangle.ToString() + ", visibleToolbarActions=[" + ($names -join "; ") + "])")
+        exit 1
+    }
+}
 
 $pt = New-Object System.Drawing.Point($cx, $cy)
 $accObj = $null
@@ -671,6 +713,8 @@ def run_tests():
             CHROME_EXE,
             f"--remote-debugging-port={cdp_port}",
             f"--user-data-dir={profile_dir}",
+            f"--load-extension={EXT_DIR}",
+            f"--disable-extensions-except={EXT_DIR}",
             "--disable-popup-blocking",
             "--no-first-run",
             "--no-default-browser-check",
@@ -692,7 +736,7 @@ def run_tests():
 
         cdp = CDPClient(ws_url)
         ver_info = cdp.send_cmd("Browser.getVersion")
-        actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "")
+        actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "").replace("Chromium/", "")
         print(f"[INIT] Connected to Google Chrome {actual_chrome_version} (x64 Windows) via CDP: {ws_url}")
         print(f"       User-Agent: {ver_info.get('userAgent', '')}")
         print("       Declared Support Floor: Chrome 109+")
@@ -701,24 +745,42 @@ def run_tests():
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
         time.sleep(0.5)
 
-        # Load the unpacked extension via CDP Extensions.loadUnpacked
-        load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
-        ext_id = load_res.get("id")
-        assert ext_id is not None, "Extensions.loadUnpacked must return valid extension ID"
+        # Discover extension ID from --load-extension or load via Extensions.loadUnpacked
+        ext_id = None
+        targets_info = cdp.send_cmd("Target.getTargets")
+        for t in targets_info.get("targetInfos", []):
+            if t.get("type") == "service_worker" and "chrome-extension://" in t.get("url", ""):
+                ext_id = t["url"].split("/")[2]
+                break
+
+        if not ext_id:
+            try:
+                load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
+                ext_id = load_res.get("id")
+            except Exception as e:
+                print(f"  [NOTE] Extensions.loadUnpacked fallback note: {e}")
+
+        assert ext_id is not None, "Extensions.loadUnpacked / --load-extension must return valid extension ID"
         print(f"[PASS] Unpacked extension loaded successfully from {EXT_DIR}")
         print(f"       Extension ID: {ext_id}")
 
         # Kill Chrome BEFORE modifying Default/Preferences so Chrome cannot overwrite
-        # pinned_extensions on shutdown or background flush.
+        # pinned_extensions on shutdown or background flush. Cleanly close via Browser.close.
+        try:
+            cdp.send_cmd("Browser.close")
+            proc.wait(timeout=5)
+        except Exception:
+            terminate_chrome_tree(proc)
         cdp.close()
         cdp = None
-        terminate_chrome_tree(proc)
         proc = None
         time.sleep(1.0)
 
         preferences_path = os.path.join(default_profile_dir, "Preferences")
-        with open(preferences_path, "r", encoding="utf-8") as f:
-            chrome_preferences = json.load(f)
+        chrome_preferences = {}
+        if os.path.exists(preferences_path):
+            with open(preferences_path, "r", encoding="utf-8") as f:
+                chrome_preferences = json.load(f)
         chrome_preferences.setdefault("extensions", {}).setdefault("ui", {})["developer_mode"] = True
         chrome_preferences["extensions"]["pinned_extensions"] = [ext_id]
         with open(preferences_path, "w", encoding="utf-8") as f:
@@ -737,7 +799,7 @@ def run_tests():
         assert ws_url is not None, "Could not reconnect to Chrome after pinning the extension action"
         cdp = CDPClient(ws_url)
         ver_info = cdp.send_cmd("Browser.getVersion")
-        actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "")
+        actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "").replace("Chromium/", "")
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
         cdp.send_cmd("Browser.setDownloadBehavior", {
             "behavior": "allow",
@@ -745,8 +807,18 @@ def run_tests():
             "eventsEnabled": True
         })
         time.sleep(0.5)
-        load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
-        assert load_res.get("id") == ext_id, "Chrome extension ID must remain stable after pinning and restart"
+        reconnect_targets = cdp.send_cmd("Target.getTargets")
+        reconnect_ext = any(
+            t.get("type") == "service_worker" and ext_id in t.get("url", "")
+            for t in reconnect_targets.get("targetInfos", [])
+        )
+        if not reconnect_ext:
+            try:
+                load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
+                reconnect_ext = (load_res.get("id") == ext_id)
+            except Exception:
+                pass
+        assert reconnect_ext, "Chrome extension must remain loaded and stable after pinning and restart"
         print(f"[PASS] Pinned the discovered extension action in the isolated profile and relaunched Chrome {actual_chrome_version}.")
 
         # Wait for service worker target registration and attach reliably (preferring auto-attached session)
@@ -1658,12 +1730,12 @@ def run_tests():
         results_dir = os.path.dirname(LOG_FILE_PATH)
         detail_desktop_metrics = verify_responsive_and_capture(
             cdp, map_sid, 1280, 800, "detail",
-            os.path.join(results_dir, "chrome-detail-desktop.png")
+            os.path.join(results_dir, f"{SCREENSHOT_PREFIX}-detail-desktop.png")
         )
         print(f"  [Responsive Detail 1280x800] {detail_desktop_metrics}")
         detail_narrow_metrics = verify_responsive_and_capture(
             cdp, map_sid, 420, 800, "detail",
-            os.path.join(results_dir, "chrome-detail-narrow.png")
+            os.path.join(results_dir, f"{SCREENSHOT_PREFIX}-detail-narrow.png")
         )
         print(f"  [Responsive Detail 420x800] {detail_narrow_metrics}")
 
@@ -1682,7 +1754,7 @@ def run_tests():
         time.sleep(0.25)
         detail_narrow_map_metrics = verify_responsive_and_capture(
             cdp, map_sid, 420, 800, "detail",
-            os.path.join(results_dir, "chrome-detail-narrow-map.png"),
+            os.path.join(results_dir, f"{SCREENSHOT_PREFIX}-detail-narrow-map.png"),
             expect_drawer=False
         )
         print(f"  [Responsive Detail Map-Only 420x800] {detail_narrow_map_metrics}")
@@ -1734,12 +1806,12 @@ def run_tests():
         time.sleep(0.4)
         overview_desktop_metrics = verify_responsive_and_capture(
             cdp, map_sid, 1280, 800, "overview",
-            os.path.join(results_dir, "chrome-overview-desktop.png")
+            os.path.join(results_dir, f"{SCREENSHOT_PREFIX}-overview-desktop.png")
         )
         print(f"  [Responsive Overview 1280x800] {overview_desktop_metrics}")
         overview_narrow_metrics = verify_responsive_and_capture(
             cdp, map_sid, 420, 800, "overview",
-            os.path.join(results_dir, "chrome-overview-narrow.png")
+            os.path.join(results_dir, f"{SCREENSHOT_PREFIX}-overview-narrow.png")
         )
         print(f"  [Responsive Overview 420x800] {overview_narrow_metrics}")
         cdp.send_cmd("Emulation.clearDeviceMetricsOverride", {}, session_id=map_sid)
@@ -1778,6 +1850,8 @@ def run_tests():
         print("  [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...")
         restart_tab_res = cdp.send_cmd("Target.createTarget", {"url": "about:blank"})
         restart_tid = restart_tab_res["targetId"]
+        cdp.send_cmd("Target.activateTarget", {"targetId": restart_tid})
+        time.sleep(0.3)
         restart_sid = cdp.attach_target(restart_tid)
         cdp.send_cmd("Page.enable", session_id=restart_sid)
         cdp.send_cmd("Runtime.enable", session_id=restart_sid)
@@ -1843,16 +1917,20 @@ def run_tests():
 
         # 8c. Browser Process Restart
         print("  [8c] Terminating Chrome process for full browser restart...")
+        try:
+            cdp.send_cmd("Browser.close")
+            proc.wait(timeout=5)
+        except Exception:
+            terminate_chrome_tree(proc)
         cdp.close()
         cdp = None
-        terminate_chrome_tree(proc)
         proc = None
         time.sleep(1.0)
         print("  Chrome process terminated cleanly.")
 
         # Relaunch Chrome with the persistent profile and restored live tab
         print("  Relaunching Chrome with persistent profile and restored live tab...")
-        chrome_cmd_restart = chrome_cmd + [f"{base_url}/restart-step3"]
+        chrome_cmd_restart = [c for c in chrome_cmd if not c.startswith("http")] + ["--restore-last-session"]
         proc2 = subprocess.Popen(chrome_cmd_restart)
         
         ws_url2 = None
@@ -1868,21 +1946,20 @@ def run_tests():
 
         cdp2 = CDPClient(ws_url2)
         ver_info2 = cdp2.send_cmd("Browser.getVersion")
-        actual_chrome_version2 = ver_info2.get("product", f"Chrome/{actual_chrome_version}").replace("Chrome/", "")
+        actual_chrome_version2 = ver_info2.get("product", f"Chrome/{actual_chrome_version}").replace("Chrome/", "").replace("Chromium/", "")
         print(f"  Reconnected to restarted Google Chrome {actual_chrome_version2}: {ws_url2}")
         cdp2.send_cmd("Target.setDiscoverTargets", {"discover": True})
 
-        # Ensure the CLI-opened /restart-step3 tab has fully committed BEFORE loading the
-        # unpacked extension so captureInitialCheckpoints() establishes its single-node baseline
-        # deterministically instead of racing with an uncommitted initial navigation.
+        # Ensure the restored /restart-step3 tab has fully committed
         restart_page_tid = None
-        for _ in range(30):
+        for _ in range(40):
             pre_load_pages = [t for t in cdp2.send_cmd("Target.getTargets", timeout=10).get("targetInfos", []) if t.get("type") == "page"]
             match_page = next((t for t in pre_load_pages if "/restart-step3" in t.get("url", "")), None)
             if match_page:
                 restart_page_tid = match_page["targetId"]
                 break
             time.sleep(0.25)
+
         assert restart_page_tid is not None, "Restarted Chrome must expose /restart-step3 page target before extension load"
         restart_probe_sid = cdp2.attach_target(restart_page_tid)
         cdp2.send_cmd("Runtime.enable", session_id=restart_probe_sid, timeout=10)
@@ -1902,9 +1979,21 @@ def run_tests():
         ]
         print(f"  Pre-extension-load open page targets: {sanitized_pre_load_tabs}")
 
-        # Re-register extension via Extensions.loadUnpacked
-        load_res2 = cdp2.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
-        ext_id2 = load_res2.get("id")
+        # Discover extension ID or re-register via Extensions.loadUnpacked
+        ext_id2 = None
+        targets_info2 = cdp2.send_cmd("Target.getTargets")
+        for t in targets_info2.get("targetInfos", []):
+            if t.get("type") == "service_worker" and "chrome-extension://" in t.get("url", ""):
+                ext_id2 = t["url"].split("/")[2]
+                break
+
+        if not ext_id2:
+            try:
+                load_res2 = cdp2.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
+                ext_id2 = load_res2.get("id")
+            except Exception as e:
+                print(f"  [NOTE] Restart Extensions.loadUnpacked fallback note: {e}")
+
         assert ext_id2 == ext_id, f"Extension ID must be stable across restart (was {ext_id}, got {ext_id2})"
 
         # Attach to service worker in restarted Chrome

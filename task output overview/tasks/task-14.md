@@ -1,6 +1,6 @@
 # Task 14 — Minimum-Supported Browser Compatibility Audit
 
-**Status:** Assigned — work only on this task and submit the evidence for lead review.  
+**Status:** Completed — submitted for lead review (see [`task output overview/task-14-output.md`](../task-14-output.md)).  
 **Milestone:** 14 (Compatibility Floor)  
 **Prerequisites:** Tasks 11, 12, and 13 are accepted. The current build declares Chrome `109+` and Firefox `115.0+` support.
 

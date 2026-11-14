@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Task 11 is accepted (Section 57), Task 12 is accepted (Section 12), and Task 13 release-candidate readiness is accepted (Section 7) after package/checksum audits and fresh Chrome `157.0.8103.78` / Firefox `160.0` E2E runs. Task 14 minimum-supported-browser compatibility audit is assigned in [`tasks/task-14.md`](task%20output%20overview/tasks/task-14.md).
+> **Active Branch Status (main):** Task 11 is accepted (Section 57), Task 12 is accepted (Section 12), and Task 13 release-candidate readiness is accepted (Section 7). Task 14 minimum-supported-browser compatibility audit is completed and submitted for lead review in [`task output overview/task-14-output.md`](task%20output%20overview/task-14-output.md) with live runtime verification of Chromium `109.0.5414.0` and Firefox `115.0` ESR.
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -14,7 +14,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
   - **Accepted Narrow-Map Legibility (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [Task 12 acceptance](task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
   - **Accepted Milestone (Milestone 13 / Task 13):** Release-candidate package, checksum, privacy-boundary, and current-browser runtime audit accepted in Section 7 of the [Task 13 report](task%20output%20overview/task-13-output.md).
-  - **Task 14 (Assigned):** Verify runtime compatibility at the declared Chrome 109 and Firefox 115 support floors using isolated profiles.
+  - **Task 14 (Completed & Submitted for Lead Review):** Live runtime compatibility verified at the declared Chrome 109 and Firefox 115 support floors using isolated profiles (Chromium `109.0.5414.0` and Firefox `115.0` ESR). All 10 verification steps, responsive reflow, and $12 \rightarrow 12$ restart persistence pass with 0 errors and 0 warnings. See [`task-14-output.md`](task%20output%20overview/task-14-output.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**
@@ -29,8 +29,8 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
 
 | Browser | Minimum Version | Justification |
 | :--- | :--- | :--- |
-| **Mozilla Firefox** | **115.0+** | Declared project compatibility floor in `browser_specific_settings.gecko.strict_min_version` (ESR 115 baseline supporting `storage.session`); current `main` verified at runtime in Firefox `160.0` (and `v0.1.0` in `158.0.1`). |
-| **Google Chrome** | **109.0+** | Declared project compatibility floor in `minimum_chrome_version`; current `main` verified at runtime in Chrome `157.0.8103.78` (and `v0.1.0` in `156.0.8078.48`). |
+| **Mozilla Firefox** | **115.0+** | Declared project compatibility floor in `browser_specific_settings.gecko.strict_min_version` (ESR 115 baseline supporting `storage.session`); verified at runtime at floor in Firefox `115.0` ESR and current `160.0` (and `v0.1.0` in `158.0.1`). |
+| **Google Chrome** | **109.0+** | Declared project compatibility floor in `minimum_chrome_version`; verified at runtime at floor in Chromium `109.0.5414.0` and current Chrome `157.0.8103.78` (and `v0.1.0` in `156.0.8078.48`). |
 
 ## Declared Permissions and Reasons
 
