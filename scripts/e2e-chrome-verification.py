@@ -463,7 +463,9 @@ def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
                 sw_target = sw_targets[-1]
                 break
             time.sleep(0.3)
-        assert sw_target is not None, "Service worker target must be discovered for extension"
+        if sw_target is None:
+            print(f"  [NOTE] Service worker target is not visible yet on attach attempt {attempt + 1}; waiting for the extension's next event.")
+            continue
         try:
             sw_sid = cdp.attach_target(sw_target["targetId"])
             cdp.send_cmd("Runtime.enable", session_id=sw_sid, timeout=12)
@@ -842,25 +844,6 @@ def run_tests():
         assert reconnect_ext, "Chrome extension must remain loaded and stable after pinning and restart"
         print(f"[PASS] Pinned the discovered extension action in the isolated profile and relaunched {CHROME_BROWSER_LABEL} {actual_chrome_version}.")
 
-        # Wait for service worker target registration and attach reliably (preferring auto-attached session)
-        sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
-        print(f"[PASS] Service worker discovered: {sw_target['title']} ({sw_target['url']})")
-        print(f"[PASS] Attached to background service worker (Session ID: {sw_sid}).")
-
-        # Verify background modules loaded without error and wait briefly for session readiness barrier
-        sw_env = cdp.evaluate(sw_sid, "({hasStorage: typeof SpatialStorage !== 'undefined', hasTracker: typeof SpatialTracker !== 'undefined', hasLaunch: typeof openOrFocusPage === 'function'})")
-        print(f"[PASS] Background service worker environment: {sw_env}")
-        assert sw_env.get("hasStorage") and sw_env.get("hasTracker") and sw_env.get("hasLaunch"), "All shared background modules must be initialized"
-
-        sw_ready = None
-        for _ in range(20):
-            sw_ready = cdp.evaluate(sw_sid, "typeof tracker !== 'undefined' ? { initialized: tracker.sessionInitialized, initializing: tracker.sessionInitializing } : null")
-            if sw_ready and sw_ready.get("initialized"):
-                break
-            time.sleep(0.25)
-        print(f"[PASS] Background tracker session state: {sw_ready}")
-        assert sw_ready and sw_ready.get("initialized"), f"Tracker sessionInitialized did not become true: {sw_ready}"
-
         # --- STEP 2: TOOLBAR ACTION BROWSER INPUT & REPEAT FOCUS ---
         print("\n--- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---")
         initial_pages = [t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"]
@@ -883,9 +866,30 @@ def run_tests():
             map_target = next((t for t in page_targets1 if f"chrome-extension://{ext_id}/index.html" in t.get("url", "")), None)
             if map_target:
                 break
-        assert map_target is not None, f"First toolbar action click must open extension index.html tab (diag={diag1}, sw_ready={sw_ready}, pages={page_targets1}, cdp_errors={cdp.errors})"
+        assert map_target is not None, f"First toolbar action click must open extension index.html tab (diag={diag1}, pages={page_targets1}, cdp_errors={cdp.errors})"
         assert len(page_targets1) == initial_tabs_count + 1, f"First toolbar click must open exactly 1 new tab (got {len(page_targets1)} vs {initial_tabs_count})"
         print(f"[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab {map_target['targetId']}, total pages={len(page_targets1)} (was {initial_tabs_count})")
+
+        # A real extension action event wakes MV3 background workers on Chrome versions that
+        # keep them dormant after startup. Attach after this event instead of assuming startup
+        # alone created a stable CDP service_worker target.
+        sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
+        print(f"[PASS] Service worker discovered: {sw_target['title']} ({sw_target['url']})")
+        print(f"[PASS] Attached to background service worker (Session ID: {sw_sid}).")
+
+        # Verify background modules loaded without error and wait briefly for session readiness barrier
+        sw_env = cdp.evaluate(sw_sid, "({hasStorage: typeof SpatialStorage !== 'undefined', hasTracker: typeof SpatialTracker !== 'undefined', hasLaunch: typeof openOrFocusPage === 'function'})")
+        print(f"[PASS] Background service worker environment: {sw_env}")
+        assert sw_env.get("hasStorage") and sw_env.get("hasTracker") and sw_env.get("hasLaunch"), "All shared background modules must be initialized"
+
+        sw_ready = None
+        for _ in range(20):
+            sw_ready = cdp.evaluate(sw_sid, "typeof tracker !== 'undefined' ? { initialized: tracker.sessionInitialized, initializing: tracker.sessionInitializing } : null")
+            if sw_ready and sw_ready.get("initialized"):
+                break
+            time.sleep(0.25)
+        print(f"[PASS] Background tracker session state: {sw_ready}")
+        assert sw_ready and sw_ready.get("initialized"), f"Tracker sessionInitialized did not become true: {sw_ready}"
 
         # Attach to map tab
         map_sid = cdp.attach_target(map_target["targetId"])
