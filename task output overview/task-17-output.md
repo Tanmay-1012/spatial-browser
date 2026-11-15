@@ -49,6 +49,8 @@ Task 17 is closed as an environment-limited investigation, not accepted as direc
 
 The project task list is complete, with no next developer task assigned. The existing Chrome and Firefox runtime evidence and the passing Task 16 hosted CI gate remain valid for the versions they tested. No release was tagged, published, or changed as part of this closeout.
 
+The reviewed closeout was fast-forwarded to `main` at commit `fbefbf0`. The standard GitHub Actions build/test gate passed on that commit in [run #43745955194](https://github.com/Tanmay-1012/spatial-browser/actions/runs/43745955194), including package generation and all 61 automated checks. This confirms the closeout did not break the regular project gate; it does not change the Chrome 109 runtime result.
+
 The task-specific Chrome 109 workflow is now manual-only and its job is restricted to the Task 17 branch. This preserves the investigation path without rerunning the known environment-blocked attempt on documentation or main-branch updates.
 
 If the owner later needs direct evidence for the declared Chrome 109 floor, the remaining action is to provide an authorized GUI-capable isolated Windows environment where Chrome 109's extension runtime can be exercised. Until then, keep the README and compatibility table explicit that branded Chrome 109 is unverified.
