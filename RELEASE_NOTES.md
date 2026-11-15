@@ -44,7 +44,7 @@ All distribution packages are generated deterministically with zero external dep
 5. In the file picker, select:
    `D:\Projects\HCI Project\outputs\chrome\unpacked`
    *(Alternatively, extract `outputs/chrome/spatial-browser-history-extension.zip` into a directory and select that folder).*
-6. Confirm that **Spatial Browser History** appears in the extensions list with version `0.1.0` and no errors.
+6. Confirm that **Spatial Browser History** appears in the extensions list with version `2.0.0` and no errors.
 7. Click the toolbar action icon to launch the history map. Click it again from another tab to verify single-tab focus behavior.
 
 ---
