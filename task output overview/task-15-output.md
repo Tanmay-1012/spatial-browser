@@ -250,3 +250,9 @@ At the time of this initial review, the assignment and indexes reflected the req
 Task 15 meets its blocker-path acceptance criteria. The declared `minimum_chrome_version: "109"` remains unchanged. Branded Chrome 109 remains **UNVERIFIED**; Chromium 109 remains proxy evidence only. No support-floor choice is inferred from the proxy, and no release was published.
 
 Task 16, **Continuous Integration Build and Test Gate**, is assigned in [`tasks/task-16.md`](tasks/task-16.md). It does not change the browser support floor or close the separate Chrome 109 runtime evidence gap. If exact Chrome 109 verification is later required, an authorized Hyper-V/Sandbox session or a disposable VM must be provided by the owner.
+
+## 11. Task 17 Follow-Up — Chrome 109 Evidence Still Open
+
+**Review date:** 2026-11-16. Task 17 later verified and extracted the exact Google-signed Chrome `109.0.5414.165` package in disposable GitHub-hosted Windows runners, but neither runtime attempt reached the extension acceptance scenarios. The headed run could not attach to Chrome's extension execution target without an interactive desktop; the Chrome 109 headless run did not load the unpacked extension. See the [Task 17 closeout](task-17-output.md) and its linked workflow runs.
+
+Task 15's original blocker-path decision remains in effect: the declared Chrome 109 floor is unchanged and branded Chrome 109 remains **UNVERIFIED**. Package authentication is not runtime compatibility evidence. No support-floor decision is inferred, and no release was changed.

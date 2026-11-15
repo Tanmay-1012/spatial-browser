@@ -768,12 +768,6 @@ def run_tests():
             "--start-maximized",
             "--force-renderer-accessibility"
         ]
-        if os.environ.get("CHROME_ALLOW_CDP_ACTION_FALLBACK") == "1":
-            # Chrome 109's pre-unified headless implementation is the available
-            # no-display mode on this VM. Keep local interactive runs headful;
-            # only the disposable hosted runner opts into it.
-            chrome_cmd.extend(["--headless=chrome", "--disable-gpu"])
-            print("[NOTE] Hosted-runner mode: launching the verified Chrome 109 binary in its Chrome-based headless mode.")
         proc = subprocess.Popen(chrome_cmd)
         
         # Connect to browser WebSocket

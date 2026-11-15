@@ -9,12 +9,13 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 - [Task 14 — Minimum-Supported Browser Compatibility Audit](task-14.md) ([Report: `task-14-output.md`](../task-14-output.md)) — Accepted with limitation (Section 9; branded Chrome 109 unverified)
 - [Task 15 — Branded Chrome 109 Verification or Support-Floor Decision](task-15.md) ([Report: `task-15-output.md`](../task-15-output.md)) — Accepted with limitation (Section 10; branded Chrome 109 unverified)
 - [Task 16 — Continuous Integration Build and Test Gate](task-16.md) ([Report: `task-16-output.md`](../task-16-output.md)) — Accepted & Verified (Section 9; first GitHub-hosted CI run passed)
+- [Task 17 — Branded Chrome 109 Runtime Verification in a Disposable Hosted VM](task-17.md) ([Report: `task-17-output.md`](../task-17-output.md)) — Closed with environment limitation; the exact package was verified, but Chrome 109 extension runtime remains unverified
 
 ## Current assignment
 
-- [Task 17 — Branded Chrome 109 Runtime Verification in a Disposable Hosted VM](task-17.md) — In progress; only the task-scoped runtime workflow may download and extract the pinned Google-signed MSI.
+- No developer task is currently assigned. The project task list is closed with the Chrome 109 runtime limitation recorded in the Task 17 report.
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12, Task 13 per Section 7, Task 14 per Section 9, Task 15 per Section 10, and Task 16 per Section 8 & 9. Task 17 is in progress; branded Chrome 109 remains unverified until its isolated runtime evidence is reviewed. Do not describe Chromium proxy results as branded Chrome verification.
+Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12, Task 13 per Section 7, Task 14 per Section 9, Task 15 per Section 10 and its Task 17 follow-up, Task 16 per Sections 8 & 9, and Task 17 is closed with an environment limitation per its closeout report. Branded Chrome 109 remains unverified; do not describe Chromium proxy results as branded Chrome verification.
 
 ## Reporting workflow
 

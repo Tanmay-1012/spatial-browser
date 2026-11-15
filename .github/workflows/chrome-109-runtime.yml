@@ -1,9 +1,7 @@
 name: Branded Chrome 109 Runtime Verification
 
 'on':
-  push:
-    branches:
-      - codex/task-17-chrome109-runtime
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,6 +9,7 @@ permissions:
 jobs:
   chrome-109-runtime:
     name: Chrome 109 E2E (Disposable Windows VM)
+    if: github.ref == 'refs/heads/codex/task-17-chrome109-runtime'
     runs-on: windows-latest
     timeout-minutes: 30
 

@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved; Tasks 11–15 are accepted, with branded Chrome 109 runtime evidence still open. Task 16 is accepted and its first GitHub-hosted CI run passed (see Section 9 of [`task-16-output.md`](task-16-output.md#9-first-github-hosted-ci-run-verification)). Task 17 is in progress to close the Chrome 109 evidence gap.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved. Tasks 11–16 are accepted, and Task 17 is closed with an environment limitation: branded Chrome 109 remains unverified because the disposable hosted runner could not execute the extension runtime checks. See the [Task 17 closeout](task-17-output.md). No developer task is currently assigned.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -22,6 +22,6 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`tasks/task-14.md`](tasks/task-14.md) · [`task-14-output.md`](task-14-output.md) | Task 14: Minimum-Supported Browser Compatibility Audit | Milestone 14 (Compatibility Floor) | Accepted with limitation — branded Chrome 109 unverified (Section 9) |
 | [`tasks/task-15.md`](tasks/task-15.md) · [`task-15-output.md`](task-15-output.md) | Task 15: Branded Chrome 109 Verification or Support-Floor Decision | Milestone 15 (Chrome Runtime Evidence) | Accepted with limitation — Chrome 109 branded runtime unverified (Section 10) |
 | [`tasks/task-16.md`](tasks/task-16.md) · [`task-16-output.md`](task-16-output.md) | Task 16: Continuous Integration Build and Test Gate | Milestone 16 (Quality Automation) | Accepted & Verified (Section 9) |
-| [`tasks/task-17.md`](tasks/task-17.md) · [`task-17-output.md`](task-17-output.md) | Task 17: Branded Chrome 109 Runtime Verification in a Disposable Hosted VM | Milestone 17 (Chrome 109 Runtime Evidence) | In Progress |
+| [`tasks/task-17.md`](tasks/task-17.md) · [`task-17-output.md`](task-17-output.md) | Task 17: Branded Chrome 109 Runtime Verification in a Disposable Hosted VM | Milestone 17 (Chrome 109 Runtime Evidence) | Closed with environment limitation — Chrome 109 unverified |
 
 

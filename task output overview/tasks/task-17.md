@@ -1,6 +1,6 @@
 # Task 17 — Branded Chrome 109 Runtime Verification in a Disposable Hosted VM
 
-**Status:** In Progress — final browser-floor acceptance evidence.
+**Status:** Closed with an environment limitation — branded Chrome 109 remains unverified. See the lead closeout in [`task-17-output.md`](../task-17-output.md).
 **Prerequisite:** Task 15 accepted with the Chrome 109 runtime evidence limitation; Task 16 CI gate accepted and verified.
 
 ## Objective
@@ -33,3 +33,7 @@ Close the remaining gap between the declared `minimum_chrome_version: "109"` and
 - The short-lived artifact contains only the stated synthetic evidence files; no MSI or profile data is included.
 - Project documentation consistently marks branded Chrome 109 as verified only for the exact tested version, without implying later 109 patch releases were tested.
 - Task 15 is closed with direct evidence, Task 17 is accepted, and no support-floor or release change is made.
+
+## Lead Closeout
+
+**Review date:** 2026-11-16. **Decision:** Close Task 17 administratively with a documented environment limitation. The direct Chrome 109 compatibility acceptance criteria above were not met, so this closeout is not a Chrome 109 support claim. The exact package was authenticated and extracted, but the available disposable hosted runner could not execute the extension runtime checks. Chrome 109 remains declared and explicitly **UNVERIFIED**. No support-floor, permission, product behavior, or release change was made. The project has no active developer task; see [`task-17-output.md`](../task-17-output.md) for evidence and the remaining owner option.

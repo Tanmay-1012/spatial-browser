@@ -4,7 +4,7 @@ This record separates automated source-level checks from manual browser behavior
 
 ## Task 11–17 status (2026-11-16)
 
-Task 11 core backend implementation and Tasks 12–14 are accepted as recorded above. Task 15 is accepted with branded Chrome 109 runtime evidence still open (see Section 10 of [`task-15-output.md`](../task%20output%20overview/task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned)). Task 16 is accepted and its first GitHub-hosted CI run passed (see Section 9 of [`task-16-output.md`](../task%20output%20overview/task-16-output.md#9-first-github-hosted-ci-run-verification)). Task 17 is in progress and uses a separate disposable Windows VM workflow for the exact branded Chrome 109 runtime check; until that run is reviewed, branded Chrome 109 remains unverified.
+Task 11 core backend implementation and Tasks 12–14 are accepted as recorded above. Task 15 remains accepted with the Chrome 109 evidence limitation. Task 16's GitHub-hosted build/test run passed. Task 17 is closed with an environment limitation: the exact Google-signed Chrome `109.0.5414.165` package was verified and extracted, but the available hosted runner could not execute the extension runtime checks. Branded Chrome 109 therefore remains **unverified**; see the [Task 17 closeout](../task%20output%20overview/task-17-output.md).
 
 ## Test record
 
@@ -127,7 +127,7 @@ Full verification run output preserved in [`docs/test-results/chrome-e2e.log`](t
   - **Firefox (`160.0` runtime vs `115.0+` floor):** The latest isolated-profile E2E run exited `0` after all scenarios, including narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 20.4px`), zoom/fit navigability, download drawer reopen, `12 -> 12` SQLite restart persistence, clean process-tree cleanup (`terminate_firefox_tree`), and zero errors/warnings.
   - **Chrome (`157.0.8103.78` runtime vs `109+` floor):** The isolated-profile E2E run exited `0`; all scenarios passed with narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 17.6px`), zoom/fit navigability, `12 -> 12` restart persistence, real CDP keyboard input, and zero errors/warnings.
 - **Narrow Map Usability Verified:** The responsive reflow layout (`layoutMode: 'reflow'`) maintains full `220x44px` node dimensions and vertical sibling fanning under Fit view, providing crisp, fully readable titles and domains at normal viewing size without initial zoom across all tested browser versions.
-- **Task 11–16 Status:** Task 11 accepted per Section 57; Tasks 12–14 accepted per their review sections; Task 15 accepted with the same limitation per Section 10 (branded Google Chrome 109 remains explicitly unverified; Chromium 109 is engine-proxy evidence only; Sandbox is enabled but this account lacks HCS access); Task 16 accepted and verified per Section 8 & 9 (first GitHub-hosted CI run #43721541361 passed on Windows; runtime browser tests remain manual).
+- **Task 11–17 Status:** Tasks 11–14 remain accepted per their review sections. Task 15 remains accepted with its limitation per Section 10. Task 16 is accepted and verified (GitHub-hosted CI run #43721541361 passed). Task 17 is closed with an environment limitation per its [closeout report](../task%20output%20overview/task-17-output.md): no branded Chrome 109 extension acceptance scenario completed, so Chrome 109 remains explicitly **unverified** and Chromium 109 remains proxy evidence only.
 
 
 
