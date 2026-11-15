@@ -151,7 +151,9 @@ Local build and automated test suites were executed to verify complete repositor
 
 ---
 
-## 7. Developer Submission Checklist
+## 7. Developer Submission Checklist (Initial Submission)
+
+This checklist records the state when Task 16 was first submitted. The owner-authorized push and hosted run are documented in Section 9.
 
 - [x] Workflow added under `.github/workflows/ci.yml`.
 - [x] Configured with triggers: `push` (`main`), `pull_request` (`main`), and `workflow_dispatch`.
@@ -166,7 +168,7 @@ Local build and automated test suites were executed to verify complete repositor
 - [x] `npm.cmd test` passes cleanly (**61 passed, 0 failed**) and `npm.cmd run build` produces verified checksums.
 - [x] No remote branches pushed, no tags created, and no releases published.
 
-## 8. Lead Review — Task 16 Accepted with Remote-Run Limitation
+## 8. Lead Review — Task 16 Accepted with Remote-Run Limitation at Initial Review
 
 **Review date:** 2026-11-15. **Decision:** Task 16 is accepted with local validation complete; its first GitHub-hosted run is pending an owner-approved push or pull request.
 
@@ -179,7 +181,7 @@ Local build and automated test suites were executed to verify complete repositor
 
 ### Acceptance status
 
-Task 16 is accepted. Its local workflow and documentation are ready; the only remaining confirmation is the first hosted run after the owner authorizes a push or pull request. No further developer task is assigned until that run can be observed.
+Task 16 was accepted at initial review. At that point, the only remaining confirmation was the first hosted run after the owner authorized a push or pull request. The owner-authorized push and successful run later completed; see Section 9.
 
 
 ---

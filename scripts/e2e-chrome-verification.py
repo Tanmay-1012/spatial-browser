@@ -41,8 +41,9 @@ CDN_PORT = 0
 LOG_FILE_PATH = os.environ.get("CHROME_LOG_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-e2e.log")
 PRE_RESTART_ERRORS_PATH = os.environ.get("CHROME_PRE_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-errors-pre-restart.json")
 POST_RESTART_ERRORS_PATH = os.environ.get("CHROME_POST_ERRORS_PATH", r"D:\Projects\HCI Project\docs\test-results\chrome-errors-post-restart.json")
-EXT_DIR = r"D:\Projects\HCI Project\outputs\chrome\unpacked"
+EXT_DIR = os.environ.get("CHROME_EXTENSION_DIR", r"D:\Projects\HCI Project\outputs\chrome\unpacked")
 CHROME_EXE = os.environ.get("CHROME_BINARY", r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+EXPECTED_CHROME_MAJOR = os.environ.get("CHROME_EXPECTED_MAJOR")
 CHROME_BROWSER_LABEL = os.environ.get("CHROME_BROWSER_LABEL") or (
     "Chromium snapshot" if "chromium" in CHROME_EXE.lower() else "Google Chrome"
 )
@@ -138,6 +139,18 @@ def find_free_local_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as port_probe:
         port_probe.bind(("127.0.0.1", 0))
         return port_probe.getsockname()[1]
+
+def verify_expected_browser_version(ver_info, phase):
+    if not EXPECTED_CHROME_MAJOR:
+        return
+    product = str(ver_info.get("product", ""))
+    reported_version = product.split("/", 1)[-1]
+    reported_major = reported_version.split(".", 1)[0]
+    assert reported_major == EXPECTED_CHROME_MAJOR, (
+        f"{phase}: expected Chrome major {EXPECTED_CHROME_MAJOR}, "
+        f"but DevTools reported {product!r}"
+    )
+    print(f"[PASS] {phase}: DevTools product {product} matches expected major {EXPECTED_CHROME_MAJOR}.")
 
 class CDPClient:
     def __init__(self, ws_url):
@@ -739,6 +752,7 @@ def run_tests():
 
         cdp = CDPClient(ws_url)
         ver_info = cdp.send_cmd("Browser.getVersion")
+        verify_expected_browser_version(ver_info, "Initial launch")
         actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "").replace("Chromium/", "")
         print(f"[INIT] Connected to {CHROME_BROWSER_LABEL} {actual_chrome_version} (x64 Windows) via CDP: {ws_url}")
         print(f"       User-Agent: {ver_info.get('userAgent', '')}")
@@ -805,6 +819,7 @@ def run_tests():
         assert ws_url is not None, "Could not reconnect to Chrome after pinning the extension action"
         cdp = CDPClient(ws_url)
         ver_info = cdp.send_cmd("Browser.getVersion")
+        verify_expected_browser_version(ver_info, "Toolbar-action relaunch")
         actual_chrome_version = ver_info.get("product", "Chrome/unknown").replace("Chrome/", "").replace("Chromium/", "")
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
         cdp.send_cmd("Browser.setDownloadBehavior", {
@@ -1952,6 +1967,7 @@ def run_tests():
 
         cdp2 = CDPClient(ws_url2)
         ver_info2 = cdp2.send_cmd("Browser.getVersion")
+        verify_expected_browser_version(ver_info2, "Full browser restart")
         actual_chrome_version2 = ver_info2.get("product", f"Chrome/{actual_chrome_version}").replace("Chrome/", "").replace("Chromium/", "")
         print(f"  Reconnected to restarted {CHROME_BROWSER_LABEL} {actual_chrome_version2}: {ws_url2}")
         cdp2.send_cmd("Target.setDiscoverTargets", {"discover": True})

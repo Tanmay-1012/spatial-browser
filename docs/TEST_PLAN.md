@@ -2,9 +2,9 @@
 
 This record separates automated source-level checks from manual browser behavior. Automated mocks and pure logic tests do not prove that an installed extension works end to end.
 
-## Task 11–16 status (2026-11-15)
+## Task 11–17 status (2026-11-16)
 
-Task 11 core backend implementation and Tasks 12–14 are accepted as recorded above. Task 14 left branded Chrome 109 runtime evidence open. Task 15 is accepted with that same limitation (see Section 10 of [`task-15-output.md`](../task%20output%20overview/task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned)). Task 16 is accepted with its first hosted CI run pending an owner-approved push or pull request (see Section 8 of [`task-16-output.md`](../task%20output%20overview/task-16-output.md#8-lead-review--task-16-accepted-with-remote-run-limitation)).
+Task 11 core backend implementation and Tasks 12–14 are accepted as recorded above. Task 15 is accepted with branded Chrome 109 runtime evidence still open (see Section 10 of [`task-15-output.md`](../task%20output%20overview/task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned)). Task 16 is accepted and its first GitHub-hosted CI run passed (see Section 9 of [`task-16-output.md`](../task%20output%20overview/task-16-output.md#9-first-github-hosted-ci-run-verification)). Task 17 is in progress and uses a separate disposable Windows VM workflow for the exact branded Chrome 109 runtime check; until that run is reviewed, branded Chrome 109 remains unverified.
 
 ## Test record
 

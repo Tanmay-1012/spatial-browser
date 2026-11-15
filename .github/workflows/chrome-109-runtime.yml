@@ -1,0 +1,100 @@
+name: Branded Chrome 109 Runtime Verification
+
+'on':
+  push:
+    branches:
+      - codex/task-17-chrome109-runtime
+
+permissions:
+  contents: read
+
+jobs:
+  chrome-109-runtime:
+    name: Chrome 109 E2E (Disposable Windows VM)
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Build the extension
+        run: npm.cmd run build
+
+      - name: Run automated verification suite
+        run: npm.cmd test
+
+      - name: Verify and extract Google-signed Chrome 109, then run E2E
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msiUrl = 'https://archive.org/download/chrome-109-Win7-8/Chrome%20109%20%28Enterprise%29%20x64.msi'
+          $expectedHash = '0adace05d1cff3bf24feff3f79efd111798bd7ba32e2acd8d0494ffd6e166b8e'
+          $expectedThumbprint = '2673EA6CC23BEFFDA49AC715B121544098A1284C'
+          $msiPath = Join-Path $env:RUNNER_TEMP 'chrome-109-enterprise-x64.msi'
+          $extractPath = Join-Path $env:RUNNER_TEMP 'chrome-109-extracted'
+
+          Invoke-WebRequest -Uri $msiUrl -OutFile $msiPath
+          $actualHash = (Get-FileHash -LiteralPath $msiPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $expectedHash) { throw "Chrome MSI SHA-256 mismatch: $actualHash" }
+
+          $msiSignature = Get-AuthenticodeSignature -FilePath $msiPath
+          if ($msiSignature.Status -ne 'Valid') { throw "Chrome MSI signature is not valid: $($msiSignature.Status)" }
+          if ($msiSignature.SignerCertificate.Subject -notmatch 'CN=Google LLC') { throw "Unexpected MSI signer: $($msiSignature.SignerCertificate.Subject)" }
+          if ($msiSignature.SignerCertificate.Thumbprint.ToUpperInvariant() -ne $expectedThumbprint) { throw 'Chrome MSI signer thumbprint mismatch.' }
+          Write-Host "Verified mirror MSI SHA-256 $actualHash; signer $($msiSignature.SignerCertificate.Subject); thumbprint $expectedThumbprint."
+
+          New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
+          $arguments = '/a "{0}" /qn TARGETDIR="{1}"' -f $msiPath, $extractPath
+          $extract = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $arguments -PassThru -Wait -NoNewWindow
+          if ($extract.ExitCode -ne 0) { throw "Administrative MSI extraction failed with exit code $($extract.ExitCode)." }
+
+          $chrome = Get-ChildItem -LiteralPath $extractPath -Filter 'chrome.exe' -File -Recurse |
+            Where-Object { $_.FullName -match '\\Google\\Chrome\\Application\\chrome\.exe$' } |
+            Select-Object -First 1
+          if (-not $chrome) { throw 'Could not locate the extracted Google Chrome application executable.' }
+          $productName = $chrome.VersionInfo.ProductName
+          $productVersion = $chrome.VersionInfo.ProductVersion
+          if ($productName -notmatch 'Google Chrome') { throw "Unexpected browser product: $productName" }
+          if ($productVersion -notmatch '^109\.') { throw "Expected Google Chrome 109, found $productVersion" }
+          $chromeSignature = Get-AuthenticodeSignature -FilePath $chrome.FullName
+          if ($chromeSignature.Status -ne 'Valid' -or $chromeSignature.SignerCertificate.Subject -notmatch 'CN=Google LLC') {
+            throw "Extracted Chrome executable does not have a valid Google LLC signature: $($chromeSignature.Status), $($chromeSignature.SignerCertificate.Subject)"
+          }
+          Write-Host "Extracted product: $productName $productVersion; executable signature: $($chromeSignature.Status), $($chromeSignature.SignerCertificate.Subject)."
+
+          python -m pip install --disable-pip-version-check websocket-client==1.8.0
+          if ($LASTEXITCODE -ne 0) { throw 'Could not install the pinned CDP WebSocket client for the E2E harness.' }
+
+          $resultsDir = Join-Path $env:GITHUB_WORKSPACE 'docs\test-results'
+          New-Item -ItemType Directory -Path $resultsDir -Force | Out-Null
+          $env:CHROME_BINARY = $chrome.FullName
+          $env:CHROME_EXTENSION_DIR = Join-Path $env:GITHUB_WORKSPACE 'outputs\chrome\unpacked'
+          $env:CHROME_EXPECTED_MAJOR = '109'
+          $env:CHROME_BROWSER_LABEL = "Google Chrome $productVersion (extracted from Google-signed MSI mirror)"
+          $env:CHROME_LOG_PATH = Join-Path $resultsDir 'chrome-109-branded-e2e.log'
+          $env:CHROME_PRE_ERRORS_PATH = Join-Path $resultsDir 'chrome-109-branded-errors-pre-restart.json'
+          $env:CHROME_POST_ERRORS_PATH = Join-Path $resultsDir 'chrome-109-branded-errors-post-restart.json'
+          $env:CHROME_SCREENSHOT_PREFIX = 'chrome-109-branded'
+          python scripts/e2e-chrome-verification.py
+          if ($LASTEXITCODE -ne 0) { throw "Chrome 109 runtime E2E failed with exit code $LASTEXITCODE." }
+
+      - name: Upload synthetic Chrome 109 evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: chrome-109-runtime-evidence
+          path: |
+            docs/test-results/chrome-109-branded-e2e.log
+            docs/test-results/chrome-109-branded-errors-*.json
+            docs/test-results/chrome-109-branded-*.png
+          if-no-files-found: warn
+          retention-days: 7

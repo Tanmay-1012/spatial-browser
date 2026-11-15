@@ -12,9 +12,9 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 
 ## Current assignment
 
-- No developer task is currently assigned. Await lead assignment for the next milestone.
+- [Task 17 — Branded Chrome 109 Runtime Verification in a Disposable Hosted VM](task-17.md) — In progress; only the task-scoped runtime workflow may download and extract the pinned Google-signed MSI.
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12, Task 13 per Section 7, Task 14 per Section 9, Task 15 per Section 10, and Task 16 per Section 8 & 9. Branded Chrome 109 remains unverified; do not describe Chromium proxy results as branded Chrome verification.
+Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12, Task 13 per Section 7, Task 14 per Section 9, Task 15 per Section 10, and Task 16 per Section 8 & 9. Task 17 is in progress; branded Chrome 109 remains unverified until its isolated runtime evidence is reviewed. Do not describe Chromium proxy results as branded Chrome verification.
 
 ## Reporting workflow
 
