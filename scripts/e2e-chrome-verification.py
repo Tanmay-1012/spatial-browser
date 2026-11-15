@@ -500,7 +500,11 @@ def wake_extension_service_worker_from_page(cdp, ext_id):
             time.sleep(0.25)
         assert page_target is not None, "Temporary extension page must open to wake the service worker"
         trigger_sid = cdp.attach_target(trigger_target_id)
-        cdp.send_cmd("Runtime.enable", session_id=trigger_sid, timeout=10)
+        # Chrome 109's extension renderer can take noticeably longer to attach
+        # on a cold hosted VM; allow it the same generous startup window as the
+        # surrounding target discovery rather than treating a slow renderer as
+        # a browser failure.
+        cdp.send_cmd("Runtime.enable", session_id=trigger_sid, timeout=30)
         wake_result = cdp.evaluate(
             trigger_sid,
             "chrome.runtime.sendMessage({type: 'spatial-browser-history:hosted-e2e-wake'}).catch(() => undefined).then(() => true)",
