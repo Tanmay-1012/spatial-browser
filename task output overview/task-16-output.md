@@ -1,6 +1,6 @@
 # Task 16 Output — Continuous Integration Build and Test Gate
 
-**Status:** Accepted with limitation — local validation passed; hosted run pending owner-approved push (see Section 8).
+**Status:** Accepted & Verified — first GitHub-hosted CI run passed (see Section 9).
 **Milestone:** 16 (Quality Automation)  
 **Prerequisite:** Task 15 accepted with its open Chrome 109 evidence limitation in Section 10 of [`task output overview/task-15-output.md`](task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned).  
 **Execution Date:** 2026-11-15  
@@ -180,3 +180,35 @@ Local build and automated test suites were executed to verify complete repositor
 ### Acceptance status
 
 Task 16 is accepted. Its local workflow and documentation are ready; the only remaining confirmation is the first hosted run after the owner authorizes a push or pull request. No further developer task is assigned until that run can be observed.
+
+
+---
+
+## 9. First GitHub-Hosted CI Run Verification
+
+Following owner approval, commits were pushed to `origin/main`. The GitHub Actions CI pipeline triggered automatically on the push event and completed with `success`.
+
+### Run Details
+- **Run ID:** `43721541361`
+- **Workflow:** `CI Build and Test Gate` ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml))
+- **Event:** `push` (commit `912ab95`)
+- **Runner:** GitHub-hosted `windows-latest`
+- **Runtime:** Node.js 22 LTS via `actions/setup-node@v7`
+- **Status:** `completed`
+- **Conclusion:** `success`
+- **Execution URL:** [https://github.com/Tanmay-1012/spatial-browser/actions/runs/43721541361](https://github.com/Tanmay-1012/spatial-browser/actions/runs/43721541361)
+- **Duration:** 28 seconds (started `2026-11-15T13:55:30Z`, completed `2026-11-15T13:55:58Z`)
+
+### Step Results
+| Step | Status | Conclusion |
+| :--- | :--- | :--- |
+| Set up job | Completed | Success |
+| Checkout repository (`actions/checkout@v7`, `persist-credentials: false`) | Completed | Success |
+| Set up Node.js (`actions/setup-node@v7`, `node-version: '22'`) | Completed | Success |
+| Build extension packages (`npm.cmd run build`) | Completed | Success |
+| Run verification test suite (`npm.cmd test`) | Completed | Success |
+| Post Set up Node.js | Completed | Success |
+| Post Checkout repository | Completed | Success |
+| Complete job | Completed | Success |
+
+With this passing GitHub-hosted run, the continuous integration gate is fully verified end-to-end on GitHub Actions infrastructure.

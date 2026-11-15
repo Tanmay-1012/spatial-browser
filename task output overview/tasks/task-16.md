@@ -1,6 +1,6 @@
 # Task 16 — Continuous Integration Build and Test Gate
 
-**Status:** Accepted with limitation — local validation passed; hosted run pending owner-approved push (see Section 8 of [`task-16-output.md`](../task-16-output.md)).
+**Status:** Accepted & Verified — first GitHub-hosted CI run passed (see Section 9 of [`task-16-output.md`](../task-16-output.md)).
 **Milestone:** 16 (Quality Automation)  
 **Prerequisite:** Task 15 is accepted with its branded Chrome 109 evidence limitation in [Task 15 output](../task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned).
 
