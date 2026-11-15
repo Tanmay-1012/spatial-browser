@@ -520,6 +520,7 @@ $processCondition = New-Object System.Windows.Automation.PropertyCondition([Syst
 $windowCondition = New-Object System.Windows.Automation.AndCondition($chromeCondition, $processCondition)
 
 $win = $null
+$windowProcessId = __PROCESS_ID__
 for ($i = 0; $i -lt 15; $i++) {
     $wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $windowCondition)
     foreach ($candidate in $wins) {
@@ -532,8 +533,24 @@ for ($i = 0; $i -lt 15; $i++) {
     if ($win) { break }
     Start-Sleep -Milliseconds 250
 }
+# Chrome 109 can hand the top-level window to a browser child process on hosted
+# Windows runners. If the launcher PID has no window, use the only visible Chrome
+# top-level window in this isolated job instead of failing on the stale PID.
 if (-not $win) {
-    Write-Error "Chrome_WidgetWin_1 window not found for pid=__PROCESS_ID__ (dpiSet=$dpiSet)"
+    $chromeWindows = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $chromeCondition)
+    $visibleChromeWindows = @(
+        foreach ($candidate in $chromeWindows) {
+            $wr = $candidate.Current.BoundingRectangle
+            if ($wr.Width -gt 100 -and $wr.Height -gt 100 -and -not $candidate.Current.IsOffscreen) { $candidate }
+        }
+    )
+    if ($visibleChromeWindows.Count -eq 1) {
+        $win = $visibleChromeWindows[0]
+        $windowProcessId = $win.Current.ProcessId
+    }
+}
+if (-not $win) {
+    Write-Error "Visible Chrome_WidgetWin_1 window not found for launcher pid=__PROCESS_ID__ (dpiSet=$dpiSet)"
     exit 1
 }
 
@@ -648,7 +665,7 @@ if (-not $accOk) {
     $methodUsed = "mouse_event"
 }
 
-Write-Output ("CLICK_SUCCESS|dpiSet=" + $dpiSet + "|winDpi=" + $winDpi + "|fgOk=" + $fgOk + "|btnRect=" + $r.ToString() + "|center=" + $cx + "," + $cy + "|hr=" + $hr + "|accName=" + $accName + "|accOk=" + $accOk + "|method=" + $methodUsed)
+Write-Output ("CLICK_SUCCESS|launcherPid=__PROCESS_ID__|windowPid=" + $windowProcessId + "|dpiSet=" + $dpiSet + "|winDpi=" + $winDpi + "|fgOk=" + $fgOk + "|btnRect=" + $r.ToString() + "|center=" + $cx + "," + $cy + "|hr=" + $hr + "|accName=" + $accName + "|accOk=" + $accOk + "|method=" + $methodUsed)
 """ .replace("__PROCESS_ID__", str(process_id))
     res = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script], capture_output=True, text=True)
     if res.returncode != 0 or "CLICK_SUCCESS" not in res.stdout:
@@ -736,6 +753,7 @@ def run_tests():
             "--disable-popup-blocking",
             "--no-first-run",
             "--no-default-browser-check",
+            "--start-maximized",
             "--force-renderer-accessibility"
         ]
         proc = subprocess.Popen(chrome_cmd)
