@@ -1,15 +1,15 @@
 ============================================================================
 TASK 12: MOZILLA FIREFOX RUNTIME ACCEPTANCE RUN
-Timestamp: 2026-11-13 21:37:56
+Timestamp: 2026-11-16 03:30:06
 Declared Manifest Minimum Floor: Firefox 115.0+
 ============================================================================
-[INIT] Local test HTTP server started at http://127.0.0.1:63924 (and http://localhost:63924)
-[INIT] Secondary CDN file server started at http://127.0.0.1:63925
+[INIT] Local test HTTP server started at http://127.0.0.1:60211 (and http://localhost:60211)
+[INIT] Secondary CDN file server started at http://127.0.0.1:60212
 [INIT] Connected to Mozilla Firefox 160.0 (x64 Windows) via Marionette (Declared Floor: Firefox 115.0+).
 
 --- STEP 1: Unpacked Extension Installation & Toolbar Setup ---
 [PASS] Temporary unpacked extension installed successfully (Addon ID: spatial-browser-history@term-project.local).
-[PASS] Toolbar action button pinned to nav-bar (Element ID: 85a14067-09fc-4b42-9b07-c05597a61431).
+[PASS] Toolbar action button pinned to nav-bar (Element ID: 963759c4-c88a-48c0-b665-58a5f29cfdfd).
 
 --- STEP 2: Invoke Actual Toolbar Action with Browser Click & Verify Existing Tab Focus ---
 [PASS] Browser Action 1 (WebDriver:ElementClick): totalTabs=2 (was 1), selected='moz-extension://d14e130f-9ddc-4a9b-8f3e-spatial000001/index.html'
@@ -24,45 +24,45 @@ Declared Manifest Minimum Floor: Firefox 115.0+
   [3f] Updating location.hash to #section1...
   [3g] History API route update (pushState to /target/spa-route)...
   [3h] Navigating to /opener and opening /child tab...
-  [3h] Child tab confirmed at http://127.0.0.1:63924/child. Closing child tab...
+  [3h] Child tab confirmed at http://127.0.0.1:60211/child. Closing child tab...
   [3i] Navigating via unknown/closed opener from untracked about:blank...
-  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:63924/unknown-parent. Closing child tab...
+  [3i] Unknown-opener child tab confirmed at http://127.0.0.1:60211/unknown-parent. Closing child tab...
 
 [VISIT COUNT AUDIT - PRE-REOPEN]
   Stored visits in local storage: 7
-    - [node_1794573488960_085dmj] url=http://127.0.0.1:63924/page1, parent=None, children=['node_1794573490639_dzd1oj'], checkpoint=True, title='Page One'
-    - [node_1794573490639_dzd1oj] url=http://127.0.0.1:63924/page2, parent=node_1794573488960_085dmj, children=['node_1794573491785_14j0zz'], checkpoint=False, title='Page Two'
-    - [node_1794573491785_14j0zz] url=http://127.0.0.1:63924/target#section1, parent=node_1794573490639_dzd1oj, children=['node_1794573494922_27w77z'], checkpoint=False, title='Updated Target Title'
-    - [node_1794573494922_27w77z] url=http://127.0.0.1:63924/target/spa-route, parent=node_1794573491785_14j0zz, children=['node_1794573496020_d9vxh0'], checkpoint=False, title='Updated Target Title'
-    - [node_1794573496020_d9vxh0] url=http://127.0.0.1:63924/opener, parent=node_1794573494922_27w77z, children=['node_1794573497246_d9cguo'], checkpoint=False, title='Opener Page'
-    - [node_1794573497246_d9cguo] url=http://127.0.0.1:63924/child, parent=node_1794573496020_d9vxh0, children=[], checkpoint=False, title='Child Page'
-    - [node_1794573501450_l47dto] url=http://127.0.0.1:63924/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
+    - [node_1794767415160_fwvnzy] url=http://127.0.0.1:60211/page1, parent=None, children=['node_1794767416244_oz2fpj'], checkpoint=True, title='Page One'
+    - [node_1794767416244_oz2fpj] url=http://127.0.0.1:60211/page2, parent=node_1794767415160_fwvnzy, children=['node_1794767417277_9if2z8'], checkpoint=False, title='Page Two'
+    - [node_1794767417277_9if2z8] url=http://127.0.0.1:60211/target#section1, parent=node_1794767416244_oz2fpj, children=['node_1794767420318_ixltst'], checkpoint=False, title='Updated Target Title'
+    - [node_1794767420318_ixltst] url=http://127.0.0.1:60211/target/spa-route, parent=node_1794767417277_9if2z8, children=['node_1794767421368_0v2wp6'], checkpoint=False, title='Updated Target Title'
+    - [node_1794767421368_0v2wp6] url=http://127.0.0.1:60211/opener, parent=node_1794767420318_ixltst, children=['node_1794767422444_4nk5d0'], checkpoint=False, title='Opener Page'
+    - [node_1794767422444_4nk5d0] url=http://127.0.0.1:60211/child, parent=node_1794767421368_0v2wp6, children=[], checkpoint=False, title='Child Page'
+    - [node_1794767426180_j0p8ct] url=http://127.0.0.1:60211/unknown-parent, parent=None, children=[], checkpoint=True, title='Unknown Parent Page'
 [PASS] Verified Page 1: Root checkpoint with parentNodeId: null.
 [PASS] Verified same-tab navigation: Page 2 parent is Page 1, Page 1 childNodeIds includes Page 2.
 [PASS] Verified redirect destination: /target parent is Page 2.
 [PASS] Verified reload deduplication: Exactly 1 node stored for /target despite reload.
 [PASS] Verified dynamic title update: node title updated in place to 'Updated Target Title'.
-[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:63924/target#section1' without creating extra visit.
+[PASS] Verified anchor fragment: Updated node URL to 'http://127.0.0.1:60211/target#section1' without creating extra visit.
 [PASS] Verified SPA route (pushState): /target/spa-route parent is /target.
-[PASS] Verified opener relationship: /child parent is /opener (node_1794573496020_d9vxh0), opener children include child.
+[PASS] Verified opener relationship: /child parent is /opener (node_1794767421368_0v2wp6), opener children include child.
 [PASS] Verified unknown/closed opener: /unknown-parent recorded as root checkpoint (parentNodeId: null, isCheckpoint: true, childNodeIds: []).
   Overview state before reopen: {'overviewHidden': False, 'detailHidden': True, 'zoomHidden': True, 'cardCount': 2, 'badge': '2 Research Trees · 7 Visits'}
-  Opened Detail View for tree_node_1794573488960_085dmj: rendered SVG nodes=6
+  Opened Detail View for tree_node_1794767415160_fwvnzy: rendered SVG nodes=6
 
 --- STEP 4: Select Closed Child Node via Browser Input & Explicitly Audit Reopened Visit Count ---
   Child node position after fit view: (1151.2416381835938, 501.20001220703125)
-[PASS] Selected closed child node via browser pointer click: title='Child Page', url='http://127.0.0.1:63924/child'
-[PASS] Reopened saved URL in new tab: http://127.0.0.1:63924/child
+[PASS] Selected closed child node via browser pointer click: title='Child Page', url='http://127.0.0.1:60211/child'
+[PASS] Reopened saved URL in new tab: http://127.0.0.1:60211/child
 
 [VISIT COUNT AUDIT - POST-REOPEN]
   Stored visits in local storage: 8 (initial: 7, +1 from reopened tab)
-  New visit recorded: [node_1794573507065_pporyg] url=http://127.0.0.1:63924/child, parent=None
+  New visit recorded: [node_1794767431062_acbp1m] url=http://127.0.0.1:60211/child, parent=None
   Overview after reopen: 3 tree cards (3 Research Trees · 8 Visits)
 [PASS] Explicit visit-count change & strict tree isolation proven: 7 visits (2 trees) -> 8 visits (3 trees), Detail View stays scoped to 6 nodes.
 
 --- STEP 5: Prove Overview/Detail Search, Restoration & Non-Distorting Time Filtering ---
   [Overview Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...
-  Base active visit count inside tree_node_1794573488960_085dmj: 6
+  Base active visit count inside tree_node_1794767415160_fwvnzy: 6
   [Detail Search] Typing 'target' into #search-input via WebDriver:ElementSendKeys...
   [Detail Search 'target'] Input: 'target', Badge: '2 of 6 matching (+2 context)', matches: 2, context ancestors: 2
   [Clear Search] Input value: '', Restored badge: '6 nodes', node count: 6
@@ -93,9 +93,9 @@ Declared Manifest Minimum Floor: Firefox 115.0+
 
 --- STEP 6.5: Task 11 Core Scenarios: Sibling Branching & Download Provenance ---
   [6.5a] Exercising Sibling Branching: /wiki -> /source-a -> Back -> /source-b...
-[PASS] Sibling Branching Proven: Source A (node_1794573527226_knkfew) and Source B (node_1794573530061_pb1eit) are siblings under Wikipedia (node_1794573526051_265098) in tree tree_node_1794573526051_265098.
+[PASS] Sibling Branching Proven: Source A (node_1794767449834_xavupr) and Source B (node_1794767451904_bd4yt2) are siblings under Wikipedia (node_1794767448800_8qi8ei) in tree tree_node_1794767448800_8qi8ei.
   [6.5b] Exercising Distinct-Host Download Provenance from http://localhost/download-portal to http://127.0.0.1 CDN...
-[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794573531328_gy8jxy (originDomain: localhost), raw URL/CDN omitted.
+[PASS] Distinct-Host Download Provenance Proven: research_paper.pdf (final URL hostname: 127.0.0.1) attached to source portal node_1794767452968_a7ayd0 (originDomain: localhost), raw URL/CDN omitted.
   [6.5c] Exercising Unattributed Download (no referrer)...
 [PASS] Unattributed Download Proven: dataset.zip recorded with parentNodeId: null, originDomain: 'Source unavailable'.
   [6.5d] Exercising Ambiguous Referrer Download (|M|=2 matches)...
@@ -117,28 +117,28 @@ Declared Manifest Minimum Floor: Firefox 115.0+
 
 --- STEP 7: Error Log Audit & Persistence (Pre-Restart Phase) ---
   [SAVED] Pre-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\firefox-errors-pre-restart.json
-  Evaluated 14 Gecko console records prior to restart.
+  Evaluated 6 Gecko console records prior to restart.
   Extension Errors: 0, Warnings: 0, Info: 0
 [PASS] Pre-restart error audit passed with 0 errors and 0 warnings.
 
 --- STEP 8: Browser Process Restart & Multi-Node Session Persistence ---
   [8a] Exercising multi-node session navigation in fresh live tab (/restart-step1 -> /restart-step2 -> /restart-step3)...
   Pre-restart node count stored in SQLite: 12
-  Pre-restart tab 8 historyStack: ['node_1794573552539_pemv3f', 'node_1794573553851_3so6tr', 'node_1794573555005_5qgkdm'] (length 3)
+  Pre-restart tab 8 historyStack: ['node_1794767469650_jmg4hd', 'node_1794767470723_lthcwp', 'node_1794767471755_shqvak'] (length 3)
 [PASS] Pre-restart multi-node baseline verified: tab 8 has 3-node history stack.
   [8b] Terminating Firefox process for full browser restart...
   Firefox process terminated cleanly.
   Relaunching Firefox with persistent profile and live tab...
   Reconnected to restarted Mozilla Firefox 160.0.
   Post-restart stored node count in SQLite: 12 (was 12)
-  Post-restart live tab state: stack=['node_1794573555005_5qgkdm'], index=0, baselineEstablished=True
+  Post-restart live tab state: stack=['node_1794767471755_shqvak'], index=0, baselineEstablished=True
 [PASS] Verified Browser Restart: Live tab with multi-node session collapsed to single-node baseline [step3], stored graph remains completely intact.
-  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794573552539_pemv3f: 3 nodes (3 nodes)
+  Post-restart Overview: 3 cards (3 Research Trees · 9 Visits); Detail View for tree_node_1794767469650_jmg4hd: 3 nodes (3 nodes)
 [PASS] Verified Task 12 UI reconciliation: Overview & Detail View accurately render persisted Research Trees after restart.
 
 --- STEP 9: Error Log Audit & Persistence (Post-Restart Phase) ---
   [SAVED] Post-Restart Phase audit artifact written to: D:\Projects\HCI Project\docs\test-results\firefox-errors-post-restart.json
-  Evaluated 25 Gecko console records in restarted session.
+  Evaluated 24 Gecko console records in restarted session.
   Post-Restart Extension Errors: 0, Warnings: 0, Info: 0
 [PASS] Post-restart error audit passed with 0 errors and 0 warnings.
 

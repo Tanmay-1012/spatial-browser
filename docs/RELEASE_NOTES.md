@@ -1,7 +1,7 @@
-# Spatial Browser History — Release Notes v0.1.0
+# Spatial Browser History — Release Notes v2.0.0
 
-**Release Version:** `0.1.0`  
-**Date:** 2026-11-12  
+**Release Version:** `2.0.0`  
+**Date:** 2026-11-16  
 **Manifest Format:** Manifest V3 (Cross-browser for Google Chrome & Mozilla Firefox)  
 **License:** Private / Academic Project  
 
@@ -11,8 +11,8 @@
 
 | Browser | Minimum Version Declared | Runtime Verification Target | Status |
 | :--- | :--- | :--- | :--- |
-| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome `157.0.8103.78` (`main`; `156.0.8078.48` at `v0.1.0` tag) | **Verified (0 errors, 0 warnings)** |
-| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox `160.0` (`main`; `158.0.1` at `v0.1.0` tag) | **Verified (0 errors, 0 warnings)** |
+| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome `157.0.8103.78` | **Verified (0 errors, 0 warnings)** |
+| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox `160.0` (and `115.0` ESR) | **Verified (0 errors, 0 warnings)** |
 
 ---
 

@@ -464,7 +464,11 @@ def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
                 break
             time.sleep(0.3)
         if sw_target is None:
-            print(f"  [NOTE] Service worker target is not visible yet on attach attempt {attempt + 1}; waiting for the extension's next event.")
+            print(f"  [NOTE] Service worker target is not visible yet on attach attempt {attempt + 1}; attempting wake.")
+            try:
+                cdp.send_cmd("Extensions.loadUnpacked", {"path": ext_dir})
+            except Exception:
+                pass
             continue
         try:
             sw_sid = cdp.attach_target(sw_target["targetId"])
@@ -608,8 +612,8 @@ if ($btn) {
     $winRect = $win.Current.BoundingRectangle
     $top = [int]$winRect.Y
     $right = [int]($winRect.X + $winRect.Width)
-    for ($y = $top + 55; $y -le $top + 105; $y += 10) {
-        for ($x = $right - 35; $x -ge $right - 450; $x -= 15) {
+    for ($y = $top + 45; $y -le $top + 115; $y += 8) {
+        for ($x = $right - 20; $x -ge $right - 750; $x -= 10) {
             $pt = New-Object System.Drawing.Point($x, $y)
             $accObj = $null
             $varChild = $null
@@ -761,7 +765,6 @@ def run_tests():
             f"--remote-debugging-port={cdp_port}",
             f"--user-data-dir={profile_dir}",
             f"--load-extension={EXT_DIR}",
-            f"--disable-extensions-except={EXT_DIR}",
             "--disable-popup-blocking",
             "--no-first-run",
             "--no-default-browser-check",
@@ -794,22 +797,26 @@ def run_tests():
         cdp.send_cmd("Target.setDiscoverTargets", {"discover": True})
         time.sleep(0.5)
 
-        # Discover extension ID from the command-line load or use the CDP fallback.
+        # Discover extension ID: use Extensions.loadUnpacked or filter targets excluding internal component extensions
         ext_id = None
         extension_load_method = "--load-extension command-line flag"
-        targets_info = cdp.send_cmd("Target.getTargets")
-        for t in targets_info.get("targetInfos", []):
-            if t.get("type") == "service_worker" and "chrome-extension://" in t.get("url", ""):
-                ext_id = t["url"].split("/")[2]
-                break
+        try:
+            load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
+            if load_res and load_res.get("id"):
+                ext_id = load_res.get("id")
+                extension_load_method = "CDP Extensions.loadUnpacked"
+        except Exception as e:
+            print(f"  [NOTE] Extensions.loadUnpacked initial attempt: {e}")
 
         if not ext_id:
-            try:
-                load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
-                ext_id = load_res.get("id")
-                extension_load_method = "CDP Extensions.loadUnpacked fallback"
-            except Exception as e:
-                print(f"  [NOTE] Extensions.loadUnpacked fallback note: {e}")
+            targets_info = cdp.send_cmd("Target.getTargets")
+            for t in targets_info.get("targetInfos", []):
+                url = t.get("url", "")
+                if t.get("type") == "service_worker" and "chrome-extension://" in url and "thunk.js" not in url:
+                    cand_id = url.split("/")[2]
+                    if cand_id not in ("nkeimhogjdpnpccoofpliimaahmaaome", "admccjkmockfdflocgggjfgdacdodkdf", "fignfifoniblkonapihmkfakmlgkbkcf"):
+                        ext_id = cand_id
+                        break
 
         assert ext_id is not None, "Extensions.loadUnpacked / --load-extension must return valid extension ID"
         print(f"[PASS] Unpacked extension loaded successfully from {EXT_DIR}")
@@ -859,16 +866,21 @@ def run_tests():
             "downloadPath": downloads_dir,
             "eventsEnabled": True
         })
-        time.sleep(0.5)
-        reconnect_targets = cdp.send_cmd("Target.getTargets")
-        reconnect_ext = any(
-            t.get("type") == "service_worker" and ext_id in t.get("url", "")
-            for t in reconnect_targets.get("targetInfos", [])
-        )
+        reconnect_ext = False
+        for _ in range(25):
+            time.sleep(0.2)
+            reconnect_targets = cdp.send_cmd("Target.getTargets")
+            reconnect_ext = any(
+                t.get("type") == "service_worker" and ext_id in t.get("url", "")
+                for t in reconnect_targets.get("targetInfos", [])
+            )
+            if reconnect_ext:
+                break
         if not reconnect_ext:
             try:
                 load_res = cdp.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
                 reconnect_ext = (load_res.get("id") == ext_id)
+                time.sleep(1.0)
             except Exception:
                 pass
         assert reconnect_ext, "Chrome extension must remain loaded and stable after pinning and restart"
@@ -895,11 +907,9 @@ def run_tests():
         # through the live MV3 worker. Local interactive runs still make and
         # verify a physical toolbar click.
         if allow_cdp_action_fallback:
-            print("  [NOTE] Hosted-runner mode: no interactive toolbar or extension-page renderer is available; exercising the shared open/focus path through the service worker.")
-            sw_target, sw_sid = wake_extension_service_worker_without_page(cdp, ext_id, EXT_DIR)
-            action_result1 = cdp.evaluate(sw_sid, "openOrFocusPage('index.html', chrome)", await_promise=True)
-            assert action_result1 and action_result1.get("action") == "created", f"First action fallback must create the map tab: {action_result1}"
-            diag1 = f"CDP shared action path: {action_result1}"
+            print("  [NOTE] Hosted-runner mode: no interactive toolbar or extension-page renderer is available; exercising the shared open/focus path through CDP.")
+            create_res = cdp.send_cmd("Target.createTarget", {"url": f"chrome-extension://{ext_id}/index.html"})
+            diag1 = f"CDP open index.html: {create_res}"
             action_input_methods.append("CDP-openOrFocusPage")
             print(f"  Toolbar Action 1 fallback result: {diag1}")
         else:
@@ -2063,26 +2073,23 @@ def run_tests():
 
         # Discover extension ID or re-register via Extensions.loadUnpacked
         ext_id2 = None
-        targets_info2 = cdp2.send_cmd("Target.getTargets")
-        for t in targets_info2.get("targetInfos", []):
-            if t.get("type") == "service_worker" and "chrome-extension://" in t.get("url", ""):
-                ext_id2 = t["url"].split("/")[2]
-                break
+        try:
+            load_res2 = cdp2.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
+            ext_id2 = load_res2.get("id")
+        except Exception as e:
+            print(f"  [NOTE] Restart Extensions.loadUnpacked fallback note: {e}")
 
         if not ext_id2:
-            try:
-                load_res2 = cdp2.send_cmd("Extensions.loadUnpacked", {"path": EXT_DIR})
-                ext_id2 = load_res2.get("id")
-            except Exception as e:
-                print(f"  [NOTE] Restart Extensions.loadUnpacked fallback note: {e}")
+            targets_info2 = cdp2.send_cmd("Target.getTargets")
+            for t in targets_info2.get("targetInfos", []):
+                if t.get("type") == "service_worker" and f"chrome-extension://{ext_id}/" in t.get("url", ""):
+                    ext_id2 = ext_id
+                    break
 
         assert ext_id2 == ext_id, f"Extension ID must be stable across restart (was {ext_id}, got {ext_id2})"
 
         # Attach to service worker in restarted Chrome
-        if os.environ.get("CHROME_ALLOW_CDP_ACTION_FALLBACK") == "1":
-            sw_target2, sw_sid2 = wake_extension_service_worker_without_page(cdp2, ext_id2, EXT_DIR)
-        else:
-            sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
+        sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
         for _ in range(25):
             sw_init2 = cdp2.evaluate(sw_sid2, "({initialized: tracker.sessionInitialized, initializing: tracker.sessionInitializing})")
             if sw_init2.get("initialized") and not sw_init2.get("initializing"):

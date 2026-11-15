@@ -6,19 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased] — Working Towards `v2.0`
+## [2.0.0] — 2026-11-16
 
-Active development on `main` is building toward **Spatial Browser History `v2.0`** (Milestone 10–12 architecture).
+Final major release delivering the **Research Tree Explorer**, **Branch-Aware Navigation Engine**, **Download Provenance Attribution**, and **Automated CI Quality Gate** across Chrome and Firefox.
 
-### Completed on `main` (V2 Core Backend — Milestone 11 & Explorer UI — Milestone 12)
+### Added & Enhanced (Milestones 10–16 Architecture)
 - **Schema V2 & Crash-Safe Migration:** Stable `treeId`, `nodeType` (`page` / `download`), `downloadNodeMap`, `baselineEstablished` tab state, V1 → V2 migration with verified backup (`spatial_browser_history_data_v1_backup`), and passive 24-hour wake-up expiration.
 - **Branch-Aware Navigation Engine:** Same-tab Back/Forward resolution with sibling branching (`Wikipedia → Source A → Back → Source B`) and symmetrical duplicate-traversal lineage invalidation.
 - **Session Safety & Startup Barrier:** Synchronous listener registration gated by `storage.session` marker checks, bounded retries, fail-closed protection on storage errors, and single-node baseline collapse for pre-restart live tabs.
-- **Download Provenance Attribution:** Referrer-only attribution to uniquely matched source pages ($|M|=1$), `"Source unavailable"` fallback when missing or ambiguous, zero raw URLs or local paths stored, verified across distinct local hostnames (`localhost` source vs `127.0.0.1` CDN) in Chrome 156 and Firefox 158.
-- **Research Tree Explorer Overview & Detail UI (Milestone 12):** Two-level Explorer with strict `treeId` summary cards, separate **Unattributed Downloads** shelf (`Source unavailable`), single-tree Detail View with sibling fan geometry, responsive indented-column reflow layout for narrow screens (`<= 900px`, `fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), non-distorting context-ancestor filtering (`.is-context-ancestor`), download provenance drawer (`Downloaded from <originDomain>`, reopening disabled), Back-to-Overview scroll/filter/focus restoration, WCAG AA contrast, and `prefers-reduced-motion`. Build and `npm test` pass (**61 passed, 0 failed**: 12 build, 35 tracker, 14 UI). Chrome `157.0.8103.78` and Firefox `160.0` isolated-profile E2E runs passed with `12 -> 12` restart persistence, clean process cleanup, and 0 errors/warnings; submitted for lead acceptance in Section 11 of `task-12-output.md`.
-
-### Next Toward `v2.0` Release Packaging
-- **Lead Review & Final `v2.0` Tagging:** Complete Milestone 12 lead review, bump version manifests to `2.0.0`, and publish signed/checksummed `v2.0` release bundles.
+- **Download Provenance Attribution:** Referrer-only attribution to uniquely matched source pages ($|M|=1$), `"Source unavailable"` fallback when missing or ambiguous, zero raw URLs or local paths stored, verified across distinct local hostnames (`localhost` source vs `127.0.0.1` CDN).
+- **Research Tree Explorer Overview & Detail UI:** Two-level Explorer with strict `treeId` summary cards, separate **Unattributed Downloads** shelf (`Source unavailable`), single-tree Detail View with sibling fan geometry, responsive indented-column reflow layout for narrow screens (`<= 900px`, `fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), non-distorting context-ancestor filtering (`.is-context-ancestor`), download provenance drawer (`Downloaded from <originDomain>`, reopening disabled), Back-to-Overview scroll/filter/focus restoration, WCAG AA contrast, and `prefers-reduced-motion`.
+- **Automated Verification & CI Quality Gate:** `npm test` passing **61 passed, 0 failed** (`12` build/manifest, `35` tracker/storage, `14` UI). Isolated-profile runtime E2E test suites passed with **0 errors, 0 warnings** in **Google Chrome 157.0.8103.78** and **Mozilla Firefox 160.0**. GitHub Actions CI build & test quality gate operational.
 
 ---
 

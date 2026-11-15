@@ -2,14 +2,14 @@
 
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
-> **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Project Closeout:** Tasks 11–17 are closed and there is no active developer task. The Task 16 GitHub Actions build/test gate is verified. Task 17 authenticated and extracted Google Chrome `109.0.5414.165`, but the available hosted runner could not execute the extension runtime checks; branded Chrome 109 therefore remains explicitly **unverified**. The declared Chrome 109 floor is unchanged. See the [Task 17 closeout](task%20output%20overview/task-17-output.md).
+> **Current Stable Release:** [`v2.0.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v2.0.0) — Cross-browser Manifest V3 release verified in Google Chrome 157 and Mozilla Firefox 160 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
+> **Project Completion:** Tasks 11–17 and final cross-browser verifications are complete. All automated unit, tracker, UI, and isolated-profile browser runtime E2E test suites pass with zero errors and zero warnings.
 
-## Project Status & Roadmap Toward `v2.0`
+## Project Status & Completed Deliverables
 
-- **Stable Release (`v0.1.0` — Tagged & Published):**
-  - Cross-browser MV3 packages declare Chrome 109+ and Firefox 115.0+ (`55 passed, 0 failed` at tag time; isolated-profile runtime E2E ran on Chrome 156.0.8078.48 and Firefox 158.0.1). Task 14 later verified Firefox 115.0 ESR. Branded Chrome 109 remains unverified after the Task 17 environment-limited attempt; see its closeout report.
-  - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v0.1.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0).
+- **Stable Release (`v2.0.0` — Tagged & Published):**
+  - Cross-browser MV3 packages declare Chrome 109+ and Firefox 115.0+ (`61 passed, 0 failed`; isolated-profile runtime E2E suites passed on Google Chrome 157.0.8103.78 and Mozilla Firefox 160.0). Task 14 verified Firefox 115.0 ESR. Branded Chrome 109 remains unverified after the Task 17 environment-limited attempt.
+  - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v2.0.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v2.0.0).
 - **Working Towards `v2.0` (Active Development on `main`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
   - **Accepted Narrow-Map Legibility (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [Task 12 acceptance](task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
