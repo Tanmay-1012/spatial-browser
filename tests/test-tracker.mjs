@@ -1395,7 +1395,7 @@ await test('Completed download from a CDN domain attributes strictly to source p
   await tracker.ensureSessionReady();
 
   // 1. Visit University research portal
-  await mockEnv.emitCommitted({ tabId: 1, frameId: 0, url: 'https://ai.university.edu/papers/llm-study', timeStamp: 1000 });
+  await mockEnv.emitCommitted({ tabId: 1, frameId: 0, url: 'https://research.university.edu/papers/graph-study', timeStamp: 1000 });
   const state1 = await storage.getState();
   const sourceNodeId = getTabHeadId(state1, 1);
 
@@ -1403,7 +1403,7 @@ await test('Completed download from a CDN domain attributes strictly to source p
   await mockEnv.emitDownloadCreated({
     id: 3003,
     url: 'https://cdn-edge-04.akamai-fastly.net/blobs/2026/study.pdf?sig=deadbeef&expires=1730000000',
-    referrer: 'https://ai.university.edu/papers/llm-study',
+    referrer: 'https://research.university.edu/papers/graph-study',
     filename: 'C:\\Downloads\\study.pdf',
     state: 'complete',
     endTime: '2026-10-29T21:00:00.000Z'
@@ -1413,7 +1413,7 @@ await test('Completed download from a CDN domain attributes strictly to source p
   const dlNode = Object.values(state2.nodes).find(n => n.downloadId === 3003);
   assert(dlNode, 'Download node must exist');
   assert.strictEqual(dlNode.parentNodeId, sourceNodeId, 'Download node must attach under source page');
-  assert.strictEqual(dlNode.originDomain, 'ai.university.edu', 'Must record source page domain, NEVER CDN domain');
+  assert.strictEqual(dlNode.originDomain, 'research.university.edu', 'Must record source page domain, NEVER CDN domain');
   assert.strictEqual(dlNode.filename, 'study.pdf');
   assert.strictEqual(dlNode.url, undefined, 'Must not persist CDN URL or auth tokens');
   assert(state2.nodes[sourceNodeId].childNodeIds.includes(dlNode.id));

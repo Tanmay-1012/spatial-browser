@@ -363,7 +363,7 @@ In `_processCompletedDownload(item)` ([`src/shared/tracker.js`](file:///d:/Proje
 #### 2. Unit Suite Expansion in `tests/test-tracker.mjs`
 The unit suite was updated and expanded to cover all edge cases (suite increased from 33 to 35 tests, total automated suite from 53 to 55 tests):
 - **Corrected Test 25:** Unattributed download with empty referrer and CDN URL (`https://cdn.datasets.org/download?token=secret`) asserts `parentNodeId: null`, `originDomain: 'Source unavailable'`, and verifies that neither the CDN host, raw URL, nor tokens appear in storage.
-- **Added Test 25b (Cross-domain CDN Download):** Simulates a research paper download where the user initiates from source page `https://ai.university.edu/papers/spatial` and the browser downloads from external CDN `https://cdn-edge-04.akamai-fastly.net/archive/paper.pdf?sig=xyz`. Asserts that the resulting download node has `parentNodeId === sourcePage.id`, `originDomain === 'ai.university.edu'` (strictly the source domain, never the CDN host), `treeId === sourcePage.treeId`, and raw CDN URLs/tokens are omitted.
+- **Added Test 25b (Cross-domain CDN Download):** Simulates a research paper download where the user initiates from source page `https://research.university.edu/papers/spatial` and the browser downloads from external CDN `https://cdn-edge-04.akamai-fastly.net/archive/paper.pdf?sig=xyz`. Asserts that the resulting download node has `parentNodeId === sourcePage.id`, `originDomain === 'research.university.edu'` (strictly the source domain, never the CDN host), `treeId === sourcePage.treeId`, and raw CDN URLs/tokens are omitted.
 - **Added Test 25c (Ambiguous Referrer Fallback):** Simulates two active tabs visiting identical URL `https://research.org/catalog` in separate trees, followed by a completed download with referrer `https://research.org/catalog` ($|M| = 2$). Asserts that `tracker.js` detects the ambiguity and safely falls back to `parentNodeId: null`, `originDomain: 'Source unavailable'`, and `isCheckpoint: true` without guessing.
 
 All 55 automated tests pass with 0 failures (`npm.cmd test`).
@@ -430,7 +430,7 @@ Task 11 is not accepted yet. The live download test does not prove that the sour
 
 - Both harnesses construct the source-page address as http://127.0.0.1:{TEST_PORT} and the download address as http://127.0.0.1:{CDN_PORT}. These URLs have the same hostname; only the port differs.
 - originDomain stores the hostname without the port, so both the source and final file URL produce 127.0.0.1. The E2E assertion therefore cannot distinguish corrected referrer-based attribution from the previous bug that used item.url.
-- The unit test with ai.university.edu and a separate CDN host exercises the code path, but does not replace the requested real-browser check.
+- The unit test with research.university.edu and a separate CDN host exercises the code path, but does not replace the requested real-browser check.
 
 ### Required correction before acceptance
 

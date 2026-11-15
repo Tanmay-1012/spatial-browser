@@ -10,7 +10,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
 - **Stable Release (`v2.0.0` — Tagged & Published):**
   - Cross-browser MV3 packages declare Chrome 109+ and Firefox 115.0+ (`61 passed, 0 failed`; isolated-profile runtime E2E suites passed on Google Chrome 157.0.8103.78 and Mozilla Firefox 160.0). Task 14 verified Firefox 115.0 ESR. Branded Chrome 109 remains unverified after the Task 17 environment-limited attempt.
   - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v2.0.0`)](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v2.0.0).
-- **Working Towards `v2.0` (Active Development on `main`):**
+- **Completed Milestones & Features (`v2.0.0`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
   - **Accepted Narrow-Map Legibility (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [Task 12 acceptance](task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
   - **Accepted Milestone (Milestone 13 / Task 13):** Release-candidate package, checksum, privacy-boundary, and current-browser runtime audit accepted in Section 7 of the [Task 13 report](task%20output%20overview/task-13-output.md).
@@ -80,7 +80,7 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │   ├── DEVELOPMENT.md         # Architecture notes, layout algorithms, schema, and rules
 │   ├── TEST_PLAN.md           # Cross-browser verification checklist and test records
 │   ├── TASK_10.md             # Pointer to the canonical assignment folder
-│   ├── RELEASE_NOTES.md       # Version 0.1.0 release notes, compatibility, and evidence
+│   ├── RELEASE_NOTES.md       # Version 2.0.0 release notes, compatibility, and evidence
 │   └── test-results/          # Real browser E2E execution logs and console error audits
 ├── outputs/                   # Generated build deliverables (do not edit manually)
 │   ├── chrome/
@@ -95,7 +95,7 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │   ├── tasks/                  # Canonical developer assignments (Task 10 onward)
 │   ├── task-1-output.md        # Completed task reports and verification evidence
 │   └── README.md               # Assignment/report index and review status
-├── CHANGELOG.md               # Release history (v0.1.0) and roadmap toward v2.0
+├── CHANGELOG.md               # Release history (v0.1.0 through v2.0.0)
 ├── RELEASE_NOTES.md           # Root release notes, deliverables, and verification summary
 └── README.md
 ```
@@ -163,8 +163,3 @@ npm test
 - All browsing metadata remains strictly local to the active browser profile in `chrome.storage.local` / `browser.storage.local`.
 - No page content, form inputs, credentials, keystrokes, or remote telemetry are collected.
 - Reopening a saved page opens its HTTP/HTTPS URL in a new tab without restoring private session state.
-
-
-
-
-

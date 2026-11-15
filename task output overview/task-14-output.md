@@ -92,7 +92,7 @@ A systematic source-code audit was conducted to verify every manifest property, 
 - **Harness & Profile:** Isolated temporary user-data directory (`test-chrome-109-*`), remote debugging port, clean process termination.
 - **Harness Execution Command:**
   ```powershell
-  $env:CHROME_BINARY = "C:\Users\tanma\.gemini\antigravity\brain\d4f1498c-651c-415e-8b90-130f9ddafa66\scratch\chromium-109\chrome-win\chrome.exe"
+  $env:CHROME_BINARY = "C:\Users\tanma\AppData\Local\Temp\scratch\chromium-109\chrome-win\chrome.exe"
   $env:CHROME_LOG_PATH = "D:\Projects\HCI Project\docs\test-results\chrome-109-e2e.log"
   $env:CHROME_PRE_ERRORS_PATH = "D:\Projects\HCI Project\docs\test-results\chrome-109-errors-pre-restart.json"
   $env:CHROME_POST_ERRORS_PATH = "D:\Projects\HCI Project\docs\test-results\chrome-109-errors-post-restart.json"
@@ -175,7 +175,7 @@ This unbranded snapshot run does not verify Google Chrome 109 stable.
 - **Harness & Profile:** Isolated temporary profile directory (`test-firefox-115-*`), dynamic Marionette port, clean process-tree termination (`terminate_firefox_tree`).
 - **Harness Execution Command:**
   ```powershell
-  $env:FIREFOX_BINARY = "C:\Users\tanma\.gemini\antigravity\brain\d4f1498c-651c-415e-8b90-130f9ddafa66\scratch\firefox-115\core\firefox.exe"
+  $env:FIREFOX_BINARY = "C:\Users\tanma\AppData\Local\Temp\scratch\firefox-115\core\firefox.exe"
   $env:FIREFOX_LOG_PATH = "D:\Projects\HCI Project\docs\test-results\firefox-115-e2e.log"
   $env:FIREFOX_PRE_ERRORS_PATH = "D:\Projects\HCI Project\docs\test-results\firefox-115-errors-pre-restart.json"
   $env:FIREFOX_POST_ERRORS_PATH = "D:\Projects\HCI Project\docs\test-results\firefox-115-errors-post-restart.json"

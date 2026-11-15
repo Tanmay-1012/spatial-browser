@@ -13,6 +13,3 @@ Thumbs.db
 desktop.ini
 *.tmp
 *.swp
-
-# Local debug / scratch files
-SPATIAL_BROWSER_HISTORY_AGENT_BRIEF.md
