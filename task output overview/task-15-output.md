@@ -1,6 +1,6 @@
 # Task 15 Output — Branded Chrome 109 Verification or Support-Floor Decision
 
-**Status:** Completed — resubmitted for lead review (see Section 9).  
+**Status:** Accepted with limitation (see Section 10).
 **Milestone:** 15 (Chrome Runtime Evidence)  
 **Prerequisite:** Task 14 accepted with its Chrome 109 evidence limitation in Section 9 of [`task output overview/task-14-output.md`](task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14).  
 **Declared Minimum Compatibility Floors:** Google Chrome `109+` (`minimum_chrome_version: "109"` in [`src/chrome/manifest.json`](../src/chrome/manifest.json)) & Mozilla Firefox `115.0+` (`strict_min_version: "115.0"` in [`src/firefox/manifest.json`](../src/firefox/manifest.json)).  
@@ -22,12 +22,11 @@ The objective of Task 15 is either to obtain and execute live runtime verificati
    - Google Cloud Storage signed release buckets (`commondatastorage.googleapis.com/chrome-signed`) returned HTTP 403 Forbidden.
    - Google's [Enterprise browser FAQ](https://new.chromium.org/administrators/frequently-asked-questions/) explicitly notes older MSI versions are not provided by Google.
 2. **Windows Sandbox Check & Exact Blocker:**
-   - The launcher `C:\Windows\System32\WindowsSandbox.exe` exists on disk (1,088,872 bytes).
-   - Component Based Servicing (CBS) registry check (`HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\PackageIndex\*Containers-DisposableClientVM*`) confirms the optional feature is **disabled/uninstalled** (state value `0`).
-   - Querying the Host Compute Service (`hcsdiag.exe list`) failed with code 1 (`Insufficient privileges. Only administrators or users that are members of the Hyper-V Administrators user group are permitted to access virtual machines or containers...`).
-   - Session group token check (`whoami /groups`) confirms the process runs at `Medium Mandatory Level` with `BUILTIN\Administrators` used for deny-only, and the account is not a member of `BUILTIN\Hyper-V Administrators`.
-   - A non-elevated launch test spawned `WindowsSandbox.exe` (PID 3408), which created 0 windows, 0 guest containers, and consumed 0% CPU before being cleanly terminated.
-   - Windows Sandbox cannot be opened or used without enabling system optional features and elevating. Per Task 15 constraints ("Do not enable it, elevate, or install Chrome 109 on the host"), it was not enabled.
+   - `WindowsSandbox.exe` exists and the supported `Win32_OptionalFeature` query reports `Containers-DisposableClientVM` with `InstallState = 1` (Enabled).
+   - The submitted report misread a CBS PackageIndex value of `0` as the feature state. That registry value does not override the WMI feature result; the correction and Microsoft state mapping are recorded in Section 10.
+   - `hcsdiag.exe list` failed with an insufficient-privileges error. The interactive token is medium integrity, the Administrators group is deny-only, and the account is not in `BUILTIN\Hyper-V Administrators`.
+   - Launching the sandbox without the required HCS access produced no usable window or guest; the process was terminated without changing system settings.
+   - The feature is enabled, but this account cannot use the Host Compute Service. No elevation, group change, MSI installation, or host modification was performed.
 3. **Mirrored Installer Provenance, Hashes & Authenticode Verification:**
    - A legacy Google Chrome 109 Enterprise 64-bit MSI was obtained from a third-party archive mirror at `https://archive.org/download/chrome-109-Win7-8/Chrome%20109%20%28Enterprise%29%20x64.msi`.
    - File size: `96,067,584` bytes.
@@ -44,7 +43,7 @@ The objective of Task 15 is either to obtain and execute live runtime verificati
    - Attribution: Described as a Google-signed MSI obtained from a third-party archive mirror, not a Google-hosted download. While Authenticode authenticates Google LLC as the author, the host is an archive mirror.
    - Installer architecture: The MSI embeds `GoogleChromeInstaller.exe` (`GoogleUpdateSetup.exe` with Omaha wrapper and `mini_installer.exe`), which performs system-wide installation into `C:\Program Files\Google\Chrome\Application`. Running it on the host would overwrite the user's Google Chrome `157.0.8103.78` and break profile isolation, so it was not installed on the host.
 4. **Unverified Floor Status Maintained:** Unbranded Chromium snapshot evidence is **not** treated as branded Google Chrome verification. Google Chrome 109 stable remains explicitly marked **UNVERIFIED** in the documentation and test plan, while the Chromium snapshot is retained as engine-proxy evidence only.
-5. **Owner Decision Framework:** Outlined three concrete paths for the project owner: (A) Retain declared Chrome 109 floor with explicit unverified status and proxy documentation; (B) Propose a new support floor that can be directly verified (such as a versioned Chrome for Testing release starting at Chrome 113+); or (C) Owner provisions dedicated isolation (enables Windows Sandbox or provisions a disposable VM).
+5. **Owner Decision Framework:** Outlined three concrete paths for the project owner: (A) Retain the declared Chrome 109 floor with explicit unverified status and proxy documentation; (B) propose a new support floor that can be directly verified; or (C) authorize Hyper-V access for the existing enabled Windows Sandbox or provide a disposable VM.
 6. **Repository & Build Health:** Executed `npm.cmd test` (**61 passed, 0 failed**) and `npm.cmd run build` (all checksums verified). Preserved all Task 14 lead-review records. No declared floors, storage schemas, permissions, or privacy boundaries were modified. No release was tagged, pushed, or distributed.
 
 ---
@@ -63,14 +62,14 @@ The objective of Task 15 is either to obtain and execute live runtime verificati
 
 ### 2.2 Windows Sandbox Availability Check
 - **Executable Presence:** `C:\Windows\System32\WindowsSandbox.exe` exists on disk (1,088,872 bytes, last modified 2026-10-14).
-- **CBS Feature State:** Queried registry `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\PackageIndex\*Containers-DisposableClientVM*`. Packages show value `0`, indicating the Windows Sandbox optional feature is **disabled/uninstalled**.
+- **Optional Feature State:** A non-elevated `Get-CimInstance Win32_OptionalFeature` query reports `Name = Containers-DisposableClientVM`, `Caption = Windows Sandbox`, `InstallState = 1`. Microsoft's [Win32_OptionalFeature documentation](https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-optionalfeature) defines `1` as **Enabled**. A CBS `PackageIndex` data value of `0` was incorrectly interpreted in the submitted report as the feature state; it is not used for that conclusion here.
 - **Host Compute Service Privileges:** Executing `hcsdiag.exe list` without elevation failed with exit code 1:
   ```
   Insufficient privileges. Only administrators or users that are members of the Hyper-V Administrators user group are permitted to access virtual machines or containers. To add yourself to the Hyper-V Administrators user group, please see https://aka.ms/hcsadmin for more information.
   ```
 - **Session Group Token:** `whoami /groups` confirms the interactive session token is `Medium Mandatory Level`. `BUILTIN\Administrators` is filtered ("Group used for deny only"), and the user account is not a member of `BUILTIN\Hyper-V Administrators`.
 - **Non-Elevated Launch Attempt:** Starting `WindowsSandbox.exe` directly spawned a background process (PID 3408, 14 idle threads, 0% CPU, 0 windows, 0 child processes). The process was unable to communicate with the Host Compute Service and was cleanly terminated.
-- **Conclusion:** Windows Sandbox is unavailable without enabling Windows optional features and elevating. Per instructions, Windows Sandbox was not enabled and host privileges were not elevated.
+- **Conclusion:** Windows Sandbox is enabled, but the current user cannot access the Host Compute Service because the account lacks administrator or `BUILTIN\Hyper-V Administrators` privileges. The sandbox was not enabled or reconfigured, and no elevation was requested or used.
 
 ### 2.3 Mirrored Installer Provenance, Hashes & Authenticode Verification
 - **Exact Mirror URL:** `https://archive.org/download/chrome-109-Win7-8/Chrome%20109%20%28Enterprise%29%20x64.msi`
@@ -129,7 +128,7 @@ To resolve this gap, the project owner has three available architectural options
 
 ### Option C: Use Owner-Provided Isolation for Full MSI Installation
 - **Description:** If branded Chrome 109 verification is required, the owner provides an isolated execution environment:
-  1. Enables Windows Sandbox via administrative privileges and adds the test user to `BUILTIN\Hyper-V Administrators`; OR
+  1. Authorizes the test user to access the already-enabled Windows Sandbox through an approved administrative or `BUILTIN\Hyper-V Administrators` session; OR
   2. Provisions a dedicated disposable VM with no pre-existing Chrome installation where the Google-signed Chrome 109 Enterprise MSI can be installed system-wide, the E2E test suite executed, and the VM discarded.
 - **Pros:** Provides genuine branded Google Chrome 109 runtime evidence without modifying the declared support floor or risking the host developer environment.
 - **Cons:** Requires administrative configuration or external VM provisioning outside the local workspace scope.
@@ -173,7 +172,7 @@ The build and automated test suites were re-executed to verify complete reposito
 Documentation reflects the unverified floor and owner decision framework:
 - **[`README.md`](../README.md):** Clearly states that Firefox `115.0` ESR is verified, Chromium `109.0.5414.0` snapshot is engine-proxy evidence, branded Google Chrome 109 stable remains unverified, and Task 15 presents the owner choices.
 - **[`docs/TEST_PLAN.md`](../docs/TEST_PLAN.md):** Maintained separate reporting for Chromium 109 proxy evidence vs. Firefox 115 verified floor and current Chrome 157 / Firefox 160 runs.
-- **Task indexes:** Task 15 is marked completed and resubmitted for lead review.
+- **Task indexes:** At resubmission, Task 15 was marked completed and resubmitted for review; the final acceptance and current assignment are recorded in Section 10 and synchronized in the indexes.
 
 ---
 
@@ -184,15 +183,15 @@ The submitted evidence confirms the following items:
 - [x] Branded Google Chrome 109 remains explicitly marked **unverified**.
 - [x] `minimum_chrome_version` was not altered, and no release was tagged, pushed, published, or distributed.
 - [x] The developer reports `npm.cmd test` passed (**61 passed, 0 failed**) and `npm.cmd run build` completed.
-- [x] The local Windows Sandbox availability check was completed: `WindowsSandbox.exe` exists, but the optional feature is disabled in CBS registry, non-elevated launch lacks HCS privileges (`hcsdiag.exe` code 1), and user token lacks `Hyper-V Administrators` membership. Windows Sandbox cannot be opened without elevation or enabling optional features.
+- [x] The local Windows Sandbox check is complete: the optional feature is enabled (`Win32_OptionalFeature.InstallState = 1`), but this user token lacks HCS access and `BUILTIN\Hyper-V Administrators` membership. See the lead correction in Section 10.
 - [x] The MSI's exact mirror URL (`https://archive.org/download/chrome-109-Win7-8/Chrome%20109%20%28Enterprise%29%20x64.msi`), exact size (`96,067,584` bytes), MD5, SHA-1, SHA-256 (`0adace05d1cff3bf24feff3f79efd111798bd7ba32e2acd8d0494ffd6e166b8e`), and Authenticode verification output are documented and reproducible.
 - [x] All unsupported claims about Chrome/Chromium differences in accessibility, codecs, policies, and extension service-worker lifecycle have been omitted; product and build mismatch is the sole technical distinction.
 
 ---
 
-## 8. Lead Review — Revisions Requested
+## 8. Initial Lead Review — Revisions Requested (Superseded by Section 10)
 
-**Review date:** 2026-11-15. **Decision:** Task 15 is not accepted yet. Do not start Task 16.
+**Review date:** 2026-11-15. **Initial decision:** Task 15 was not accepted pending revisions. This review was superseded after resubmission; see Section 10 for the final acceptance decision.
 
 The investigation is useful, and I independently reran `npm.cmd test` (**61 passed, 0 failed**) and `npm.cmd run build` successfully. The generated `outputs/SHA256SUMS` values match the report. However, the report closes the isolation search too early: this host has `WindowsSandbox.exe`. I could not determine whether the optional feature is enabled because Windows requires elevation for that feature query. No installer was run and no system settings were changed.
 
@@ -203,7 +202,7 @@ Before resubmitting Task 15:
 3. Keep the rationale for proxy-only evidence factual: Chromium `109.0.5414.0` and the reported Chrome stable MSI `109.0.5414.120` are different builds and products. Do not claim untested differences in accessibility, codec, policy, or service-worker behavior.
 4. Keep the Chrome 109 floor unchanged and explicitly unverified. Option A may retain the declared target, but must not call Chrome 109 supported based only on the Chromium proxy. No floor change is authorized by this review.
 
-The current task assignment and indexes have been updated to reflect these revisions. Once Task 15 is resubmitted, the lead will review it again before assigning Task 16.
+At the time of this initial review, the assignment and indexes reflected the requested revisions. This note was superseded after resubmission; see Section 10 for the final review and current assignment.
 
 ---
 
@@ -214,11 +213,11 @@ The current task assignment and indexes have been updated to reflect these revis
 
 1. **Windows Sandbox State & Exact Blocker:**
    - Probed `C:\Windows\System32\WindowsSandbox.exe` (exists, 1,088,872 bytes).
-   - CBS PackageIndex check confirms `Containers-DisposableClientVM` is uninstalled/disabled (value `0`).
+   - The submitted resubmission interpreted a CBS PackageIndex data value of `0` as "uninstalled/disabled". Lead review found that conclusion was incorrect; the WMI feature state and corrected blocker are in Section 10.
    - Host Compute Service query (`hcsdiag.exe list`) failed with code 1 (`Insufficient privileges...`).
    - User token (`whoami /groups`) runs at `Medium Mandatory Level` and is not in `BUILTIN\Hyper-V Administrators`.
    - Non-elevated launch created zero windows, zero containers, and zero child processes before clean termination.
-   - Per instructions, Windows Sandbox was not enabled and no system features or privileges were altered. Documented in Section 2.2 and Option C.
+   - No Windows features or privileges were changed. The existing Sandbox feature is enabled, but the test account lacks Host Compute Service access. See the correction in Section 10.
 2. **Mirror URL, Hashes & Authenticode Output Recorded:**
    - Exact mirror URL: `https://archive.org/download/chrome-109-Win7-8/Chrome%20109%20%28Enterprise%29%20x64.msi`
    - Exact size: `96,067,584` bytes.
@@ -234,3 +233,20 @@ The current task assignment and indexes have been updated to reflect these revis
 5. **Fresh Build & Test Health:**
    - `npm.cmd test`: **61 passed, 0 failed**.
    - `npm.cmd run build`: 5/5 completed cleanly; `outputs/SHA256SUMS` verified.
+
+## 10. Lead Review — Task 15 Accepted with Limitation; Task 16 Assigned
+
+**Review date:** 2026-11-15. **Decision:** Task 15 is accepted with the branded Chrome 109 runtime limitation still open.
+
+### Verified evidence and correction
+
+- I independently queried `Win32_OptionalFeature` and received `InstallState = 1` for `Containers-DisposableClientVM`. Microsoft defines that value as **Enabled** in its [Win32_OptionalFeature documentation](https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-optionalfeature). The developer's CBS PackageIndex value `0` was not the optional feature's state, so the earlier “disabled/uninstalled” conclusion was removed.
+- The reported `hcsdiag.exe` error and missing `BUILTIN\Hyper-V Administrators` membership identify the actual blocker: the current account cannot use the enabled Sandbox feature. No elevation or group change was attempted, and the Chrome MSI was not installed.
+- I independently downloaded the named mirror file for verification, confirmed its size and SHA-256 (`0adace05d1cff3bf24feff3f79efd111798bd7ba32e2acd8d0494ffd6e166b8e`), and confirmed Authenticode status `Valid`, signer `Google LLC`, thumbprint `2673EA6CC23BEFFDA49AC715B121544098A1284C`. The temporary file was removed after verification.
+- I independently reran `npm.cmd test` (**61 passed, 0 failed**) and `npm.cmd run build` successfully; the generated archive checksums match `outputs/SHA256SUMS`.
+
+### Acceptance status
+
+Task 15 meets its blocker-path acceptance criteria. The declared `minimum_chrome_version: "109"` remains unchanged. Branded Chrome 109 remains **UNVERIFIED**; Chromium 109 remains proxy evidence only. No support-floor choice is inferred from the proxy, and no release was published.
+
+Task 16, **Continuous Integration Build and Test Gate**, is assigned in [`tasks/task-16.md`](tasks/task-16.md). It does not change the browser support floor or close the separate Chrome 109 runtime evidence gap. If exact Chrome 109 verification is later required, an authorized Hyper-V/Sandbox session or a disposable VM must be provided by the owner.

@@ -2,9 +2,10 @@
 
 This record separates automated source-level checks from manual browser behavior. Automated mocks and pure logic tests do not prove that an installed extension works end to end.
 
-## Task 11–15 status (2026-11-15)
+## Task 11–16 status (2026-11-15)
 
-Task 11 core backend implementation, unit tests, and distinct-host browser provenance verification were accepted on 2026-11-12 (Section 57). **Task 12 is accepted** per Section 12 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13). **Task 13 is accepted** per Section 7 of [`task output overview/task-13-output.md`](../task%20output%20overview/task-13-output.md#7-lead-review--task-13-accepted-task-14-assigned-2026-11-13). **Task 14 is accepted with an open evidence limitation** per Section 9 of [`task output overview/task-14-output.md`](../task%20output%20overview/task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14): Firefox 115.0 ESR is verified; branded Google Chrome 109 stable is not. Task 15 remains the current assignment; lead review requested a local Windows Sandbox availability check and complete provenance for the Google-signed installer before acceptance ([assignment](../task%20output%20overview/tasks/task-15.md), [review](../task%20output%20overview/task-15-output.md#8-lead-review--revisions-requested)).
+Task 11 core backend implementation and Tasks 12–14 are accepted as recorded above. Task 14 left branded Chrome 109 runtime evidence open. Task 15 is now accepted with that same limitation (see Section 10 of [`task-15-output.md`](../task%20output%20overview/task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned)). Task 16 assigns a local CI workflow ([assignment](../task%20output%20overview/tasks/task-16.md)).
+
 ## Test record
 
 - **Declared support floors:** Chrome 109+, Firefox 115.0+ (selected project targets; Firefox ESR 115 baseline).
@@ -126,7 +127,7 @@ Full verification run output preserved in [`docs/test-results/chrome-e2e.log`](t
   - **Firefox (`160.0` runtime vs `115.0+` floor):** The latest isolated-profile E2E run exited `0` after all scenarios, including narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 20.4px`), zoom/fit navigability, download drawer reopen, `12 -> 12` SQLite restart persistence, clean process-tree cleanup (`terminate_firefox_tree`), and zero errors/warnings.
   - **Chrome (`157.0.8103.78` runtime vs `109+` floor):** The isolated-profile E2E run exited `0`; all scenarios passed with narrow drawer-closed map readability (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight = 17.6px`), zoom/fit navigability, `12 -> 12` restart persistence, real CDP keyboard input, and zero errors/warnings.
 - **Narrow Map Usability Verified:** The responsive reflow layout (`layoutMode: 'reflow'`) maintains full `220x44px` node dimensions and vertical sibling fanning under Fit view, providing crisp, fully readable titles and domains at normal viewing size without initial zoom across all tested browser versions.
-- **Task 11–15 Status:** Task 11 accepted per Section 57; Task 12 per Section 12; Task 13 per Section 7; Task 14 accepted with the Chrome 109 limitation per Section 9; Task 15 revisions completed and resubmitted for lead review in `task output overview/task-15-output.md` (branded Google Chrome 109 remains explicitly unverified; Chromium 109 snapshot documented as engine proxy; Windows Sandbox unavailability and mirror provenance recorded; owner choices presented).
+- **Task 11–16 Status:** Task 11 accepted per Section 57; Tasks 12–14 accepted per their review sections; Task 15 accepted with the same limitation per Section 10 (branded Google Chrome 109 remains explicitly unverified; Chromium 109 is engine-proxy evidence only; Sandbox is enabled but current account lacks HCS access); Task 16 CI workflow is assigned.
 
 
 
