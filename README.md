@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v0.1.0`](https://github.com/Tanmay-1012/spatial-browser/releases/tag/v0.1.0) — Cross-browser Manifest V3 build verified at tag time in Chrome 156 and Firefox 158 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Active Branch Status (main):** Tasks 11–15 are accepted (with Task 14/15's limitation that branded Chrome 109 remains unverified; Chromium `109.0.5414.0` is engine-proxy evidence). Task 16 adds a GitHub Actions CI gate (`.github/workflows/ci.yml`) and is submitted for lead review; see [`task-16-output.md`](task%20output%20overview/task-16-output.md).
+> **Active Branch Status (main):** Tasks 11–16 are accepted. Task 15 retains the limitation that branded Chrome 109 remains unverified; Chromium `109.0.5414.0` is engine-proxy evidence only. The Windows Sandbox feature is enabled, but this account lacks Host Compute Service access. Task 16 adds a local CI gate; its first hosted run awaits an owner-approved push or pull request.
 
 ## Project Status & Roadmap Toward `v2.0`
 
@@ -16,7 +16,7 @@ A local-first browser extension for Google Chrome and Mozilla Firefox that helps
   - **Accepted Milestone (Milestone 13 / Task 13):** Release-candidate package, checksum, privacy-boundary, and current-browser runtime audit accepted in Section 7 of the [Task 13 report](task%20output%20overview/task-13-output.md).
   - **Task 14 (Accepted with a limitation):** Firefox `115.0` ESR passed all 10 isolated-profile E2E steps. An unbranded Chromium `109.0.5414.0` snapshot also passed, but it does not prove branded Google Chrome 109 stable compatibility. Task 15 tracks the remaining Chrome evidence gap.
   - **Task 15 (Accepted with a limitation):** Branded Chrome 109 remains explicitly unverified. The Windows Sandbox feature is enabled, but the current account lacks Host Compute Service access; the mirrored MSI's hash and Google signature were verified. See [Task 15 review](task%20output%20overview/task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned).
-  - **Task 16 (Completed & Submitted for Lead Review):** Added a GitHub Actions workflow (`.github/workflows/ci.yml`) running deterministic builds and the full automated test suite on `windows-latest` (Node.js 22 LTS) on push/PR to `main` and `workflow_dispatch`. Preserves read-only repository permissions with zero secrets, publishing, or artifact uploads. Browser runtime checks remain manual. See [`task-16-output.md`](task%20output%20overview/task-16-output.md).
+  - **Task 16 (Accepted; remote run pending):** Added a GitHub Actions workflow (`.github/workflows/ci.yml`) running deterministic builds and the full automated test suite on `windows-latest` (Node.js 22 LTS) on push/PR to `main` and `workflow_dispatch`. It uses current official actions, read-only repository permissions, no user-provided secrets, no persisted checkout credentials, and no publishing or artifact uploads. Browser runtime checks remain manual. Its first hosted run requires an owner-approved push or pull request. See [`task-16-output.md`](task%20output%20overview/task-16-output.md).
 
 - **Milestone 1 (Foundation):** Cross-browser extension skeleton with valid MV3 manifests, shared interface shell, single-tab focus behavior, and zero-dependency packaging.
 - **Milestone 2 & 11 (V2 Storage, Tracking, Session Safety & Download Capture):**

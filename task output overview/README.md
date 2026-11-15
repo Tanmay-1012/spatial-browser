@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved; Tasks 11–14 are accepted, with branded Chrome 109 runtime evidence still open. Task 15 is accepted with that limitation; Task 16 is the current assignment.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved; Tasks 11–15 are accepted, with branded Chrome 109 runtime evidence still open. Task 16 is accepted; its first hosted run is pending an owner-approved push or pull request.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -21,6 +21,6 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`tasks/task-13.md`](tasks/task-13.md) · [`task-13-output.md`](task-13-output.md) | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Accepted (Section 7) |
 | [`tasks/task-14.md`](tasks/task-14.md) · [`task-14-output.md`](task-14-output.md) | Task 14: Minimum-Supported Browser Compatibility Audit | Milestone 14 (Compatibility Floor) | Accepted with limitation — branded Chrome 109 unverified (Section 9) |
 | [`tasks/task-15.md`](tasks/task-15.md) · [`task-15-output.md`](task-15-output.md) | Task 15: Branded Chrome 109 Verification or Support-Floor Decision | Milestone 15 (Chrome Runtime Evidence) | Accepted with limitation — Chrome 109 branded runtime unverified (Section 10) |
-| [`tasks/task-16.md`](tasks/task-16.md) · [`task-16-output.md`](task-16-output.md) | Task 16: Continuous Integration Build and Test Gate | Milestone 16 (Quality Automation) | Completed (submitted for lead review) |
+| [`tasks/task-16.md`](tasks/task-16.md) · [`task-16-output.md`](task-16-output.md) | Task 16: Continuous Integration Build and Test Gate | Milestone 16 (Quality Automation) | Accepted — hosted run pending owner-approved push (Section 8) |
 
 

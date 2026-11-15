@@ -166,13 +166,13 @@ Automated continuous integration is configured in `.github/workflows/ci.yml` to 
 
 ### 2. Runner Environment & Security Boundaries
 - **Runner:** `windows-latest` GitHub-hosted runner, matching the project's native Windows development environment and PowerShell execution baseline.
-- **Node.js Runtime:** Node.js 22 LTS configured via official `actions/setup-node@v4`.
+- **Node.js Runtime:** Node.js 22 LTS configured via official `actions/setup-node@v7`.
 - **Permissions:** Restricted strictly to `contents: read`.
-- **Zero Secrets / Zero Publishing:** The workflow requires no secrets, tokens, or environment credentials. It does not publish packages, create releases, upload build artifacts, or modify repository contents.
+- **Credentials / Publishing:** The workflow requires no user-provided secrets. Checkout uses GitHub's automatically provided `GITHUB_TOKEN` with `contents: read`; checkout credential persistence is disabled. It does not publish packages, create releases, upload build artifacts, or modify repository contents.
 
 ### 3. Pipeline Stages
-1. **Repository Checkout:** Clones source tree at trigger commit via `actions/checkout@v4`.
-2. **Runtime Setup:** Sets up Node.js 22 LTS environment.
+1. **Repository Checkout:** Clones source tree at trigger commit via `actions/checkout@v7` with credential persistence disabled.
+2. **Runtime Setup:** Sets up Node.js 22 LTS environment and disables package-manager caching (the project has no lockfile or dependencies).
 3. **Package Compilation:** Executes `npm.cmd run build` to compile unpacked extension directories (`outputs/chrome/unpacked`, `outputs/firefox/unpacked`), zip/xpi archives, and compute `outputs/SHA256SUMS`.
 4. **Deterministic Verification:** Executes `npm.cmd test` to run all 61 automated tests:
    - `tests/verify-builds.mjs`: Validates manifests, build parity, archive integrity, CSP compliance, and icons.
