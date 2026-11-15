@@ -485,48 +485,17 @@ def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
             sw_sid = None
     raise AssertionError("Could not attach and enable Runtime on extension service worker")
 
-def wake_extension_service_worker_from_page(cdp, ext_id):
-    """Wake an MV3 worker through its registered message event on UI-less runners."""
-    trigger = cdp.send_cmd("Target.createTarget", {"url": f"chrome-extension://{ext_id}/index.html"})
-    trigger_target_id = trigger["targetId"]
-    trigger_sid = None
-    try:
-        page_target = None
-        for _ in range(40):
-            pages = cdp.send_cmd("Target.getTargets", timeout=10).get("targetInfos", [])
-            page_target = next((t for t in pages if t.get("targetId") == trigger_target_id and t.get("type") == "page"), None)
-            if page_target:
-                break
-            time.sleep(0.25)
-        assert page_target is not None, "Temporary extension page must open to wake the service worker"
-        trigger_sid = cdp.attach_target(trigger_target_id)
-        # Chrome 109's extension renderer can take noticeably longer to attach
-        # on a cold hosted VM; allow it the same generous startup window as the
-        # surrounding target discovery rather than treating a slow renderer as
-        # a browser failure.
-        cdp.send_cmd("Runtime.enable", session_id=trigger_sid, timeout=30)
-        wake_result = cdp.evaluate(
-            trigger_sid,
-            "chrome.runtime.sendMessage({type: 'spatial-browser-history:hosted-e2e-wake'}).catch(() => undefined).then(() => true)",
-            await_promise=True,
-        )
-        assert wake_result is True, f"Temporary extension page did not wake the background worker: {wake_result}"
-        time.sleep(0.3)
-    finally:
-        if trigger_sid:
-            try:
-                cdp.send_cmd("Target.detachFromTarget", {"sessionId": trigger_sid}, timeout=3)
-            except Exception:
-                pass
-        try:
-            cdp.send_cmd("Target.closeTarget", {"targetId": trigger_target_id}, timeout=5)
-        except Exception:
-            pass
-        for _ in range(30):
-            remaining = cdp.send_cmd("Target.getTargets", timeout=10).get("targetInfos", [])
-            if not any(t.get("targetId") == trigger_target_id for t in remaining):
-                break
-            time.sleep(0.1)
+def wake_extension_service_worker_without_page(cdp, ext_id, extension_dir):
+    """Attach to the MV3 worker and issue a state-free wake message on UI-less runners."""
+    sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, extension_dir)
+    wake_result = cdp.evaluate(
+        sw_sid,
+        "chrome.runtime.sendMessage({type: 'spatial-browser-history:hosted-e2e-wake'}).catch(() => undefined).then(() => true)",
+        await_promise=True,
+    )
+    assert wake_result is True, f"Non-mutating extension wake message did not complete: {wake_result}"
+    print("  [PASS] Issued the non-mutating extension wake message through the live service worker.")
+    return sw_target, sw_sid
 
 def click_chrome_toolbar_action(process_id):
     ps_script = r"""
@@ -926,9 +895,8 @@ def run_tests():
         # through the live MV3 worker. Local interactive runs still make and
         # verify a physical toolbar click.
         if allow_cdp_action_fallback:
-            print("  [NOTE] Hosted-runner mode: no interactive toolbar is available; exercising the shared open/focus path through CDP.")
-            wake_extension_service_worker_from_page(cdp, ext_id)
-            sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
+            print("  [NOTE] Hosted-runner mode: no interactive toolbar or extension-page renderer is available; exercising the shared open/focus path through the service worker.")
+            sw_target, sw_sid = wake_extension_service_worker_without_page(cdp, ext_id, EXT_DIR)
             action_result1 = cdp.evaluate(sw_sid, "openOrFocusPage('index.html', chrome)", await_promise=True)
             assert action_result1 and action_result1.get("action") == "created", f"First action fallback must create the map tab: {action_result1}"
             diag1 = f"CDP shared action path: {action_result1}"
@@ -2112,8 +2080,9 @@ def run_tests():
 
         # Attach to service worker in restarted Chrome
         if os.environ.get("CHROME_ALLOW_CDP_ACTION_FALLBACK") == "1":
-            wake_extension_service_worker_from_page(cdp2, ext_id2)
-        sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
+            sw_target2, sw_sid2 = wake_extension_service_worker_without_page(cdp2, ext_id2, EXT_DIR)
+        else:
+            sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
         for _ in range(25):
             sw_init2 = cdp2.evaluate(sw_sid2, "({initialized: tracker.sessionInitialized, initializing: tracker.sessionInitializing})")
             if sw_init2.get("initialized") and not sw_init2.get("initializing"):
