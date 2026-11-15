@@ -917,17 +917,12 @@ def run_tests():
         sw_target = None
         sw_sid = None
 
-        # Action 1: prefer a physical browser-toolbar click. Hosted Windows runners
-        # may have no interactive desktop, so the task workflow can explicitly opt
-        # into exercising the same open/focus function through the live MV3 worker.
-        try:
-            diag1 = click_chrome_toolbar_action(proc.pid)
-            action_input_methods.append("physical-toolbar-click")
-            print(f"  Toolbar Action Click 1 diagnostics: {diag1}")
-        except RuntimeError as click_error:
-            if not allow_cdp_action_fallback or "Visible Chrome_WidgetWin_1 window not found" not in str(click_error):
-                raise
-            print(f"  [NOTE] No interactive Chrome toolbar is available on this hosted runner ({click_error}). Waking the worker through a no-op extension message and exercising the shared open/focus path through CDP.")
+        # Hosted Windows runners have no interactive desktop. In that explicit
+        # mode, skip UI Automation and exercise the shared open/focus handler
+        # through the live MV3 worker. Local interactive runs still make and
+        # verify a physical toolbar click.
+        if allow_cdp_action_fallback:
+            print("  [NOTE] Hosted-runner mode: no interactive toolbar is available; exercising the shared open/focus path through CDP.")
             wake_extension_service_worker_from_page(cdp, ext_id)
             sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
             action_result1 = cdp.evaluate(sw_sid, "openOrFocusPage('index.html', chrome)", await_promise=True)
@@ -935,6 +930,10 @@ def run_tests():
             diag1 = f"CDP shared action path: {action_result1}"
             action_input_methods.append("CDP-openOrFocusPage")
             print(f"  Toolbar Action 1 fallback result: {diag1}")
+        else:
+            diag1 = click_chrome_toolbar_action(proc.pid)
+            action_input_methods.append("physical-toolbar-click")
+            print(f"  Toolbar Action Click 1 diagnostics: {diag1}")
 
         map_target = None
         page_targets1 = []
@@ -985,17 +984,14 @@ def run_tests():
         pages_before_action2 = len([t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"])
         print(f"  Switched focus to blank tab {blank_target_id}. Pages before Action 2: {pages_before_action2}")
         
-        try:
-            diag2 = click_chrome_toolbar_action(proc.pid)
-            action_input_methods.append("physical-toolbar-click")
-        except RuntimeError as click_error:
-            if not allow_cdp_action_fallback or "Visible Chrome_WidgetWin_1 window not found" not in str(click_error):
-                raise
-            print(f"  [NOTE] Second physical toolbar click unavailable ({click_error}); checking the same open/focus handler through CDP.")
+        if allow_cdp_action_fallback:
             action_result2 = cdp.evaluate(sw_sid, "openOrFocusPage('index.html', chrome)", await_promise=True)
             assert action_result2 and action_result2.get("action") == "focused", f"Repeat action fallback must focus the existing map tab: {action_result2}"
             diag2 = f"CDP shared action path: {action_result2}"
             action_input_methods.append("CDP-openOrFocusPage")
+        else:
+            diag2 = click_chrome_toolbar_action(proc.pid)
+            action_input_methods.append("physical-toolbar-click")
         print(f"  Toolbar Action Click 2 diagnostics: {diag2}")
         time.sleep(2)
 
@@ -1020,7 +1016,7 @@ def run_tests():
         assert active_tab_info and f"chrome-extension://{ext_id}/index.html" in active_tab_info.get("url", ""), (
             f"Second toolbar action click must focus existing index.html tab (got active={active_tab_info}, allTabs={tab_audit2.get('allTabs')}, diag2={diag2})"
         )
-        print(f"[PASS] Toolbar Action Click 2 (Real UI Click): focused existing map tab (active tab info: {active_tab_info}) without opening duplicate tab")
+        print(f"[PASS] Toolbar Action 2 ({action_input_methods[-1]}): focused existing map tab (active tab info: {active_tab_info}) without opening duplicate tab")
 
         # --- STEP 3: REAL BROWSING NAVIGATION CAPTURE & PARENT RELATIONSHIPS ---
         print("\n--- STEP 3: Exercise Browsing Scenarios & Verify Stored Visits and Parent Relationships ---")
