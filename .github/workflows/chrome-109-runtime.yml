@@ -57,10 +57,18 @@ jobs:
           $extract = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $arguments -PassThru -Wait -NoNewWindow
           if ($extract.ExitCode -ne 0) { throw "Administrative MSI extraction failed with exit code $($extract.ExitCode)." }
 
-          $chrome = Get-ChildItem -LiteralPath $extractPath -Filter 'chrome.exe' -File -Recurse |
-            Where-Object { $_.FullName -match '\\Google\\Chrome\\Application\\chrome\.exe$' } |
+          $chromeCandidates = Get-ChildItem -LiteralPath $extractPath -Filter 'chrome.exe' -File -Recurse
+          $chrome = $chromeCandidates |
+            Where-Object { $_.VersionInfo.ProductName -match 'Google Chrome' -and $_.VersionInfo.ProductVersion -match '^109\.' } |
             Select-Object -First 1
-          if (-not $chrome) { throw 'Could not locate the extracted Google Chrome application executable.' }
+          if (-not $chrome) {
+            Write-Host 'Extracted chrome.exe candidates:'
+            $chromeCandidates | ForEach-Object { Write-Host "$($_.FullName) | $($_.VersionInfo.ProductName) | $($_.VersionInfo.ProductVersion)" }
+            if (-not $chromeCandidates) {
+              Get-ChildItem -LiteralPath $extractPath -File -Recurse | Select-Object -First 30 -ExpandProperty FullName | ForEach-Object { Write-Host $_ }
+            }
+            throw 'Could not locate an extracted Google Chrome 109 application executable.'
+          }
           $productName = $chrome.VersionInfo.ProductName
           $productVersion = $chrome.VersionInfo.ProductVersion
           if ($productName -notmatch 'Google Chrome') { throw "Unexpected browser product: $productName" }
