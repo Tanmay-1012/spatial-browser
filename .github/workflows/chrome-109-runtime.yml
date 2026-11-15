@@ -69,9 +69,15 @@ jobs:
           $updatePolicyPath = 'HKLM:\SOFTWARE\Policies\Google\Update'
           New-Item -Path $updatePolicyPath -Force | Out-Null
           New-ItemProperty -Path $updatePolicyPath -Name 'UpdateDefault' -PropertyType DWord -Value 0 -Force | Out-Null
-          $installArguments = '/i "{0}" /qn /norestart NOGOOGLEUPDATEPING=1' -f $msiPath
+          $installLog = Join-Path $env:RUNNER_TEMP 'chrome-109-msi-install.log'
+          $installArguments = '/i "{0}" /qn /norestart NOGOOGLEUPDATEPING=1 /l*v "{1}"' -f $msiPath, $installLog
           $install = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $installArguments -PassThru -Wait -NoNewWindow
-          if ($install.ExitCode -ne 0) { throw "Installing Chrome in the disposable VM failed with exit code $($install.ExitCode)." }
+          if ($install.ExitCode -ne 0) {
+            if (Test-Path -LiteralPath $installLog) {
+              Get-Content -LiteralPath $installLog | Select-String -Pattern 'Return value 3|Error 1603|MainEngineThread is returning|Installation success or error status' -Context 3,5 | Select-Object -Last 8 | ForEach-Object { $_.Context.PreContext | ForEach-Object { Write-Host $_ }; Write-Host $_.Line; $_.Context.PostContext | ForEach-Object { Write-Host $_ } }
+            }
+            throw "Installing Chrome in the disposable VM failed with exit code $($install.ExitCode)."
+          }
 
           if (-not (Test-Path -LiteralPath $chromePath)) { throw "Installed Chrome executable was not found at $chromePath." }
           $chrome = Get-Item -LiteralPath $chromePath
