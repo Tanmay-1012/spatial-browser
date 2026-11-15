@@ -52,9 +52,26 @@ jobs:
           Write-Host "Verified mirror MSI SHA-256 $actualHash; signer $($msiSignature.SignerCertificate.Subject); thumbprint $expectedThumbprint."
 
           $chromePath = Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'
-          if (Test-Path -LiteralPath $chromePath) {
+          $uninstallRoots = @(
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+          )
+          $chromeMsiEntries = @(
+            foreach ($root in $uninstallRoots) {
+              Get-ChildItem -LiteralPath $root -ErrorAction SilentlyContinue |
+                ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue }
+            }
+          ) | Where-Object { $_.DisplayName -eq 'Google Chrome' -and $_.WindowsInstaller -eq 1 -and $_.PSChildName -match '^\{[0-9A-Fa-f-]{36}\}$' }
+          $chromeProductCodes = $chromeMsiEntries | Select-Object -ExpandProperty PSChildName -Unique
+          foreach ($productCode in $chromeProductCodes) {
+            $entry = $chromeMsiEntries | Where-Object { $_.PSChildName -eq $productCode } | Select-Object -First 1
+            Write-Host "Removing preinstalled Google Chrome MSI $productCode (package version $($entry.DisplayVersion)) only from the disposable VM."
+            $remove = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList @('/x', $productCode, '/qn', '/norestart') -PassThru -Wait -NoNewWindow
+            if ($remove.ExitCode -notin @(0, 3010)) { throw "Removing preinstalled Chrome MSI $productCode failed with exit code $($remove.ExitCode)." }
+          }
+          if (-not $chromeProductCodes -and (Test-Path -LiteralPath $chromePath)) {
             $existingVersion = (Get-Item -LiteralPath $chromePath).VersionInfo.ProductVersion
-            Write-Host "The disposable runner image includes Google Chrome $existingVersion; removing it only from this temporary VM before the pinned 109 install."
+            Write-Host "The disposable runner image includes Google Chrome $existingVersion without a registered MSI; removing it only from this temporary VM."
             $chromeRoot = Split-Path -Parent $chromePath
             $setup = Get-ChildItem -LiteralPath $chromeRoot -Filter 'setup.exe' -File -Recurse |
               Where-Object { $_.FullName -match '\\Installer\\setup\.exe$' } |
@@ -62,8 +79,25 @@ jobs:
             if (-not $setup) { throw 'Could not find the runner image Chrome setup.exe uninstaller.' }
             $uninstall = Start-Process -FilePath $setup.FullName -ArgumentList @('--uninstall', '--system-level', '--force-uninstall') -PassThru -Wait -NoNewWindow
             if ($uninstall.ExitCode -ne 0) { throw "Removing the runner image Chrome failed with exit code $($uninstall.ExitCode)." }
-            for ($attempt = 0; $attempt -lt 30 -and (Test-Path -LiteralPath $chromePath); $attempt++) { Start-Sleep -Seconds 1 }
-            if (Test-Path -LiteralPath $chromePath) { throw 'The runner image Chrome was not removed; refusing to test against an ambiguous installation.' }
+          }
+          for ($attempt = 0; $attempt -lt 30 -and (Test-Path -LiteralPath $chromePath); $attempt++) { Start-Sleep -Seconds 1 }
+          if (Test-Path -LiteralPath $chromePath) { throw 'The runner image Chrome was not removed; refusing to test against an ambiguous installation.' }
+
+          $chromeProductId = '{8A69D345-D564-463c-AFF1-A69D9E530F96}'
+          $chromeUpdateRoots = @(
+            'HKLM:\SOFTWARE\Google\Update',
+            'HKLM:\SOFTWARE\WOW6432Node\Google\Update',
+            'HKCU:\SOFTWARE\Google\Update'
+          )
+          foreach ($root in $chromeUpdateRoots) {
+            foreach ($kind in @('Clients', 'ClientState')) {
+              $statePath = Join-Path (Join-Path $root $kind) $chromeProductId
+              if (Test-Path -LiteralPath $statePath) {
+                $state = Get-ItemProperty -LiteralPath $statePath -Name 'pv' -ErrorAction SilentlyContinue
+                if ($state.pv) { Write-Host "Clearing stale runner-only Chrome update version marker $($state.pv) from $statePath." }
+                Remove-Item -LiteralPath $statePath -Recurse -Force
+              }
+            }
           }
 
           $updatePolicyPath = 'HKLM:\SOFTWARE\Policies\Google\Update'
