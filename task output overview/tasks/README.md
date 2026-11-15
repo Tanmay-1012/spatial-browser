@@ -11,7 +11,7 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 
 ## Current assignment
 
-- [Task 16 — Continuous Integration Build and Test Gate](task-16.md) — Assigned
+- [Task 16 — Continuous Integration Build and Test Gate](task-16.md) ([Report: `task-16-output.md`](../task-16-output.md)) — Completed (submitted for lead review)
 
 Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12, Task 13 per Section 7, Task 14 per Section 9, and Task 15 per Section 10. Branded Chrome 109 remains unverified; do not describe Chromium proxy results as branded Chrome verification.
 

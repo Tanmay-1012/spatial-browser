@@ -1,6 +1,6 @@
 # Task 16 — Continuous Integration Build and Test Gate
 
-**Status:** Assigned.  
+**Status:** Completed — submitted for lead review (see [`task output overview/task-16-output.md`](../task-16-output.md)).  
 **Milestone:** 16 (Quality Automation)  
 **Prerequisite:** Task 15 is accepted with its branded Chrome 109 evidence limitation in [Task 15 output](../task-15-output.md#10-lead-review--task-15-accepted-with-limitation-task-16-assigned).
 

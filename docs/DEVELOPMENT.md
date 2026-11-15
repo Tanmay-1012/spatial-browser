@@ -154,3 +154,32 @@ Packaging helper `scripts/build.mjs` generates:
 ### Extension Signing & Distribution Boundaries
 - **Chrome:** Load unpacked directory directly in developer mode, or distribute zip to Chrome Web Store.
 - **Firefox:** Standard Release and Beta channels enforce extension signing (`xpinstall.signatures.required = true`). Unsigned packages cannot be installed permanently via `about:addons`. For development and evaluation, use `about:debugging#/runtime/this-firefox` ("Load Temporary Add-on..."). Permanent deployment requires Mozilla Add-ons (AMO) signing or unbranded/Developer Edition builds with signature checks disabled.
+
+## Continuous Integration & Verification Pipeline (Milestone 16)
+
+Automated continuous integration is configured in `.github/workflows/ci.yml` to establish a repeatable build and verification gate for all proposed changes to `main`.
+
+### 1. Workflow Triggers
+- **Push:** Automatically triggers on direct commits pushed to `main`.
+- **Pull Request:** Automatically triggers on pull requests targeting `main`.
+- **Manual Dispatch:** Can be manually triggered via `workflow_dispatch` in the GitHub Actions UI.
+
+### 2. Runner Environment & Security Boundaries
+- **Runner:** `windows-latest` GitHub-hosted runner, matching the project's native Windows development environment and PowerShell execution baseline.
+- **Node.js Runtime:** Node.js 22 LTS configured via official `actions/setup-node@v4`.
+- **Permissions:** Restricted strictly to `contents: read`.
+- **Zero Secrets / Zero Publishing:** The workflow requires no secrets, tokens, or environment credentials. It does not publish packages, create releases, upload build artifacts, or modify repository contents.
+
+### 3. Pipeline Stages
+1. **Repository Checkout:** Clones source tree at trigger commit via `actions/checkout@v4`.
+2. **Runtime Setup:** Sets up Node.js 22 LTS environment.
+3. **Package Compilation:** Executes `npm.cmd run build` to compile unpacked extension directories (`outputs/chrome/unpacked`, `outputs/firefox/unpacked`), zip/xpi archives, and compute `outputs/SHA256SUMS`.
+4. **Deterministic Verification:** Executes `npm.cmd test` to run all 61 automated tests:
+   - `tests/verify-builds.mjs`: Validates manifests, build parity, archive integrity, CSP compliance, and icons.
+   - `tests/test-tracker.mjs`: Validates Schema V2, sibling branching, crash recovery, session safety, and download provenance.
+   - `tests/test-ui.mjs`: Validates two-level explorer layout, responsive reflow, filtering, WCAG AA contrast, and URL validation.
+
+### 4. Automated CI vs. Manual Browser Runtime Verification
+- **What CI Covers:** Automated validation of code integrity, manifest specifications, package generation, archive parity, and business logic unit tests. Any regression immediately fails the workflow and blocks merging.
+- **What CI Does Not Cover (Manual Runtime Tests):** End-to-end browser runtime behavior—such as launching isolated Chrome/Firefox profiles, real CDP/Marionette browser automation, live navigation tracking across real tabs, browser restarts, SQLite persistence across process reboots, and visual screenshot inspection—remains a manual verification procedure conducted in dedicated local or VM environments. CI does not download, install, or run legacy browser runtimes (such as Chrome 109 or Firefox 115). All manual runtime test procedures and historical test results are documented in `docs/TEST_PLAN.md` and milestone output reports.
+
