@@ -32,98 +32,50 @@ jobs:
       - name: Run automated verification suite
         run: npm.cmd test
 
-      - name: Verify and install Google-signed Chrome 109 in the disposable VM, then run E2E
+      - name: Verify Chrome 109 package provenance, extract without installation, then run E2E
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $msiUrl = 'https://archive.org/download/chrome-109-Win7-8/Chrome%20109%20%28Enterprise%29%20x64.msi'
-          $expectedHash = '0adace05d1cff3bf24feff3f79efd111798bd7ba32e2acd8d0494ffd6e166b8e'
+          $expectedMsiHash = '0adace05d1cff3bf24feff3f79efd111798bd7ba32e2acd8d0494ffd6e166b8e'
+          $installerUrl = 'https://dl.google.com/release2/chrome/ggsdppo5kshsyqe3fej7lv4tau_109.0.5414.165/109.0.5414.165_chrome_installer.exe'
+          $expectedInstallerHash = 'a1e8be08baf5ea4e6cb8a33158481132ecb3f2ffb0a9bb33a172395eba1379cb'
+          $expectedInstallerSize = 93128752
           $expectedThumbprint = '2673EA6CC23BEFFDA49AC715B121544098A1284C'
           $msiPath = Join-Path $env:RUNNER_TEMP 'chrome-109-enterprise-x64.msi'
+          $installerPath = Join-Path $env:RUNNER_TEMP '109.0.5414.165-chrome-installer.exe'
 
           Invoke-WebRequest -Uri $msiUrl -OutFile $msiPath
-          $actualHash = (Get-FileHash -LiteralPath $msiPath -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualHash -ne $expectedHash) { throw "Chrome MSI SHA-256 mismatch: $actualHash" }
+          $actualMsiHash = (Get-FileHash -LiteralPath $msiPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualMsiHash -ne $expectedMsiHash) { throw "Chrome MSI SHA-256 mismatch: $actualMsiHash" }
 
           $msiSignature = Get-AuthenticodeSignature -FilePath $msiPath
           if ($msiSignature.Status -ne 'Valid') { throw "Chrome MSI signature is not valid: $($msiSignature.Status)" }
           if ($msiSignature.SignerCertificate.Subject -notmatch 'CN=Google LLC') { throw "Unexpected MSI signer: $($msiSignature.SignerCertificate.Subject)" }
           if ($msiSignature.SignerCertificate.Thumbprint.ToUpperInvariant() -ne $expectedThumbprint) { throw 'Chrome MSI signer thumbprint mismatch.' }
-          Write-Host "Verified mirror MSI SHA-256 $actualHash; signer $($msiSignature.SignerCertificate.Subject); thumbprint $expectedThumbprint."
+          Write-Host "Verified mirror MSI SHA-256 $actualMsiHash; signer $($msiSignature.SignerCertificate.Subject); thumbprint $expectedThumbprint."
 
-          $chromePath = Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'
-          $uninstallRoots = @(
-            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
-            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
-          )
-          $chromeMsiEntries = @(
-            foreach ($root in $uninstallRoots) {
-              Get-ChildItem -LiteralPath $root -ErrorAction SilentlyContinue |
-                ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue }
-            }
-          ) | Where-Object { $_.DisplayName -eq 'Google Chrome' -and $_.WindowsInstaller -eq 1 -and $_.PSChildName -match '^\{[0-9A-Fa-f-]{36}\}$' }
-          $chromeProductCodes = $chromeMsiEntries | Select-Object -ExpandProperty PSChildName -Unique
-          foreach ($productCode in $chromeProductCodes) {
-            $entry = $chromeMsiEntries | Where-Object { $_.PSChildName -eq $productCode } | Select-Object -First 1
-            Write-Host "Removing preinstalled Google Chrome MSI $productCode (package version $($entry.DisplayVersion)) only from the disposable VM."
-            $remove = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList @('/x', $productCode, '/qn', '/norestart') -PassThru -Wait -NoNewWindow
-            if ($remove.ExitCode -notin @(0, 3010)) { throw "Removing preinstalled Chrome MSI $productCode failed with exit code $($remove.ExitCode)." }
+          Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
+          $installer = Get-Item -LiteralPath $installerPath
+          if ($installer.Length -ne $expectedInstallerSize) { throw "Google Chrome installer size mismatch: $($installer.Length) bytes." }
+          $actualInstallerHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualInstallerHash -ne $expectedInstallerHash) { throw "Google Chrome installer SHA-256 mismatch: $actualInstallerHash" }
+          $installerSignature = Get-AuthenticodeSignature -FilePath $installerPath
+          if ($installerSignature.Status -ne 'Valid' -or $installerSignature.SignerCertificate.Subject -notmatch 'CN=Google LLC' -or $installerSignature.SignerCertificate.Thumbprint.ToUpperInvariant() -ne $expectedThumbprint) {
+            throw "Google Chrome installer signature validation failed: $($installerSignature.Status), $($installerSignature.SignerCertificate.Subject)."
           }
-          if (-not $chromeProductCodes -and (Test-Path -LiteralPath $chromePath)) {
-            $existingVersion = (Get-Item -LiteralPath $chromePath).VersionInfo.ProductVersion
-            Write-Host "The disposable runner image includes Google Chrome $existingVersion without a registered MSI; removing it only from this temporary VM."
-            $chromeRoot = Split-Path -Parent $chromePath
-            $setup = Get-ChildItem -LiteralPath $chromeRoot -Filter 'setup.exe' -File -Recurse |
-              Where-Object { $_.FullName -match '\\Installer\\setup\.exe$' } |
-              Select-Object -First 1
-            if (-not $setup) { throw 'Could not find the runner image Chrome setup.exe uninstaller.' }
-            $uninstall = Start-Process -FilePath $setup.FullName -ArgumentList @('--uninstall', '--system-level', '--force-uninstall') -PassThru -Wait -NoNewWindow
-            if ($uninstall.ExitCode -ne 0) { throw "Removing the runner image Chrome failed with exit code $($uninstall.ExitCode)." }
+          $installerProductVersion = $installer.VersionInfo.ProductVersion
+          if ($installer.VersionInfo.ProductName -ne 'Google Chrome Installer' -or $installerProductVersion -ne '109.0.5414.165') {
+            throw "Unexpected Google Chrome installer identity: $($installer.VersionInfo.ProductName) $installerProductVersion"
           }
-          for ($attempt = 0; $attempt -lt 30 -and (Test-Path -LiteralPath $chromePath); $attempt++) { Start-Sleep -Seconds 1 }
-          if (Test-Path -LiteralPath $chromePath) { throw 'The runner image Chrome was not removed; refusing to test against an ambiguous installation.' }
+          Write-Host "Verified Google-hosted Chrome installer $installerProductVersion; size $($installer.Length); SHA-256 $actualInstallerHash; signer $($installerSignature.SignerCertificate.Subject)."
 
-          $chromeProductId = '{8A69D345-D564-463c-AFF1-A69D9E530F96}'
-          $chromeUpdateRoots = @(
-            'HKLM:\SOFTWARE\Google\Update',
-            'HKLM:\SOFTWARE\WOW6432Node\Google\Update',
-            'HKCU:\SOFTWARE\Google\Update'
-          )
-          foreach ($root in $chromeUpdateRoots) {
-            foreach ($kind in @('Clients', 'ClientState')) {
-              $statePath = Join-Path (Join-Path $root $kind) $chromeProductId
-              if (Test-Path -LiteralPath $statePath) {
-                $state = Get-ItemProperty -LiteralPath $statePath -Name 'pv' -ErrorAction SilentlyContinue
-                if ($state.pv) { Write-Host "Clearing stale runner-only Chrome update version marker $($state.pv) from $statePath." }
-                Remove-Item -LiteralPath $statePath -Recurse -Force
-              }
-            }
-          }
-
-          $updatePolicyPath = 'HKLM:\SOFTWARE\Policies\Google\Update'
-          New-Item -Path $updatePolicyPath -Force | Out-Null
-          New-ItemProperty -Path $updatePolicyPath -Name 'UpdateDefault' -PropertyType DWord -Value 0 -Force | Out-Null
-          $installLog = Join-Path $env:RUNNER_TEMP 'chrome-109-msi-install.log'
-          $installArguments = '/i "{0}" /qn /norestart NOGOOGLEUPDATEPING=1 /l*v "{1}"' -f $msiPath, $installLog
-          $install = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $installArguments -PassThru -Wait -NoNewWindow
-          if ($install.ExitCode -ne 0) {
-            if (Test-Path -LiteralPath $installLog) {
-              Get-Content -LiteralPath $installLog | Select-String -Pattern 'Return value 3|Error 1603|MainEngineThread is returning|Installation success or error status' -Context 3,5 | Select-Object -Last 8 | ForEach-Object { $_.Context.PreContext | ForEach-Object { Write-Host $_ }; Write-Host $_.Line; $_.Context.PostContext | ForEach-Object { Write-Host $_ } }
-            }
-            throw "Installing Chrome in the disposable VM failed with exit code $($install.ExitCode)."
-          }
-
-          if (-not (Test-Path -LiteralPath $chromePath)) { throw "Installed Chrome executable was not found at $chromePath." }
+          $chromeExtractDir = Join-Path $env:RUNNER_TEMP 'chrome-109-extracted'
+          $chromePath = & .\scripts\extract-chrome-package.ps1 -InstallerPath $installerPath -Destination $chromeExtractDir
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Chrome package extraction failed with exit code $LASTEXITCODE." }
+          if (-not $chromePath -or -not (Test-Path -LiteralPath $chromePath -PathType Leaf)) { throw "Chrome package extraction did not return a chrome.exe path: $chromePath" }
           $chrome = Get-Item -LiteralPath $chromePath
-          $productName = $chrome.VersionInfo.ProductName
           $productVersion = $chrome.VersionInfo.ProductVersion
-          if ($productName -notmatch 'Google Chrome') { throw "Unexpected browser product: $productName" }
-          if ($productVersion -notmatch '^109\.') { throw "Expected Google Chrome 109, found $productVersion" }
-          $chromeSignature = Get-AuthenticodeSignature -FilePath $chrome.FullName
-          if ($chromeSignature.Status -ne 'Valid' -or $chromeSignature.SignerCertificate.Subject -notmatch 'CN=Google LLC') {
-            throw "Extracted Chrome executable does not have a valid Google LLC signature: $($chromeSignature.Status), $($chromeSignature.SignerCertificate.Subject)"
-          }
-          Write-Host "Installed product in disposable VM: $productName $productVersion; executable signature: $($chromeSignature.Status), $($chromeSignature.SignerCertificate.Subject)."
 
           python -m pip install --disable-pip-version-check websocket-client==1.8.0
           if ($LASTEXITCODE -ne 0) { throw 'Could not install the pinned CDP WebSocket client for the E2E harness.' }
@@ -133,7 +85,7 @@ jobs:
           $env:CHROME_BINARY = $chrome.FullName
           $env:CHROME_EXTENSION_DIR = Join-Path $env:GITHUB_WORKSPACE 'outputs\chrome\unpacked'
           $env:CHROME_EXPECTED_MAJOR = '109'
-          $env:CHROME_BROWSER_LABEL = "Google Chrome $productVersion (extracted from Google-signed MSI mirror)"
+          $env:CHROME_BROWSER_LABEL = "Google Chrome $productVersion (Google-signed payload; package hash matches verified MSI manifest)"
           $env:CHROME_LOG_PATH = Join-Path $resultsDir 'chrome-109-branded-e2e.log'
           $env:CHROME_PRE_ERRORS_PATH = Join-Path $resultsDir 'chrome-109-branded-errors-pre-restart.json'
           $env:CHROME_POST_ERRORS_PATH = Join-Path $resultsDir 'chrome-109-branded-errors-post-restart.json'
