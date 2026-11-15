@@ -1,6 +1,7 @@
 # Task 15 — Branded Chrome 109 Verification or Support-Floor Decision
 
-**Status:** Completed — submitted for lead review (see [`task output overview/task-15-output.md`](../task-15-output.md)).  
+**Status:** Completed — resubmitted for lead review (see Section 9 of [`task output overview/task-15-output.md`](../task-15-output.md)).
+
 **Milestone:** 15 (Chrome Runtime Evidence)  
 **Prerequisite:** Task 14 is accepted with its open Chrome 109 evidence limitation in Section 9 of [Task 14 output](../task-14-output.md#9-lead-review--task-14-accepted-with-chrome-evidence-limitation-task-15-assigned-2026-11-14).
 
@@ -13,13 +14,16 @@ Resolve the remaining gap between the declared `minimum_chrome_version: "109"` a
 ### 1. Attempt exact branded Chrome 109 runtime verification
 
 - Look for an official or otherwise controlled source for a branded Google Chrome 109 stable binary suitable for isolated testing. Do not treat Chromium snapshots, current Chrome, or mocks as branded Chrome 109.
+- Check whether the host's Windows Sandbox is already enabled and can be launched without changing system features or requiring elevation. Do not enable Windows Sandbox, elevate, install the MSI on the host, or modify the user's existing Chrome installation. If it is already available, use a disposable sandbox with a throwaway profile.
 - If available, record the exact product/version and binary provenance, create a throwaway user-data profile, and run the current Chrome E2E suite against the freshly built unpacked extension.
+- For any MSI obtained from a mirror, record the exact source URL and file SHA-256, and retain the Authenticode verification result. Describe it as a Google-signed installer obtained from that mirror, not as a Google-hosted download.
 - Retain the acceptance scenarios in Task 14: installation/startup, toolbar open-or-focus, navigation and opener relationships, reload/title/fragment behavior, Explorer overview/detail, search/filter context, download provenance and safe fallbacks, keyboard/focus restoration, narrow reflow, and clean `12 -> 12` restart persistence.
 - Confirm logs identify the actual branded product and extension load method. Capture pre/post error audits and narrow screenshots. Keep the tested browser restricted to local synthetic pages; do not sign into accounts or use a personal browser profile.
 
 ### 2. If branded Chrome 109 cannot be obtained
 
 - Document the official sources and controlled environments checked, the specific failure or limitation, and why the Chromium snapshot cannot close the branded-browser acceptance item.
+- Keep the explanation limited to verified product/version differences. Do not attribute extension lifecycle, accessibility, codec, or policy behavior differences to Chrome branding unless the report includes evidence for those claims.
 - Keep Google Chrome 109 compatibility clearly marked **unverified** in `README.md`, `docs/TEST_PLAN.md`, and the Task 15 report. Keep the Chromium snapshot labeled as proxy evidence only.
 - Present the owner with the choices and trade-offs: retain Chrome 109 as a declared but unverified floor, or propose a new minimum based on a browser version that can be directly verified. Do not alter `minimum_chrome_version` or make that decision yourself.
 

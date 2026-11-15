@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved; Tasks 11–13 are accepted; Task 14 is accepted with branded Chrome 109 runtime evidence still open. Task 15 is the current assignment.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved; Tasks 11–13 are accepted; Task 14 is accepted with branded Chrome 109 runtime evidence still open. Task 15 remains the current assignment; lead review requested revisions before acceptance.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -20,6 +20,6 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`task-12.md`](tasks/task-12.md) · [`task-12-output.md`](task-12-output.md) | Task 12: Research Tree Explorer Overview & Detail UI | Milestone 12 (Research Tree Explorer UI) | Accepted (Section 12) |
 | [`tasks/task-13.md`](tasks/task-13.md) · [`task-13-output.md`](task-13-output.md) | Task 13: Release Candidate Readiness & Evidence Closeout | Milestone 13 (Quality & Handoff) | Accepted (Section 7) |
 | [`tasks/task-14.md`](tasks/task-14.md) · [`task-14-output.md`](task-14-output.md) | Task 14: Minimum-Supported Browser Compatibility Audit | Milestone 14 (Compatibility Floor) | Accepted with limitation — branded Chrome 109 unverified (Section 9) |
-| [`tasks/task-15.md`](tasks/task-15.md) · [`task-15-output.md`](task-15-output.md) | Task 15: Branded Chrome 109 Verification or Support-Floor Decision | Milestone 15 (Chrome Runtime Evidence) | Completed (submitted for lead review) |
+| [`tasks/task-15.md`](tasks/task-15.md) · [`task-15-output.md`](task-15-output.md) | Task 15: Branded Chrome 109 Verification or Support-Floor Decision | Milestone 15 (Chrome Runtime Evidence) | Completed (resubmitted for lead review) |
 
 
