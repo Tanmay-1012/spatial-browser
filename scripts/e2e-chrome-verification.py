@@ -485,6 +485,45 @@ def attach_extension_service_worker(cdp, ext_id, ext_dir, retries=4):
             sw_sid = None
     raise AssertionError("Could not attach and enable Runtime on extension service worker")
 
+def wake_extension_service_worker_from_page(cdp, ext_id):
+    """Wake an MV3 worker through its registered message event on UI-less runners."""
+    trigger = cdp.send_cmd("Target.createTarget", {"url": f"chrome-extension://{ext_id}/index.html"})
+    trigger_target_id = trigger["targetId"]
+    trigger_sid = None
+    try:
+        page_target = None
+        for _ in range(40):
+            pages = cdp.send_cmd("Target.getTargets", timeout=10).get("targetInfos", [])
+            page_target = next((t for t in pages if t.get("targetId") == trigger_target_id and t.get("type") == "page"), None)
+            if page_target:
+                break
+            time.sleep(0.25)
+        assert page_target is not None, "Temporary extension page must open to wake the service worker"
+        trigger_sid = cdp.attach_target(trigger_target_id)
+        cdp.send_cmd("Runtime.enable", session_id=trigger_sid, timeout=10)
+        wake_result = cdp.evaluate(
+            trigger_sid,
+            "chrome.runtime.sendMessage({type: 'spatial-browser-history:hosted-e2e-wake'}).catch(() => undefined).then(() => true)",
+            await_promise=True,
+        )
+        assert wake_result is True, f"Temporary extension page did not wake the background worker: {wake_result}"
+        time.sleep(0.3)
+    finally:
+        if trigger_sid:
+            try:
+                cdp.send_cmd("Target.detachFromTarget", {"sessionId": trigger_sid}, timeout=3)
+            except Exception:
+                pass
+        try:
+            cdp.send_cmd("Target.closeTarget", {"targetId": trigger_target_id}, timeout=5)
+        except Exception:
+            pass
+        for _ in range(30):
+            remaining = cdp.send_cmd("Target.getTargets", timeout=10).get("targetInfos", [])
+            if not any(t.get("targetId") == trigger_target_id for t in remaining):
+                break
+            time.sleep(0.1)
+
 def click_chrome_toolbar_action(process_id):
     ps_script = r"""
 Add-Type -AssemblyName UIAutomationClient
@@ -873,9 +912,30 @@ def run_tests():
             cdp.send_cmd("Page.bringToFront", session_id=init_sid)
             time.sleep(0.25)
         
-        # Action 1: First browser click on toolbar action button opens extension map in a new tab
-        diag1 = click_chrome_toolbar_action(proc.pid)
-        print(f"  Toolbar Action Click 1 diagnostics: {diag1}")
+        allow_cdp_action_fallback = os.environ.get("CHROME_ALLOW_CDP_ACTION_FALLBACK") == "1"
+        action_input_methods = []
+        sw_target = None
+        sw_sid = None
+
+        # Action 1: prefer a physical browser-toolbar click. Hosted Windows runners
+        # may have no interactive desktop, so the task workflow can explicitly opt
+        # into exercising the same open/focus function through the live MV3 worker.
+        try:
+            diag1 = click_chrome_toolbar_action(proc.pid)
+            action_input_methods.append("physical-toolbar-click")
+            print(f"  Toolbar Action Click 1 diagnostics: {diag1}")
+        except RuntimeError as click_error:
+            if not allow_cdp_action_fallback or "Visible Chrome_WidgetWin_1 window not found" not in str(click_error):
+                raise
+            print(f"  [NOTE] No interactive Chrome toolbar is available on this hosted runner ({click_error}). Waking the worker through a no-op extension message and exercising the shared open/focus path through CDP.")
+            wake_extension_service_worker_from_page(cdp, ext_id)
+            sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
+            action_result1 = cdp.evaluate(sw_sid, "openOrFocusPage('index.html', chrome)", await_promise=True)
+            assert action_result1 and action_result1.get("action") == "created", f"First action fallback must create the map tab: {action_result1}"
+            diag1 = f"CDP shared action path: {action_result1}"
+            action_input_methods.append("CDP-openOrFocusPage")
+            print(f"  Toolbar Action 1 fallback result: {diag1}")
+
         map_target = None
         page_targets1 = []
         for _ in range(20):
@@ -886,12 +946,12 @@ def run_tests():
                 break
         assert map_target is not None, f"First toolbar action click must open extension index.html tab (diag={diag1}, pages={page_targets1}, cdp_errors={cdp.errors})"
         assert len(page_targets1) == initial_tabs_count + 1, f"First toolbar click must open exactly 1 new tab (got {len(page_targets1)} vs {initial_tabs_count})"
-        print(f"[PASS] Toolbar Action Click 1 (Real UI Click): opened map tab {map_target['targetId']}, total pages={len(page_targets1)} (was {initial_tabs_count})")
+        print(f"[PASS] Toolbar Action 1 ({action_input_methods[-1]}): opened map tab {map_target['targetId']}, total pages={len(page_targets1)} (was {initial_tabs_count})")
 
-        # A real extension action event wakes MV3 background workers on Chrome versions that
-        # keep them dormant after startup. Attach after this event instead of assuming startup
-        # alone created a stable CDP service_worker target.
-        sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
+        # Attach after the action event (or the explicit no-op wake message) instead
+        # of assuming startup alone created a stable CDP service_worker target.
+        if sw_sid is None:
+            sw_target, sw_sid = attach_extension_service_worker(cdp, ext_id, EXT_DIR)
         print(f"[PASS] Service worker discovered: {sw_target['title']} ({sw_target['url']})")
         print(f"[PASS] Attached to background service worker (Session ID: {sw_sid}).")
 
@@ -925,7 +985,17 @@ def run_tests():
         pages_before_action2 = len([t for t in cdp.send_cmd("Target.getTargets")["targetInfos"] if t.get("type") == "page"])
         print(f"  Switched focus to blank tab {blank_target_id}. Pages before Action 2: {pages_before_action2}")
         
-        diag2 = click_chrome_toolbar_action(proc.pid)
+        try:
+            diag2 = click_chrome_toolbar_action(proc.pid)
+            action_input_methods.append("physical-toolbar-click")
+        except RuntimeError as click_error:
+            if not allow_cdp_action_fallback or "Visible Chrome_WidgetWin_1 window not found" not in str(click_error):
+                raise
+            print(f"  [NOTE] Second physical toolbar click unavailable ({click_error}); checking the same open/focus handler through CDP.")
+            action_result2 = cdp.evaluate(sw_sid, "openOrFocusPage('index.html', chrome)", await_promise=True)
+            assert action_result2 and action_result2.get("action") == "focused", f"Repeat action fallback must focus the existing map tab: {action_result2}"
+            diag2 = f"CDP shared action path: {action_result2}"
+            action_input_methods.append("CDP-openOrFocusPage")
         print(f"  Toolbar Action Click 2 diagnostics: {diag2}")
         time.sleep(2)
 
@@ -2041,6 +2111,8 @@ def run_tests():
         assert ext_id2 == ext_id, f"Extension ID must be stable across restart (was {ext_id}, got {ext_id2})"
 
         # Attach to service worker in restarted Chrome
+        if os.environ.get("CHROME_ALLOW_CDP_ACTION_FALLBACK") == "1":
+            wake_extension_service_worker_from_page(cdp2, ext_id2)
         sw_target2, sw_sid2 = attach_extension_service_worker(cdp2, ext_id2, EXT_DIR)
         for _ in range(25):
             sw_init2 = cdp2.evaluate(sw_sid2, "({initialized: tracker.sessionInitialized, initializing: tracker.sessionInitializing})")
@@ -2173,7 +2245,10 @@ def run_tests():
         print("\n--- STEP 10: Cross-Browser Comparison & Evaluation ---")
         print(f"  [{CHROME_BROWSER_LABEL.upper()} {actual_chrome_version} RUNTIME EVALUATION (Declared Chrome Floor: Chrome 109+)]")
         print(f"  - Extension Loading: Validated via {extension_load_method} in {CHROME_BROWSER_LABEL} {actual_chrome_version}.")
-        print("  - Toolbar Action Open-or-Focus: Exact parity; first DPI-aware UI click opens map tab, repeat click focuses existing map without duplication.")
+        if all(method == "physical-toolbar-click" for method in action_input_methods):
+            print("  - Toolbar Action Open-or-Focus: Physical UI click opens the map tab; repeat click focuses the existing map without duplication.")
+        else:
+            print("  - Toolbar Action Open-or-Focus: The hosted runner has no accessible Chrome desktop; the live MV3 worker's shared open/focus handler created the map tab and focused it on repeat. Physical toolbar click remains covered by the separate Chrome 157 and Firefox runtime runs.")
         print("  - Navigation Topology: Exact parity across same-tab, redirects, reloads, title updates, fragments,")
         print("    SPA routes (pushState), known-opener tabs, and unknown/closed opener fallback (root checkpoint, parentNodeId: null).")
         print("  - Reload Deduplication: Exact parity; exactly 1 node stored for /target despite reload.")

@@ -86,6 +86,7 @@ jobs:
           $env:CHROME_EXTENSION_DIR = Join-Path $env:GITHUB_WORKSPACE 'outputs\chrome\unpacked'
           $env:CHROME_EXPECTED_MAJOR = '109'
           $env:CHROME_BROWSER_LABEL = "Google Chrome $productVersion (Google-signed payload; package hash matches verified MSI manifest)"
+          $env:CHROME_ALLOW_CDP_ACTION_FALLBACK = '1'
           $env:CHROME_LOG_PATH = Join-Path $resultsDir 'chrome-109-branded-e2e.log'
           $env:CHROME_PRE_ERRORS_PATH = Join-Path $resultsDir 'chrome-109-branded-errors-pre-restart.json'
           $env:CHROME_POST_ERRORS_PATH = Join-Path $resultsDir 'chrome-109-branded-errors-post-restart.json'
