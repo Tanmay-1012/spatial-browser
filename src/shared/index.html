@@ -62,12 +62,24 @@
           <button id="zoom-reset" type="button" class="btn btn-secondary btn-sm" title="Fit Map to View (0)" aria-label="Fit map to view">Fit</button>
         </div>
 
-        <!-- Clear Action -->
+        <!-- Clear & Study Actions -->
         <div class="header-actions">
+          <button id="study-controller-btn" type="button" class="btn btn-secondary btn-sm" aria-haspopup="dialog" aria-label="Open User Study Controller">Study Mode</button>
           <button id="clear-map-btn" type="button" class="btn btn-danger btn-sm" aria-haspopup="dialog" aria-label="Clear all captured history">Clear Map</button>
         </div>
       </div>
     </header>
+
+    <!-- Visible Active Study Indicator Banner -->
+    <div id="study-recording-banner" class="study-recording-banner" role="status" aria-live="assertive" hidden>
+      <div class="study-banner-content">
+        <span class="study-pulse-dot" aria-hidden="true"></span>
+        <strong class="study-banner-tag">STUDY RECORDING ACTIVE:</strong>
+        <span id="study-banner-info">Participant P01 &bull; Condition B &bull; Period 1</span>
+        <span class="study-banner-deadline" id="study-banner-timer">120s</span>
+        <button id="study-banner-stop-btn" type="button" class="btn btn-danger btn-xs">Give Up / Stop</button>
+      </div>
+    </div>
 
     <!-- Main Workspace -->
     <main class="app-main" id="main-content" role="main">
@@ -292,6 +304,166 @@
         </div>
       </aside>
 
+      <!-- Study Controller Modal -->
+      <div id="study-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="study-modal-title" tabindex="-1" hidden>
+        <div class="modal-card study-modal-card">
+          <div class="study-modal-header">
+            <h2 id="study-modal-title" class="modal-title">User Study Controller</h2>
+            <button id="study-modal-close-btn" type="button" class="details-close-btn" aria-label="Close Study Controller">&times;</button>
+          </div>
+
+          <div class="study-modal-body">
+            <!-- Privacy & Consent Notice -->
+            <div class="study-privacy-notice" role="note">
+              <strong>Privacy Notice:</strong> Recording activates strictly during a timed retrieval window. Only visits to allowlisted local corpus pages (<span class="code-pill">pack_x</span>, <span class="code-pill">pack_y</span>) are logged with opaque keys. No personal identities, email, student ID, off-corpus URLs, query strings, or search terms are captured. All records remain on-device.
+            </div>
+
+            <!-- Active Configuration / Start -->
+            <fieldset class="study-fieldset">
+              <legend class="study-legend">Trial Configuration</legend>
+              <div class="study-grid-row">
+                <div class="study-field">
+                  <label for="study-participant-id" class="study-label">Participant ID</label>
+                  <input type="text" id="study-participant-id" value="P01" maxlength="10" class="study-input" aria-label="Pseudonymous participant code">
+                </div>
+                <div class="study-field">
+                  <label for="study-sequence" class="study-label">Sequence (Latin Square)</label>
+                  <select id="study-sequence" class="study-select">
+                    <option value="seq_1">Seq 1: A/X then B/Y</option>
+                    <option value="seq_2">Seq 2: B/Y then A/X</option>
+                    <option value="seq_3">Seq 3: A/Y then B/X</option>
+                    <option value="seq_4">Seq 4: B/X then A/Y</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="study-grid-row">
+                <div class="study-field">
+                  <label for="study-period" class="study-label">Period</label>
+                  <select id="study-period" class="study-select">
+                    <option value="1">Period 1</option>
+                    <option value="2">Period 2</option>
+                  </select>
+                </div>
+                <div class="study-field">
+                  <label for="study-condition" class="study-label">Condition &amp; Tool</label>
+                  <select id="study-condition" class="study-select">
+                    <option value="B">Condition B (Spatial History Map)</option>
+                    <option value="A">Condition A (Chrome Built-in History)</option>
+                  </select>
+                </div>
+                <div class="study-field">
+                  <label for="study-topic-pack" class="study-label">Topic Pack</label>
+                  <select id="study-topic-pack" class="study-select">
+                    <option value="pack_x">Pack X (Solar Energy)</option>
+                    <option value="pack_y">Pack Y (Olympic History)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Flags -->
+              <div class="study-flags-group">
+                <label class="study-checkbox-label">
+                  <input type="checkbox" id="study-target-revisited">
+                  <span>Target revisited during 10-min setup delay (protocol-deviation flag)</span>
+                </label>
+                <label class="study-checkbox-label">
+                  <input type="checkbox" id="study-protocol-deviation">
+                  <span>Other experimental deviation occurred during round</span>
+                </label>
+              </div>
+
+              <div class="study-actions-row">
+                <button id="study-start-btn" type="button" class="btn btn-primary">Start Timed Retrieval (120s)</button>
+                <button id="study-stop-btn" type="button" class="btn btn-danger" disabled>Give Up / Stop</button>
+              </div>
+
+              <div id="study-trial-status" class="study-status-banner" role="status">Status: Standby (Not Recording)</div>
+            </fieldset>
+
+            <!-- Post-Trial NASA-TLX Assessment -->
+            <fieldset class="study-fieldset" id="study-tlx-fieldset">
+              <legend class="study-legend">Post-Trial NASA-TLX Workload Assessment</legend>
+              <p class="study-tlx-desc">Administer immediately following retrieval attempt. Rate each dimension on official 0&ndash;100 scale.</p>
+
+              <div class="tlx-grid">
+                <div class="tlx-item">
+                  <div class="tlx-label-row">
+                    <label for="tlx-mental">Mental Demand</label>
+                    <span id="tlx-mental-val" class="tlx-val-badge">50</span>
+                  </div>
+                  <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
+                  <input type="range" id="tlx-mental" min="0" max="100" value="50" class="tlx-slider">
+                </div>
+
+                <div class="tlx-item">
+                  <div class="tlx-label-row">
+                    <label for="tlx-physical">Physical Demand</label>
+                    <span id="tlx-physical-val" class="tlx-val-badge">50</span>
+                  </div>
+                  <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
+                  <input type="range" id="tlx-physical" min="0" max="100" value="50" class="tlx-slider">
+                </div>
+
+                <div class="tlx-item">
+                  <div class="tlx-label-row">
+                    <label for="tlx-temporal">Temporal Demand</label>
+                    <span id="tlx-temporal-val" class="tlx-val-badge">50</span>
+                  </div>
+                  <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
+                  <input type="range" id="tlx-temporal" min="0" max="100" value="50" class="tlx-slider">
+                </div>
+
+                <div class="tlx-item">
+                  <div class="tlx-label-row">
+                    <label for="tlx-performance">Performance</label>
+                    <span id="tlx-performance-val" class="tlx-val-badge">50</span>
+                  </div>
+                  <div class="tlx-anchor-row"><span>Perfect</span><span>Failure</span></div>
+                  <input type="range" id="tlx-performance" min="0" max="100" value="50" class="tlx-slider">
+                </div>
+
+                <div class="tlx-item">
+                  <div class="tlx-label-row">
+                    <label for="tlx-effort">Effort</label>
+                    <span id="tlx-effort-val" class="tlx-val-badge">50</span>
+                  </div>
+                  <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
+                  <input type="range" id="tlx-effort" min="0" max="100" value="50" class="tlx-slider">
+                </div>
+
+                <div class="tlx-item">
+                  <div class="tlx-label-row">
+                    <label for="tlx-frustration">Frustration</label>
+                    <span id="tlx-frustration-val" class="tlx-val-badge">50</span>
+                  </div>
+                  <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
+                  <input type="range" id="tlx-frustration" min="0" max="100" value="50" class="tlx-slider">
+                </div>
+              </div>
+
+              <div class="tlx-summary-row">
+                <span id="tlx-raw-score" class="tlx-raw-badge">Raw TLX Summary: 50.0 / 100</span>
+                <button id="study-submit-tlx-btn" type="button" class="btn btn-primary btn-sm">Save NASA-TLX Ratings</button>
+              </div>
+            </fieldset>
+
+            <!-- Export and Local Data Actions -->
+            <fieldset class="study-fieldset">
+              <legend class="study-legend">Study Data Management &amp; Export</legend>
+              <div class="study-export-summary">
+                <span id="study-records-count">0 recorded trials in local study store</span>
+              </div>
+              <div class="study-export-actions">
+                <button id="study-export-csv-btn" type="button" class="btn btn-secondary btn-sm">Export study-trials.csv</button>
+                <button id="study-export-json-btn" type="button" class="btn btn-secondary btn-sm">Export study-events.json</button>
+                <button id="study-clear-data-btn" type="button" class="btn btn-danger btn-sm">Delete Study Records</button>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+
       <!-- Confirmation Modal for Clear Map -->
       <div id="clear-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-description" tabindex="-1" hidden>
         <div class="modal-card">
@@ -310,6 +482,8 @@
   </div>
 
   <script src="storage.js"></script>
+  <script src="study-corpus.js"></script>
+  <script src="study-manager.js"></script>
   <script src="ui-logic.js"></script>
   <script src="background-messages.js"></script>
   <script src="app.js"></script>

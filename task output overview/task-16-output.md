@@ -198,7 +198,7 @@ Following owner approval, commits were pushed to `origin/main`. The GitHub Actio
 - **Runtime:** Node.js 22 LTS via `actions/setup-node@v7`
 - **Status:** `completed`
 - **Conclusion:** `success`
-- **Execution URL:** [https://github.com/Tanmay-1012/spatial-browser/actions/runs/43721541361](https://github.com/Tanmay-1012/spatial-browser/actions/runs/43721541361)
+- **Execution URL:** [https://github.com/TanmayTejaswi/spatial-browser/actions/runs/43721541361](https://github.com/TanmayTejaswi/spatial-browser/actions/runs/43721541361)
 - **Duration:** 28 seconds (started `2026-11-15T13:55:30Z`, completed `2026-11-15T13:55:58Z`)
 
 ### Step Results

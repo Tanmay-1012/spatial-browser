@@ -88,6 +88,7 @@
       this.storage = storageManager;
       this.api = customApi || (typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null));
       this.sessionStorage = options.sessionStorage || (this.api?.storage?.session || (this.storage?.adapter?._getRawSessionStorage ? this.storage.adapter._getRawSessionStorage() : null));
+      this.studyManager = options.studyManager || null;
       this.pendingOpeners = new Map();
       this.recentNavigations = new Map();
       this.debounceWindowMs = 600;
@@ -440,6 +441,14 @@
 
       if (this._isDuplicateSignal(tabId, url, source)) return null;
 
+      if (this.studyManager) {
+        try {
+          await this.studyManager.handleNavigation(details);
+        } catch (err) {
+          console.error('[SpatialTracker:StudyNavError]', err);
+        }
+      }
+
       const isForwardBack = Array.isArray(details.transitionQualifiers) &&
         details.transitionQualifiers.includes('forward_back');
 
@@ -554,7 +563,15 @@
       }
 
       if (typeof openerTabId === 'number' && openerTabId !== tabId) {
-        const openerNode = await this.storage.getCurrentNodeForTab(openerTabId);
+        let openerNode = await this.storage.getCurrentNodeForTab(openerTabId);
+        if (!openerNode) {
+          // Bounded retry to allow parent tab write queue to settle during rapid tab creation
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await new Promise((r) => setTimeout(r, 60));
+            openerNode = await this.storage.getCurrentNodeForTab(openerTabId);
+            if (openerNode) break;
+          }
+        }
         if (openerNode && openerNode.id) parentNodeId = openerNode.id;
         else isCheckpoint = true;
       } else if (currentNode && currentNode.id) {
@@ -606,6 +623,19 @@
       return this._withSessionGate(() => {
         return this._enqueueTab(tabId, async () => {
           let urlResult = null;
+          if (this.studyManager && (changeInfo.status === 'complete' || changeInfo.url)) {
+            try {
+              const currentUrl = (tab && tab.url) || changeInfo.url;
+              if (currentUrl) {
+                await this.studyManager.handleNavigation({
+                  tabId,
+                  url: currentUrl,
+                  status: changeInfo.status,
+                  transitionType: 'link'
+                });
+              }
+            } catch (_) {}
+          }
           if (typeof changeInfo.url === 'string' && tab && tab.status !== 'loading' && isTrackableUrl(changeInfo.url)) {
             urlResult = await this._processUrlChange({
               tabId,

@@ -6,10 +6,12 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node tests/verify-builds.mjs && node tests/test-tracker.mjs && node tests/test-ui.mjs",
+    "test": "node tests/verify-builds.mjs && node tests/test-tracker.mjs && node tests/test-ui.mjs && node tests/test-branch.mjs && node tests/test-study.mjs",
     "test:builds": "node tests/verify-builds.mjs",
     "test:tracker": "node tests/test-tracker.mjs",
     "test:ui": "node tests/test-ui.mjs",
+    "test:branch": "node tests/test-branch.mjs",
+    "test:study": "node tests/test-study.mjs",
     "generate-icons": "python scripts/generate-icons.py"
   },
   "keywords": [

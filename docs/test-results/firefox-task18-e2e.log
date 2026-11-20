@@ -1,0 +1,34 @@
+================================================================================
+TASK 18: MOZILLA FIREFOX RUNTIME VERIFICATION
+Timestamp: 2026-11-20 12:22:36 UTC
+Firefox Binary: C:\Program Files\Mozilla Firefox\firefox.exe
+================================================================================
+[INIT] Connected to Firefox Marionette on port 51082
+[INIT] Installed unpacked Firefox extension: spatial-browser-history@term-project.local
+[AUDIT] Pre-test error log recorded: D:\Projects\HCI Project\docs\test-results\firefox-task18-errors-pre.json (0 errors)
+
+--- STEP 1: Sibling Branch Navigation Scenario in Firefox ---
+
+--- STEP 2: Study Mode UI & Controller in Firefox ---
+[PASS] Study banner is hidden by default in Firefox.
+[PASS] Firefox trial started: Participant P02 • Condition B • Period 1
+
+--- STEP 3: Navigations, Wrong-Page Count & Target Success in Firefox ---
+[PASS] Firefox Raw TLX calculation: Raw TLX Summary: 23.3 / 100
+
+--- STEP 4: Condition A & Abandon in Firefox ---
+
+--- STEP 5: Export CSV & JSON and Privacy Audit in Firefox ---
+[PASS] Firefox trials verified: 1=success, 2=abandoned
+[PASS] Privacy Audit in Firefox PASSED: Zero leaks in CSV or JSON exports.
+
+--- STEP 6: Inter-Round Reset in Firefox ---
+[PASS] Firefox Inter-Round Reset verified: history nodes=0, study trials=2
+
+--- STEP 7: Delete Study Records in Firefox ---
+[PASS] Firefox study records deleted cleanly.
+[AUDIT] Post-test error log recorded: D:\Projects\HCI Project\docs\test-results\firefox-task18-errors-post.json (0 errors)
+
+============================================================================
+MOZILLA FIREFOX TASK 18 RUNTIME VERIFICATION COMPLETED SUCCESSFULLY
+============================================================================

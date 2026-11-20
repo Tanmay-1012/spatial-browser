@@ -3,15 +3,27 @@
  * Spatial Browser History
  */
 
-/* global openOrFocusPage, SpatialStorage, SpatialTracker, SpatialBackgroundMessages */
+/* global openOrFocusPage, SpatialStorage, SpatialTracker, SpatialBackgroundMessages, SpatialStudyManager */
 
-// 1. Initialize storage and tracker instances
+// 1. Initialize storage, study, and tracker instances
 const storageManager = new SpatialStorage.StorageManager();
-const tracker = new SpatialTracker.NavigationTracker(storageManager, browser);
+const studyManager = new SpatialStudyManager.StudyManager({ storageAdapter: storageManager.adapter });
+const tracker = new SpatialTracker.NavigationTracker(storageManager, browser, { studyManager });
+globalThis.storageManager = storageManager;
+globalThis.studyManager = studyManager;
+globalThis.tracker = tracker;
 
 // 2. Register all navigation event listeners synchronously at startup
 tracker.init();
+studyManager.init().catch(() => {});
 SpatialBackgroundMessages.registerClearHistoryListener(browser.runtime, storageManager);
+
+// Synchronize study state changes across UI and background
+browser.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.spatial_browser_study_data) {
+    studyManager.init().catch(() => {});
+  }
+});
 
 // 3. Register toolbar single-tab open/focus behavior
 browser.action.onClicked.addListener(async () => {

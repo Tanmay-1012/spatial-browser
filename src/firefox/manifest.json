@@ -19,8 +19,10 @@
     "scripts": [
       "launch.js",
       "storage.js",
+      "study-corpus.js",
+      "study-manager.js",
       "tracker.js",
-        "background-messages.js",
+      "background-messages.js",
       "background.js"
     ]
   },

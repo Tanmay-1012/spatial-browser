@@ -29,11 +29,11 @@ The standalone package was downloaded from Google's `dl.google.com/release2` end
 
 ### Run 1 — headed Chrome 109
 
-[GitHub Actions run #43744325678](https://github.com/Tanmay-1012/spatial-browser/actions/runs/43744325678) verified the extracted product as Google Chrome `109.0.5414.165`, loaded the unpacked extension, and relaunched the browser with the extension ID preserved. The hosted Windows runner had no interactive Chrome window. When the fallback attached to the extension service worker, `Runtime.enable` timed out and the DevTools WebSocket was reset. The E2E suite stopped before navigation and UI scenarios.
+[GitHub Actions run #43744325678](https://github.com/TanmayTejaswi/spatial-browser/actions/runs/43744325678) verified the extracted product as Google Chrome `109.0.5414.165`, loaded the unpacked extension, and relaunched the browser with the extension ID preserved. The hosted Windows runner had no interactive Chrome window. When the fallback attached to the extension service worker, `Runtime.enable` timed out and the DevTools WebSocket was reset. The E2E suite stopped before navigation and UI scenarios.
 
 ### Run 2 — Chrome 109 Chrome-based headless mode
 
-[GitHub Actions run #43744717992](https://github.com/Tanmay-1012/spatial-browser/actions/runs/43744717992) reported `HeadlessChrome/109.0.5414.165`, but the unpacked extension was not loaded. Chrome 109 did not expose the later `Extensions.loadUnpacked` DevTools command, and the harness stopped at extension discovery. No extension runtime scenario ran.
+[GitHub Actions run #43744717992](https://github.com/TanmayTejaswi/spatial-browser/actions/runs/43744717992) reported `HeadlessChrome/109.0.5414.165`, but the unpacked extension was not loaded. Chrome 109 did not expose the later `Extensions.loadUnpacked` DevTools command, and the harness stopped at extension discovery. No extension runtime scenario ran.
 
 Both runs uploaded only the synthetic runner log as a seven-day artifact. Error-audit JSON and screenshots were not produced because the harness stopped before the acceptance scenarios. The artifacts contain no browser profile, installer, extension archive, downloaded test file, or user data.
 
@@ -49,7 +49,7 @@ Task 17 is closed as an environment-limited investigation, not accepted as direc
 
 The project task list is complete, with no next developer task assigned. The existing Chrome and Firefox runtime evidence and the passing Task 16 hosted CI gate remain valid for the versions they tested. No release was tagged, published, or changed as part of this closeout.
 
-The reviewed closeout was fast-forwarded to `main` at commit `fbefbf0`. The standard GitHub Actions build/test gate passed on that commit in [run #43745955194](https://github.com/Tanmay-1012/spatial-browser/actions/runs/43745955194), including package generation and all 61 automated checks. This confirms the closeout did not break the regular project gate; it does not change the Chrome 109 runtime result.
+The reviewed closeout was fast-forwarded to `main` at commit `fbefbf0`. The standard GitHub Actions build/test gate passed on that commit in [run #43745955194](https://github.com/TanmayTejaswi/spatial-browser/actions/runs/43745955194), including package generation and all 61 automated checks. This confirms the closeout did not break the regular project gate; it does not change the Chrome 109 runtime result.
 
 The task-specific Chrome 109 workflow is now manual-only and its job is restricted to the Task 17 branch. This preserves the investigation path without rerunning the known environment-blocked attempt on documentation or main-branch updates.
 

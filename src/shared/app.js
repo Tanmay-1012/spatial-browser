@@ -24,6 +24,8 @@
 
   // Application state
   let storageManager = null;
+  let studyManager = null;
+  let studyTimerInterval = null;
   let currentState = null;
   let viewMode = 'overview'; // 'overview' | 'detail'
   let selectedTreeId = null;
@@ -78,6 +80,16 @@
   let elDetailsActions, elReopenBtn;
   let elParentLineageContainer, elParentLineageLabel, elDetailsParent, elChildrenLineageContainer, elDetailsChildren;
 
+  // Study Controller DOM references
+  let elStudyControllerBtn, elStudyModal, elStudyModalCloseBtn;
+  let elStudyRecordingBanner, elStudyBannerInfo, elStudyBannerTimer, elStudyBannerStopBtn;
+  let elStudyParticipantId, elStudySequence, elStudyPeriod, elStudyCondition, elStudyTopicPack;
+  let elStudyTargetRevisited, elStudyProtocolDeviation, elStudyStartBtn, elStudyStopBtn, elStudyTrialStatus;
+  let elStudyTlxFieldset, elTlxMental, elTlxPhysical, elTlxTemporal, elTlxPerformance, elTlxEffort, elTlxFrustration;
+  let elTlxMentalVal, elTlxPhysicalVal, elTlxTemporalVal, elTlxPerformanceVal, elTlxEffortVal, elTlxFrustrationVal;
+  let elTlxRawScore, elStudySubmitTlxBtn;
+  let elStudyRecordsCount, elStudyExportCsvBtn, elStudyExportJsonBtn, elStudyClearDataBtn;
+
   async function init() {
     cacheDomElements();
     setupEventListeners();
@@ -92,10 +104,27 @@
       }
     }
 
+    if (typeof globalThis.SpatialStudyManager !== 'undefined') {
+      studyManager = new globalThis.SpatialStudyManager.StudyManager({
+        storageAdapter: storageManager ? storageManager.adapter : null
+      });
+      try {
+        await studyManager.init();
+        updateStudyUiFromState();
+      } catch (studyErr) {
+        console.warn('[SpatialApp] Study manager initialization notice:', studyErr);
+      }
+    }
+
     if (api && api.storage && api.storage.onChanged) {
       api.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === 'local' && changes.spatial_browser_history_data) {
-          loadAndRender();
+        if (areaName === 'local') {
+          if (changes.spatial_browser_history_data) {
+            loadAndRender();
+          }
+          if (changes.spatial_browser_study_data && studyManager) {
+            studyManager.init().then(() => updateStudyUiFromState());
+          }
         }
       });
     }
@@ -166,6 +195,48 @@
     elDetailsParent = document.getElementById('details-parent');
     elChildrenLineageContainer = document.getElementById('children-lineage-container');
     elDetailsChildren = document.getElementById('details-children');
+
+    // Study elements
+    elStudyControllerBtn = document.getElementById('study-controller-btn');
+    elStudyModal = document.getElementById('study-modal');
+    elStudyModalCloseBtn = document.getElementById('study-modal-close-btn');
+
+    elStudyRecordingBanner = document.getElementById('study-recording-banner');
+    elStudyBannerInfo = document.getElementById('study-banner-info');
+    elStudyBannerTimer = document.getElementById('study-banner-timer');
+    elStudyBannerStopBtn = document.getElementById('study-banner-stop-btn');
+
+    elStudyParticipantId = document.getElementById('study-participant-id');
+    elStudySequence = document.getElementById('study-sequence');
+    elStudyPeriod = document.getElementById('study-period');
+    elStudyCondition = document.getElementById('study-condition');
+    elStudyTopicPack = document.getElementById('study-topic-pack');
+    elStudyTargetRevisited = document.getElementById('study-target-revisited');
+    elStudyProtocolDeviation = document.getElementById('study-protocol-deviation');
+    elStudyStartBtn = document.getElementById('study-start-btn');
+    elStudyStopBtn = document.getElementById('study-stop-btn');
+    elStudyTrialStatus = document.getElementById('study-trial-status');
+
+    elStudyTlxFieldset = document.getElementById('study-tlx-fieldset');
+    elTlxMental = document.getElementById('tlx-mental');
+    elTlxPhysical = document.getElementById('tlx-physical');
+    elTlxTemporal = document.getElementById('tlx-temporal');
+    elTlxPerformance = document.getElementById('tlx-performance');
+    elTlxEffort = document.getElementById('tlx-effort');
+    elTlxFrustration = document.getElementById('tlx-frustration');
+    elTlxMentalVal = document.getElementById('tlx-mental-val');
+    elTlxPhysicalVal = document.getElementById('tlx-physical-val');
+    elTlxTemporalVal = document.getElementById('tlx-temporal-val');
+    elTlxPerformanceVal = document.getElementById('tlx-performance-val');
+    elTlxEffortVal = document.getElementById('tlx-effort-val');
+    elTlxFrustrationVal = document.getElementById('tlx-frustration-val');
+    elTlxRawScore = document.getElementById('tlx-raw-score');
+    elStudySubmitTlxBtn = document.getElementById('study-submit-tlx-btn');
+
+    elStudyRecordsCount = document.getElementById('study-records-count');
+    elStudyExportCsvBtn = document.getElementById('study-export-csv-btn');
+    elStudyExportJsonBtn = document.getElementById('study-export-json-btn');
+    elStudyClearDataBtn = document.getElementById('study-clear-data-btn');
   }
 
   function getActiveFilterStore() {
@@ -178,6 +249,7 @@
       const store = getActiveFilterStore();
       store.query = elSearchInput.value;
       elSearchClearBtn.hidden = !store.query.trim();
+      if (studyManager) studyManager.recordStudyEvent('extension_search');
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = setTimeout(() => {
         applyFiltersAndRender();
@@ -292,13 +364,56 @@
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (!elClearModal.hidden) {
+        if (!elStudyModal.hidden) {
+          closeStudyModal();
+        } else if (!elClearModal.hidden) {
           elClearModal.hidden = true;
           elClearMapBtn.focus();
         } else if (!elDetailsPanel.hidden) {
           closeDetailsPanel(true);
         }
       }
+    });
+
+    // Study Controller listeners
+    elStudyControllerBtn.addEventListener('click', () => {
+      openStudyModal();
+    });
+
+    elStudyModalCloseBtn.addEventListener('click', () => {
+      closeStudyModal();
+    });
+
+    elStudyStartBtn.addEventListener('click', () => {
+      handleStudyStart();
+    });
+
+    elStudyStopBtn.addEventListener('click', () => {
+      handleStudyStop();
+    });
+
+    elStudyBannerStopBtn.addEventListener('click', () => {
+      handleStudyStop();
+    });
+
+    for (const slider of [elTlxMental, elTlxPhysical, elTlxTemporal, elTlxPerformance, elTlxEffort, elTlxFrustration]) {
+      slider.addEventListener('input', updateTlxValues);
+    }
+
+    elStudySubmitTlxBtn.addEventListener('click', () => {
+      handleStudySubmitTlx();
+    });
+
+    elStudyExportCsvBtn.addEventListener('click', () => {
+      handleStudyExportCsv();
+    });
+
+    elStudyExportJsonBtn.addEventListener('click', () => {
+      handleStudyExportJson();
+    });
+
+    elStudyClearDataBtn.addEventListener('click', () => {
+      handleStudyClearData();
     });
 
     elDetailsCloseBtn.addEventListener('click', () => {
@@ -312,9 +427,18 @@
       reopenUrl(node.url);
     });
 
-    elZoomIn.addEventListener('click', () => zoomBy(1.2));
-    elZoomOut.addEventListener('click', () => zoomBy(0.83));
-    elZoomReset.addEventListener('click', () => fitGraphToView());
+    elZoomIn.addEventListener('click', () => {
+      if (studyManager) studyManager.recordStudyEvent('extension_zoom');
+      zoomBy(1.2);
+    });
+    elZoomOut.addEventListener('click', () => {
+      if (studyManager) studyManager.recordStudyEvent('extension_zoom');
+      zoomBy(0.83);
+    });
+    elZoomReset.addEventListener('click', () => {
+      if (studyManager) studyManager.recordStudyEvent('extension_zoom');
+      fitGraphToView();
+    });
 
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -331,6 +455,199 @@
         }
       }, 100);
     });
+  }
+
+  function openStudyModal() {
+    updateStudyUiFromState();
+    elStudyModal.hidden = false;
+    elStudyModalCloseBtn.focus();
+  }
+
+  function closeStudyModal() {
+    elStudyModal.hidden = true;
+    elStudyControllerBtn.focus();
+  }
+
+  function updateStudyUiFromState() {
+    if (!studyManager) return;
+    const active = studyManager.getActiveTrial();
+    const isRecording = Boolean(active && active.status === 'active');
+
+    // Indicator banner
+    elStudyRecordingBanner.hidden = !isRecording;
+    if (isRecording) {
+      elStudyBannerInfo.textContent = `Participant ${active.participantId} \u2022 Condition ${active.condition} \u2022 Period ${active.period}`;
+      const remSec = Math.max(0, Math.ceil((active.deadlineTimestamp - Date.now()) / 1000));
+      elStudyBannerTimer.textContent = remSec + 's';
+      startStudyTimerLoop();
+    } else {
+      stopStudyTimerLoop();
+    }
+
+    // Modal buttons & status
+    elStudyStartBtn.disabled = isRecording;
+    elStudyStopBtn.disabled = !isRecording;
+    elStudyBannerStopBtn.disabled = !isRecording;
+
+    if (isRecording) {
+      elStudyTrialStatus.textContent = `Recording Active: ${active.trialId} (${active.topicPack}) \u2014 Incorrect Opens: ${active.incorrectPageOpens}`;
+      elStudyTrialStatus.style.color = '#EF4444';
+    } else {
+      const state = studyManager._state;
+      const lastId = state ? state.lastCompletedTrialId : null;
+      if (lastId) {
+        const lastTrial = state.trials.find((t) => t.trialId === lastId);
+        const outcome = lastTrial ? lastTrial.outcome : 'completed';
+        elStudyTrialStatus.textContent = `Last Trial: ${lastId} (${outcome}) \u2014 Ready for Next Round`;
+        elStudyTrialStatus.style.color = '#10B981';
+      } else {
+        elStudyTrialStatus.textContent = 'Status: Standby (Not Recording)';
+        elStudyTrialStatus.style.color = '';
+      }
+    }
+
+    // Records count
+    const trialCount = (studyManager._state && Array.isArray(studyManager._state.trials))
+      ? studyManager._state.trials.length
+      : 0;
+    elStudyRecordsCount.textContent = `${trialCount} recorded ${trialCount === 1 ? 'trial' : 'trials'} in local study store`;
+  }
+
+  function startStudyTimerLoop() {
+    if (studyTimerInterval) clearInterval(studyTimerInterval);
+    studyTimerInterval = setInterval(async () => {
+      if (!studyManager) return;
+      const active = studyManager.getActiveTrial();
+      if (!active || active.status !== 'active') {
+        stopStudyTimerLoop();
+        updateStudyUiFromState();
+        return;
+      }
+      const now = Date.now();
+      const remSec = Math.max(0, Math.ceil((active.deadlineTimestamp - now) / 1000));
+      elStudyBannerTimer.textContent = remSec + 's';
+
+      if (now >= active.deadlineTimestamp) {
+        await studyManager.checkDeadline();
+        stopStudyTimerLoop();
+        updateStudyUiFromState();
+      }
+    }, 500);
+  }
+
+  function stopStudyTimerLoop() {
+    if (studyTimerInterval) {
+      clearInterval(studyTimerInterval);
+      studyTimerInterval = null;
+    }
+  }
+
+  async function handleStudyStart() {
+    if (!studyManager) return;
+    try {
+      const participantId = elStudyParticipantId.value.trim() || 'P01';
+      const sequence = elStudySequence.value;
+      const period = Number(elStudyPeriod.value) || 1;
+      const condition = elStudyCondition.value;
+      const topicPack = elStudyTopicPack.value;
+      const targetRevisitedDelay = elStudyTargetRevisited.checked;
+      const protocolDeviation = elStudyProtocolDeviation.checked;
+
+      await studyManager.startTrial({
+        participantId,
+        sequence,
+        period,
+        condition,
+        topicPack,
+        targetRevisitedDelay,
+        protocolDeviation
+      });
+
+      updateStudyUiFromState();
+    } catch (err) {
+      alert(err.message || 'Could not start study trial');
+    }
+  }
+
+  async function handleStudyStop() {
+    if (!studyManager) return;
+    await studyManager.abandonTrial();
+    stopStudyTimerLoop();
+    updateStudyUiFromState();
+  }
+
+  function updateTlxValues() {
+    const m = Number(elTlxMental.value);
+    const p = Number(elTlxPhysical.value);
+    const t = Number(elTlxTemporal.value);
+    const pf = Number(elTlxPerformance.value);
+    const ef = Number(elTlxEffort.value);
+    const fr = Number(elTlxFrustration.value);
+
+    elTlxMentalVal.textContent = m;
+    elTlxPhysicalVal.textContent = p;
+    elTlxTemporalVal.textContent = t;
+    elTlxPerformanceVal.textContent = pf;
+    elTlxEffortVal.textContent = ef;
+    elTlxFrustrationVal.textContent = fr;
+
+    const raw = ((m + p + t + pf + ef + fr) / 6.0).toFixed(1);
+    elTlxRawScore.textContent = `Raw TLX Summary: ${raw} / 100`;
+  }
+
+  async function handleStudySubmitTlx() {
+    if (!studyManager || !studyManager._state) return;
+    const lastId = studyManager._state.lastCompletedTrialId;
+    if (!lastId) {
+      alert('No completed trial available to attach workload ratings.');
+      return;
+    }
+    const ratings = {
+      mentalDemand: Number(elTlxMental.value),
+      physicalDemand: Number(elTlxPhysical.value),
+      temporalDemand: Number(elTlxTemporal.value),
+      performance: Number(elTlxPerformance.value),
+      effort: Number(elTlxEffort.value),
+      frustration: Number(elTlxFrustration.value)
+    };
+    await studyManager.submitTlx(lastId, ratings);
+    alert(`NASA-TLX ratings saved for ${lastId}.`);
+    updateStudyUiFromState();
+  }
+
+  function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
+
+  function handleStudyExportCsv() {
+    if (!studyManager) return;
+    const csv = studyManager.generateTrialsCsv();
+    downloadFile(csv, 'study-trials.csv', 'text/csv;charset=utf-8;');
+  }
+
+  function handleStudyExportJson() {
+    if (!studyManager) return;
+    const jsonStr = studyManager.generateEventsJson();
+    downloadFile(jsonStr, 'study-events.json', 'application/json;charset=utf-8;');
+  }
+
+  async function handleStudyClearData() {
+    if (!studyManager) return;
+    if (!confirm('Permanently delete all stored study records and events? This action cannot be undone.')) {
+      return;
+    }
+    await studyManager.clearStudyRecords();
+    updateStudyUiFromState();
   }
 
   function syncHeaderAndInputs() {

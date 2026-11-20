@@ -12,12 +12,13 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 - [Task 15 — Branded Chrome 109 Verification or Support-Floor Decision](task-15.md) ([Report: `task-15-output.md`](../task-15-output.md)) — Accepted with limitation (Section 10; branded Chrome 109 unverified)
 - [Task 16 — Continuous Integration Build and Test Gate](task-16.md) ([Report: `task-16-output.md`](../task-16-output.md)) — Accepted & Verified (Section 9; first GitHub-hosted CI run passed)
 - [Task 17 — Branded Chrome 109 Runtime Verification in a Disposable Hosted VM](task-17.md) ([Report: `task-17-output.md`](../task-17-output.md)) — Closed with environment limitation; the exact package was verified, but Chrome 109 extension runtime remains unverified
+- [Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export](task-18.md) ([Report: `task-18-output.md`](../task-18-output.md) · [Study design](../../docs/USER_STUDY_PLAN.md)) — Implemented & Verified; awaiting lead review
 
 ## Current assignment
 
-- No developer task is currently assigned. The project task list is closed with the Chrome 109 runtime limitation recorded in the Task 17 report.
+- **Current assignment:** [Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export](task-18.md) ([Report: `task-18-output.md`](../task-18-output.md)). Implementation and synthetic-data verification complete; submitted for lead review. Participant recruitment is not authorized under this task.
 
-Task 10 v15 is approved. Task 11 is accepted per Section 57. Task 12 is accepted per Section 12, Task 13 per Section 7, Task 14 per Section 9, Task 15 per Section 10 and its Task 17 follow-up, Task 16 per Sections 8 & 9, and Task 17 is closed with an environment limitation per its closeout report. Branded Chrome 109 remains unverified; do not describe Chromium proxy results as branded Chrome verification.
+Task 10 v15 is approved. Tasks 11–16 remain accepted. Task 17 is closed with an environment limitation; branded Chrome 109 remains unverified. Task 18 is the only active assignment. Do not describe Chromium proxy results as branded Chrome verification.
 
 ## Reporting workflow
 
