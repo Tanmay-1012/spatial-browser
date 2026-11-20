@@ -1538,3 +1538,54 @@ button.lineage-node-pill {
   flex-wrap: wrap;
 }
 
+.study-help-text {
+  font-size: 0.72rem;
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+  display: block;
+}
+
+.btn-warning {
+  background-color: #f59e0b;
+  color: #ffffff;
+  border: 1px solid #d97706;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: #d97706;
+}
+
+.study-dict-panel {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.study-dict-panel[hidden] {
+  display: none !important;
+}
+
+.study-dict-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 4px;
+}
+
+.study-dict-content pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-muted);
+}
+
+

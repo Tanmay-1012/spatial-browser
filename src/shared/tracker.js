@@ -161,6 +161,10 @@
         return this.handleTabReplaced(addedTabId, removedTabId);
       };
 
+      const onCompletedListener = (details) => {
+        return this.handleNavigationCompleted(details);
+      };
+
       const onDownloadCreatedListener = (downloadItem) => {
         return this.handleDownloadCreated(downloadItem);
       };
@@ -171,6 +175,9 @@
 
       if (api.webNavigation && api.webNavigation.onCommitted) {
         api.webNavigation.onCommitted.addListener(onCommittedListener);
+      }
+      if (api.webNavigation && api.webNavigation.onCompleted) {
+        api.webNavigation.onCompleted.addListener(onCompletedListener);
       }
       if (api.webNavigation && api.webNavigation.onHistoryStateUpdated) {
         api.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdatedListener);
@@ -202,6 +209,7 @@
 
       this._boundListeners = {
         onCommittedListener,
+        onCompletedListener,
         onHistoryStateUpdatedListener,
         onReferenceFragmentUpdatedListener,
         onCreatedNavigationTargetListener,
@@ -219,6 +227,7 @@
       const api = this.api;
       const b = this._boundListeners;
       if (api.webNavigation?.onCommitted?.removeListener) api.webNavigation.onCommitted.removeListener(b.onCommittedListener);
+      if (api.webNavigation?.onCompleted?.removeListener) api.webNavigation.onCompleted.removeListener(b.onCompletedListener);
       if (api.webNavigation?.onHistoryStateUpdated?.removeListener) api.webNavigation.onHistoryStateUpdated.removeListener(b.onHistoryStateUpdatedListener);
       if (api.webNavigation?.onReferenceFragmentUpdated?.removeListener) api.webNavigation.onReferenceFragmentUpdated.removeListener(b.onReferenceFragmentUpdatedListener);
       if (api.webNavigation?.onCreatedNavigationTarget?.removeListener) api.webNavigation.onCreatedNavigationTarget.removeListener(b.onCreatedNavigationTargetListener);
@@ -387,6 +396,21 @@
       return this._withSessionGate(() => {
         return this._enqueueTab(tabId, () => this._processUrlChange(details, 'committed'));
       });
+    }
+
+    /**
+     * Handles top-level page load completion events for study target detection.
+     */
+    async handleNavigationCompleted(details) {
+      if (!details || details.frameId !== 0) return null;
+      if (this.studyManager && typeof this.studyManager.handleNavigationCompleted === 'function') {
+        try {
+          await this.studyManager.handleNavigationCompleted(details);
+        } catch (err) {
+          console.error('[SpatialTracker:StudyNavCompletedError]', err);
+        }
+      }
+      return null;
     }
 
     /**

@@ -1,6 +1,6 @@
 # Task Output Overview Directory
 
-This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved. Tasks 11–16 are accepted, and Task 17 is closed with an environment limitation: branded Chrome 109 remains unverified because the disposable hosted runner could not execute the extension runtime checks. See the [Task 17 closeout](task-17-output.md). Task 18 is now assigned to fix the reported linear map and prepare opt-in, local-only study instrumentation; participant recruitment is not included.
+This directory contains individual outcome and verification reports for each project task, detailing objectives, deliverables, test results, and artifacts. Task 10's v15 design is approved. Tasks 11–16 are accepted, and Task 17 is closed with an environment limitation: branded Chrome 109 remains unverified because the disposable hosted runner could not execute the extension runtime checks. See the [Task 17 closeout](task-17-output.md). Task 18 review corrections have been implemented and verified across 75 automated checks and Chrome 157 / Firefox 160 isolated runtime runs; resubmitted for lead review. See the [Task 18 report](task-18-output.md) and [review corrections](tasks/task-18-review.md). Participant recruitment is not authorized.
 
 Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for the current task before starting work, and submit each result as the matching `task-N-output.md` report in this directory.
 
@@ -23,6 +23,6 @@ Developer assignments live in [`tasks/`](tasks/README.md). Check that folder for
 | [`tasks/task-15.md`](tasks/task-15.md) · [`task-15-output.md`](task-15-output.md) | Task 15: Branded Chrome 109 Verification or Support-Floor Decision | Milestone 15 (Chrome Runtime Evidence) | Accepted with limitation — Chrome 109 branded runtime unverified (Section 10) |
 | [`tasks/task-16.md`](tasks/task-16.md) · [`task-16-output.md`](task-16-output.md) | Task 16: Continuous Integration Build and Test Gate | Milestone 16 (Quality Automation) | Accepted & Verified (Section 9) |
 | [`tasks/task-17.md`](tasks/task-17.md) · [`task-17-output.md`](task-17-output.md) | Task 17: Branded Chrome 109 Runtime Verification in a Disposable Hosted VM | Milestone 17 (Chrome 109 Runtime Evidence) | Closed with environment limitation — Chrome 109 unverified |
-| [`tasks/task-18.md`](tasks/task-18.md) · [`task-18-output.md`](task-18-output.md) · [Study plan](../docs/USER_STUDY_PLAN.md) | Task 18: Study Readiness — Repair Visible Branching and Add Private Study Export | Study Readiness | Implemented & Verified (Awaiting Lead Review) |
+| [`tasks/task-18.md`](tasks/task-18.md) · [`tasks/task-18-review.md`](tasks/task-18-review.md) · [`task-18-output.md`](task-18-output.md) · [Study plan](../docs/USER_STUDY_PLAN.md) | Task 18: Study Readiness — Repair Visible Branching and Add Private Study Export | Study Readiness | Corrections Completed — Resubmitted for Lead Review |
 
 

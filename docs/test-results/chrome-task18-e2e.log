@@ -1,37 +1,46 @@
 ================================================================================
 TASK 18: GOOGLE CHROME RUNTIME VERIFICATION
-Timestamp: 2026-11-20 12:22:17 UTC
+Timestamp: 2026-11-20 23:29:57 UTC
 Chrome Binary: C:\Program Files\Google\Chrome\Application\chrome.exe
 ================================================================================
 [INIT] Loaded unpacked extension via CDP: edhmggcmhhmlbfmidpeamoiffebfijah
 [INIT] Tracker session initialized and storage ready.
 [AUDIT] Pre-test error log recorded: D:\Projects\HCI Project\docs\test-results\chrome-task18-errors-pre.json (0 errors)
 
---- STEP 1: Sibling Branch Navigation Scenario ---
+--- STEP 1: Sibling Branch Navigation Scenario in Chrome ---
 
---- STEP 2: Extension UI, Branch Verification & Study Controller ---
+--- STEP 2: Extension UI, Stored Sibling Graph & Screenshots ---
 [PASS] Research Trees Overview rendered 1 tree card(s).
 [PASS] Storage graph audited: 7 total nodes, Hub has 4 sibling children.
-[PASS] Study banner is hidden by default (study mode disabled).
-[PASS] Study controller modal opened.
-[PASS] Trial started: Participant P01 • Condition B • Period 1
+[PASS] Captured Chrome desktop screenshot: D:\Projects\HCI Project\docs\test-results\chrome-branch-desktop.png
+[PASS] Captured Chrome reflow screenshot: D:\Projects\HCI Project\docs\test-results\chrome-branch-reflow.png
 
---- STEP 3: Navigations, Wrong-Page Count & Target Success ---
+--- STEP 3: Study Controller & Valid Latin Square Sequence 4 ---
+[PASS] Study banner is hidden by default.
+[PASS] Study controller modal opened.
+[PASS] Sequence 4 Period 1 automatically derived: Condition=B, Pack=pack_x
+[PASS] Chrome Trial 1 started: Participant P01 • Condition B • Period 1
+
+--- STEP 4: Delayed Target Response & Load Completion Timing ---
 [PASS] Incorrect corpus page open recorded: count = 1.
-[PASS] Trial completed successfully: outcome=success, elapsed=1016ms, incorrectOpens=1
+[PASS] In-flight check while target document is loading: active=True, completedTrials=0
+[PASS] Target success finalized upon load completion: outcome=success, elapsed=3036ms
 [PASS] Raw TLX live calculation verified: Raw TLX Summary: 23.3 / 100 (expected 23.3)
 
---- STEP 4: Condition A (Chrome History) & Give Up / Abandon ---
-[PASS] Condition A trial abandoned cleanly: outcome=abandoned, tool=chrome_history
+--- STEP 5: Sequence 4 Period 2 (Condition A / Pack Y) & Timeout ---
+[PASS] Sequence 4 Period 2 derived: Condition=A, Pack=pack_y
+[PASS] Timeout outcome verified in Chrome: outcome=timeout, elapsed=120000ms
 
---- STEP 5: Export CSV & JSON and Privacy Audit ---
-[PASS] CSV export matches schema and contains recorded trials.
-[PASS] Privacy Audit PASSED: Zero raw URLs, page titles, search text, or off-corpus records in CSV or JSON.
+--- STEP 6: Finish Session Control & Audit Stamp ---
+[PASS] Finish Session verified: status=finished, finishEventLogged=True
 
---- STEP 6: Inter-Round Reset (Clear Map) & Record Survival ---
+--- STEP 7: Export CSV & JSON, Schema Agreement & Privacy Audit ---
+[PASS] CSV export matches schema and valid Latin Square Sequence 4 rows.
+[PASS] JSON events verified: snake_case keys agree exactly with data dictionary.
+[PASS] Privacy Audit PASSED: Zero raw URLs, page titles, or query strings in exports.
+
+--- STEP 8: Inter-Round Reset (Clear Map) & Explicit Delete ---
 [PASS] Inter-round reset: Normal history cleared (0 nodes), Study records preserved (2 trials).
-
---- STEP 7: Delete Study Records Action ---
 [PASS] Study records cleared completely with explicit delete action.
 [AUDIT] Post-test error log recorded: D:\Projects\HCI Project\docs\test-results\chrome-task18-errors-post.json (0 errors)
 

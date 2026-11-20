@@ -82,13 +82,13 @@
 
   // Study Controller DOM references
   let elStudyControllerBtn, elStudyModal, elStudyModalCloseBtn;
-  let elStudyRecordingBanner, elStudyBannerInfo, elStudyBannerTimer, elStudyBannerStopBtn;
+  let elStudyRecordingBanner, elStudyBannerInfo, elStudyBannerTimer, elStudyBannerStopBtn, elStudyBannerFinishBtn;
   let elStudyParticipantId, elStudySequence, elStudyPeriod, elStudyCondition, elStudyTopicPack;
-  let elStudyTargetRevisited, elStudyProtocolDeviation, elStudyStartBtn, elStudyStopBtn, elStudyTrialStatus;
+  let elStudyTargetRevisited, elStudyProtocolDeviation, elStudyStartBtn, elStudyStopBtn, elStudyFinishSessionBtn, elStudyNewSessionBtn, elStudyTrialStatus;
   let elStudyTlxFieldset, elTlxMental, elTlxPhysical, elTlxTemporal, elTlxPerformance, elTlxEffort, elTlxFrustration;
   let elTlxMentalVal, elTlxPhysicalVal, elTlxTemporalVal, elTlxPerformanceVal, elTlxEffortVal, elTlxFrustrationVal;
   let elTlxRawScore, elStudySubmitTlxBtn;
-  let elStudyRecordsCount, elStudyExportCsvBtn, elStudyExportJsonBtn, elStudyClearDataBtn;
+  let elStudyRecordsCount, elStudyExportCsvBtn, elStudyExportJsonBtn, elStudyDictToggleBtn, elStudyExportDictBtn, elStudyClearDataBtn, elStudyDictPanel, elStudyDictContent;
 
   async function init() {
     cacheDomElements();
@@ -110,6 +110,7 @@
       });
       try {
         await studyManager.init();
+        syncStudySequenceAssignment();
         updateStudyUiFromState();
       } catch (studyErr) {
         console.warn('[SpatialApp] Study manager initialization notice:', studyErr);
@@ -205,6 +206,7 @@
     elStudyBannerInfo = document.getElementById('study-banner-info');
     elStudyBannerTimer = document.getElementById('study-banner-timer');
     elStudyBannerStopBtn = document.getElementById('study-banner-stop-btn');
+    elStudyBannerFinishBtn = document.getElementById('study-banner-finish-btn');
 
     elStudyParticipantId = document.getElementById('study-participant-id');
     elStudySequence = document.getElementById('study-sequence');
@@ -215,6 +217,8 @@
     elStudyProtocolDeviation = document.getElementById('study-protocol-deviation');
     elStudyStartBtn = document.getElementById('study-start-btn');
     elStudyStopBtn = document.getElementById('study-stop-btn');
+    elStudyFinishSessionBtn = document.getElementById('study-finish-session-btn');
+    elStudyNewSessionBtn = document.getElementById('study-new-session-btn');
     elStudyTrialStatus = document.getElementById('study-trial-status');
 
     elStudyTlxFieldset = document.getElementById('study-tlx-fieldset');
@@ -236,7 +240,11 @@
     elStudyRecordsCount = document.getElementById('study-records-count');
     elStudyExportCsvBtn = document.getElementById('study-export-csv-btn');
     elStudyExportJsonBtn = document.getElementById('study-export-json-btn');
+    elStudyDictToggleBtn = document.getElementById('study-dict-toggle-btn');
+    elStudyExportDictBtn = document.getElementById('study-export-dict-btn');
     elStudyClearDataBtn = document.getElementById('study-clear-data-btn');
+    elStudyDictPanel = document.getElementById('study-dict-panel');
+    elStudyDictContent = document.getElementById('study-dict-content');
   }
 
   function getActiveFilterStore() {
@@ -396,6 +404,40 @@
       handleStudyStop();
     });
 
+    elStudySequence.addEventListener('change', () => {
+      syncStudySequenceAssignment();
+    });
+
+    elStudyPeriod.addEventListener('change', () => {
+      syncStudySequenceAssignment();
+    });
+
+    elStudyParticipantId.addEventListener('input', () => {
+      validateParticipantInput();
+    });
+
+    elStudyFinishSessionBtn.addEventListener('click', () => {
+      handleStudyFinishSession();
+    });
+
+    if (elStudyBannerFinishBtn) {
+      elStudyBannerFinishBtn.addEventListener('click', () => {
+        handleStudyFinishSession();
+      });
+    }
+
+    elStudyNewSessionBtn.addEventListener('click', () => {
+      handleStudyNewSession();
+    });
+
+    elStudyDictToggleBtn.addEventListener('click', () => {
+      toggleStudyDictionary();
+    });
+
+    elStudyExportDictBtn.addEventListener('click', () => {
+      handleStudyExportDictionary();
+    });
+
     for (const slider of [elTlxMental, elTlxPhysical, elTlxTemporal, elTlxPerformance, elTlxEffort, elTlxFrustration]) {
       slider.addEventListener('input', updateTlxValues);
     }
@@ -468,10 +510,37 @@
     elStudyControllerBtn.focus();
   }
 
+  function syncStudySequenceAssignment() {
+    if (!globalThis.SpatialStudyManager) return;
+    const seq = elStudySequence ? elStudySequence.value : 'seq_1';
+    const period = Number(elStudyPeriod ? elStudyPeriod.value : 1) || 1;
+    const assigned = globalThis.SpatialStudyManager.getSequenceAssignment(seq, period);
+    if (assigned) {
+      if (elStudyCondition) elStudyCondition.value = assigned.condition;
+      if (elStudyTopicPack) elStudyTopicPack.value = assigned.topicPack;
+    }
+  }
+
+  function validateParticipantInput() {
+    if (!elStudyParticipantId) return true;
+    const val = (elStudyParticipantId.value || '').trim();
+    const valid = globalThis.SpatialStudyManager && globalThis.SpatialStudyManager.isValidParticipantId
+      ? globalThis.SpatialStudyManager.isValidParticipantId(val)
+      : /^P\d{2,3}$/.test(val);
+    if (!valid) {
+      elStudyParticipantId.style.borderColor = '#EF4444';
+    } else {
+      elStudyParticipantId.style.borderColor = '';
+    }
+    return valid;
+  }
+
   function updateStudyUiFromState() {
     if (!studyManager) return;
     const active = studyManager.getActiveTrial();
     const isRecording = Boolean(active && active.status === 'active');
+    const sessionStatus = studyManager.getSessionStatus();
+    const isFinished = sessionStatus === 'finished';
 
     // Indicator banner
     elStudyRecordingBanner.hidden = !isRecording;
@@ -485,11 +554,17 @@
     }
 
     // Modal buttons & status
-    elStudyStartBtn.disabled = isRecording;
+    elStudyStartBtn.disabled = isRecording || isFinished;
     elStudyStopBtn.disabled = !isRecording;
-    elStudyBannerStopBtn.disabled = !isRecording;
+    if (elStudyBannerStopBtn) elStudyBannerStopBtn.disabled = !isRecording;
+    if (elStudyFinishSessionBtn) elStudyFinishSessionBtn.hidden = isFinished;
+    if (elStudyNewSessionBtn) elStudyNewSessionBtn.hidden = !isFinished;
+    if (elStudyBannerFinishBtn) elStudyBannerFinishBtn.disabled = isFinished;
 
-    if (isRecording) {
+    if (isFinished) {
+      elStudyTrialStatus.textContent = 'Status: Session Finished (Audited). Start New Session to record further trials.';
+      elStudyTrialStatus.style.color = '#F59E0B';
+    } else if (isRecording) {
       elStudyTrialStatus.textContent = `Recording Active: ${active.trialId} (${active.topicPack}) \u2014 Incorrect Opens: ${active.incorrectPageOpens}`;
       elStudyTrialStatus.style.color = '#EF4444';
     } else {
@@ -544,6 +619,10 @@
 
   async function handleStudyStart() {
     if (!studyManager) return;
+    if (!validateParticipantInput()) {
+      alert('Invalid participant ID. Must strictly match pseudonymous format P01–P999 without formula characters.');
+      return;
+    }
     try {
       const participantId = elStudyParticipantId.value.trim() || 'P01';
       const sequence = elStudySequence.value;
@@ -574,6 +653,44 @@
     await studyManager.abandonTrial();
     stopStudyTimerLoop();
     updateStudyUiFromState();
+  }
+
+  async function handleStudyFinishSession() {
+    if (!studyManager) return;
+    if (!confirm('Finish researcher study session? This will audit-stamp the session and prevent accidental extra trials.')) {
+      return;
+    }
+    await studyManager.finishSession();
+    stopStudyTimerLoop();
+    updateStudyUiFromState();
+  }
+
+  async function handleStudyNewSession() {
+    if (!studyManager) return;
+    await studyManager.startNewSession();
+    updateStudyUiFromState();
+  }
+
+  function toggleStudyDictionary() {
+    if (!elStudyDictPanel) return;
+    const isHidden = elStudyDictPanel.hidden;
+    if (isHidden) {
+      if (studyManager && typeof studyManager.getDataDictionaryText === 'function') {
+        const text = studyManager.getDataDictionaryText();
+        elStudyDictContent.textContent = text;
+      }
+      elStudyDictPanel.hidden = false;
+      elStudyDictToggleBtn.textContent = 'Hide Data Dictionary';
+    } else {
+      elStudyDictPanel.hidden = true;
+      elStudyDictToggleBtn.textContent = 'View Data Dictionary';
+    }
+  }
+
+  function handleStudyExportDictionary() {
+    if (!studyManager || typeof studyManager.getDataDictionaryText !== 'function') return;
+    const md = studyManager.getDataDictionaryText();
+    downloadFile(md, 'STUDY_DATA_DICTIONARY.md', 'text/markdown;charset=utf-8;');
   }
 
   function updateTlxValues() {
@@ -610,9 +727,13 @@
       effort: Number(elTlxEffort.value),
       frustration: Number(elTlxFrustration.value)
     };
-    await studyManager.submitTlx(lastId, ratings);
-    alert(`NASA-TLX ratings saved for ${lastId}.`);
-    updateStudyUiFromState();
+    try {
+      await studyManager.submitTlx(lastId, ratings);
+      alert(`NASA-TLX ratings saved for ${lastId}.`);
+      updateStudyUiFromState();
+    } catch (err) {
+      alert(err.message || 'Could not submit NASA-TLX ratings');
+    }
   }
 
   function downloadFile(content, filename, mimeType) {

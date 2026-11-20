@@ -1,31 +1,40 @@
 ================================================================================
 TASK 18: MOZILLA FIREFOX RUNTIME VERIFICATION
-Timestamp: 2026-11-20 12:22:36 UTC
+Timestamp: 2026-11-20 23:30:21 UTC
 Firefox Binary: C:\Program Files\Mozilla Firefox\firefox.exe
 ================================================================================
-[INIT] Connected to Firefox Marionette on port 51082
+[INIT] Connected to Firefox Marionette on port 52728
 [INIT] Installed unpacked Firefox extension: spatial-browser-history@term-project.local
 [AUDIT] Pre-test error log recorded: D:\Projects\HCI Project\docs\test-results\firefox-task18-errors-pre.json (0 errors)
 
 --- STEP 1: Sibling Branch Navigation Scenario in Firefox ---
 
---- STEP 2: Study Mode UI & Controller in Firefox ---
-[PASS] Study banner is hidden by default in Firefox.
-[PASS] Firefox trial started: Participant P02 • Condition B • Period 1
+--- STEP 2: Firefox Stored Sibling Graph & Screenshots ---
+[PASS] Firefox storage graph audited: 7 nodes, Hub has 4 sibling children.
+[PASS] Captured Firefox desktop screenshot: D:\Projects\HCI Project\docs\test-results\firefox-branch-desktop.png
+[PASS] Captured Firefox reflow screenshot: D:\Projects\HCI Project\docs\test-results\firefox-branch-reflow.png
 
---- STEP 3: Navigations, Wrong-Page Count & Target Success in Firefox ---
+--- STEP 3: Study Controller & Valid Latin Square Sequence 1 in Firefox ---
+[PASS] Firefox Sequence 1 Period 1 automatically derived: Condition=A, Pack=pack_x
+[PASS] Firefox Trial 1 started: Participant P02 • Condition A • Period 1
+
+--- STEP 4: Delayed Target Response in Firefox ---
 [PASS] Firefox Raw TLX calculation: Raw TLX Summary: 23.3 / 100
 
---- STEP 4: Condition A & Abandon in Firefox ---
+--- STEP 5: Sequence 1 Period 2 (Condition B / Pack Y) & Timeout in Firefox ---
+[PASS] Firefox Sequence 1 Period 2 derived: Condition=B, Pack=pack_y
+[PASS] Timeout outcome verified in Firefox: outcome=timeout, elapsed=120000ms
 
---- STEP 5: Export CSV & JSON and Privacy Audit in Firefox ---
-[PASS] Firefox trials verified: 1=success, 2=abandoned
-[PASS] Privacy Audit in Firefox PASSED: Zero leaks in CSV or JSON exports.
+--- STEP 6: Finish Session Action in Firefox ---
+[PASS] Firefox Finish Session verified: status=finished
 
---- STEP 6: Inter-Round Reset in Firefox ---
+--- STEP 7: Export CSV & JSON and Privacy Audit in Firefox ---
+[PASS] Firefox CSV matches schema and valid Latin Square Sequence 1 rows.
+[PASS] Firefox JSON events verified with snake_case keys.
+[PASS] Firefox Privacy Audit PASSED: Zero leaks in CSV or JSON exports.
+
+--- STEP 8: Inter-Round Reset & Explicit Delete in Firefox ---
 [PASS] Firefox Inter-Round Reset verified: history nodes=0, study trials=2
-
---- STEP 7: Delete Study Records in Firefox ---
 [PASS] Firefox study records deleted cleanly.
 [AUDIT] Post-test error log recorded: D:\Projects\HCI Project\docs\test-results\firefox-task18-errors-post.json (0 errors)
 

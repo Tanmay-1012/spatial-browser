@@ -12,13 +12,13 @@ This is the canonical folder for all upcoming developer tasks. Check here before
 - [Task 15 — Branded Chrome 109 Verification or Support-Floor Decision](task-15.md) ([Report: `task-15-output.md`](../task-15-output.md)) — Accepted with limitation (Section 10; branded Chrome 109 unverified)
 - [Task 16 — Continuous Integration Build and Test Gate](task-16.md) ([Report: `task-16-output.md`](../task-16-output.md)) — Accepted & Verified (Section 9; first GitHub-hosted CI run passed)
 - [Task 17 — Branded Chrome 109 Runtime Verification in a Disposable Hosted VM](task-17.md) ([Report: `task-17-output.md`](../task-17-output.md)) — Closed with environment limitation; the exact package was verified, but Chrome 109 extension runtime remains unverified
-- [Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export](task-18.md) ([Report: `task-18-output.md`](../task-18-output.md) · [Study design](../../docs/USER_STUDY_PLAN.md)) — Implemented & Verified; awaiting lead review
+- [Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export](task-18.md) ([Report: `task-18-output.md`](../task-18-output.md) · [Lead review corrections](task-18-review.md) · [Study design](../../docs/USER_STUDY_PLAN.md)) — Corrections completed; resubmitted for lead review
 
 ## Current assignment
 
-- **Current assignment:** [Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export](task-18.md) ([Report: `task-18-output.md`](../task-18-output.md)). Implementation and synthetic-data verification complete; submitted for lead review. Participant recruitment is not authorized under this task.
+- **Current assignment:** [Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export](task-18.md). Lead review corrections have been implemented and verified across 75 automated checks and Chrome 157 / Firefox 160 isolated runtime runs; resubmitted for lead review. Participant recruitment is not authorized under this task.
 
-Task 10 v15 is approved. Tasks 11–16 remain accepted. Task 17 is closed with an environment limitation; branded Chrome 109 remains unverified. Task 18 is the only active assignment. Do not describe Chromium proxy results as branded Chrome verification.
+Task 10 v15 is approved. Tasks 11–16 remain accepted. Task 17 is closed with an environment limitation; branded Chrome 109 remains unverified. Task 18 review corrections are the only active assignment. Do not describe Chromium proxy results as branded Chrome verification.
 
 ## Reporting workflow
 

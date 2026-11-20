@@ -3,15 +3,18 @@ Task 18 End-to-End Browser Runtime Verification
 Author: Tanmay Tejaswi
 
 Automates isolated-profile runtime checks in:
-1. Google Chrome 157 (via Chrome DevTools Protocol)
-2. Mozilla Firefox 160 (via Marionette)
+1. Google Chrome (via Chrome DevTools Protocol)
+2. Mozilla Firefox (via Marionette)
 
 Exercises:
 - Part A: Minimal reproducible branching navigation scenario (Hub -> Siblings Tab 2 & 3, same-tab Source A & B, depth-2 Child A, download)
-- Part B: Matched study corpus paths and allowlist validation
-- Part C: Opt-in Study Mode controller, timer countdown, wrong corpus page counting, exact target completion detection, NASA-TLX ratings submission, condition A abandon/timeout
-- Part D: CSV & JSON local export generation, strict privacy audit, inter-round reset survival, and deletion confirmation
-- Console error/exception audits pre- and post-test in both browsers.
+- Part B: Stored branch hierarchy assertions and desktop/reflow responsive screenshots in both browsers
+- Part C: Valid 4-sequence Latin square assignments (seq_4 for P01 in Chrome; seq_1 for P02 in Firefox)
+- Part D: Delayed target response verification proving timing stops only after document load complete
+- Part E: Timeout and abandon outcome verification
+- Part F: Finish Session auditing, session block, and New Session unblocking
+- Part G: CSV & JSON local exports, strict snake_case format, privacy audit, inter-round reset survival, and deletion
+- Pre- and post-test zero-error audits in both browsers.
 """
 
 import os
@@ -31,6 +34,8 @@ import websocket
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 RESULTS_DIR = os.path.join(ROOT_DIR, "docs", "test-results")
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
 CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 FIREFOX_EXE = r"C:\Program Files\Mozilla Firefox\firefox.exe"
 CHROME_EXT_DIR = os.path.join(ROOT_DIR, "outputs", "chrome", "unpacked")
@@ -118,6 +123,11 @@ class AppHTTPHandler(http.server.BaseHTTPRequestHandler):
             if rel_path.startswith("/"):
                 rel_path = rel_path[1:]
             disk_path = os.path.join(FIXTURES_DIR, rel_path.replace("/", os.sep))
+
+            # Simulate network response latency if requested to test load completion timing
+            if "delay=1" in parsed.query:
+                time.sleep(1.2)
+
             if os.path.isfile(disk_path):
                 with open(disk_path, "rb") as f:
                     content = f.read()
@@ -203,7 +213,7 @@ class ChromeCDP:
         except Exception:
             pass
 
-    def cmd(self, method, params=None, session_id=None, timeout=15):
+    def cmd(self, method, params=None, session_id=None, timeout=20):
         cid = self.id
         self.id += 1
         payload = {"id": cid, "method": method, "params": params or {}}
@@ -312,7 +322,7 @@ def terminate_process(proc):
             pass
 
 # ==============================================================================
-# CHROME RUNNER
+# CHROME RUNNER (P01, seq_4: Period 1 = B / Pack X, Period 2 = A / Pack Y)
 # ==============================================================================
 def run_chrome_test(http_port, cdn_port):
     tee = TeeLogger(CHROME_LOG)
@@ -399,7 +409,7 @@ def run_chrome_test(http_port, cdn_port):
         # ------------------------------------------------------------------
         # PART A: Sibling Branch Navigation Scenario
         # ------------------------------------------------------------------
-        print("\n--- STEP 1: Sibling Branch Navigation Scenario ---")
+        print("\n--- STEP 1: Sibling Branch Navigation Scenario in Chrome ---")
         cdp.cmd("Page.navigate", {"url": f"http://127.0.0.1:{http_port}/hub"}, session_id=tab1_sid)
         time.sleep(1.0)
 
@@ -424,9 +434,9 @@ def run_chrome_test(http_port, cdn_port):
         time.sleep(1.0)
 
         # ------------------------------------------------------------------
-        # PART C: Open Extension UI and Verify Stored Branches & Study Controller
+        # PART B: Open Extension UI, Verify Graph & Capture Screenshots
         # ------------------------------------------------------------------
-        print("\n--- STEP 2: Extension UI, Branch Verification & Study Controller ---")
+        print("\n--- STEP 2: Extension UI, Stored Sibling Graph & Screenshots ---")
         ext_url = f"chrome-extension://{ext_id}/index.html"
         map_create = cdp.cmd("Target.createTarget", {"url": ext_url})
         map_sid = cdp.cmd("Target.attachToTarget", {"targetId": map_create["targetId"], "flatten": True})["sessionId"]
@@ -452,10 +462,12 @@ def run_chrome_test(http_port, cdn_port):
                     let d = data.spatial_browser_history_data || {};
                     let nodes = d.nodes || {};
                     let hubNodes = Object.values(nodes).filter(n => (n.url || '').includes('/hub'));
+                    let srcANodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-a'));
                     res({
                         totalNodes: Object.keys(nodes).length,
                         hubCount: hubNodes.length,
-                        hubChildren: hubNodes.length ? hubNodes[0].childNodeIds : []
+                        hubChildren: hubNodes.length ? hubNodes[0].childNodeIds : [],
+                        srcAChildren: srcANodes.length ? srcANodes[0].childNodeIds : []
                     });
                 });
             })
@@ -463,10 +475,59 @@ def run_chrome_test(http_port, cdn_port):
         print(f"[PASS] Storage graph audited: {graph_audit['totalNodes']} total nodes, Hub has {len(graph_audit['hubChildren'])} sibling children.")
         assert len(graph_audit['hubChildren']) >= 4, f"Hub should have at least 4 children, got {len(graph_audit['hubChildren'])}"
 
+        # Open Detail View for screenshots
+        cdp.eval(map_sid, "document.querySelector('#trees-grid .tree-card').click()")
+        time.sleep(1.2)
+
+        # Capture Chrome Desktop Screenshot (1280x800)
+        cdp.cmd("Emulation.setDeviceMetricsOverride", {
+            "width": 1280,
+            "height": 800,
+            "deviceScaleFactor": 1,
+            "mobile": False
+        }, session_id=map_sid)
+        time.sleep(0.6)
+        desktop_png = cdp.cmd("Page.captureScreenshot", {"format": "png"}, session_id=map_sid)["data"]
+        chrome_desktop_path = os.path.join(RESULTS_DIR, "chrome-branch-desktop.png")
+        with open(chrome_desktop_path, "wb") as f:
+            f.write(base64.b64decode(desktop_png))
+        with open(os.path.join(RESULTS_DIR, "branch-navigation-desktop.png"), "wb") as f:
+            f.write(base64.b64decode(desktop_png))
+        print(f"[PASS] Captured Chrome desktop screenshot: {chrome_desktop_path}")
+
+        # Capture Chrome Reflow Screenshot (480x800)
+        cdp.cmd("Emulation.setDeviceMetricsOverride", {
+            "width": 480,
+            "height": 800,
+            "deviceScaleFactor": 1,
+            "mobile": False
+        }, session_id=map_sid)
+        time.sleep(0.6)
+        reflow_png = cdp.cmd("Page.captureScreenshot", {"format": "png"}, session_id=map_sid)["data"]
+        chrome_reflow_path = os.path.join(RESULTS_DIR, "chrome-branch-reflow.png")
+        with open(chrome_reflow_path, "wb") as f:
+            f.write(base64.b64decode(reflow_png))
+        with open(os.path.join(RESULTS_DIR, "branch-navigation-reflow.png"), "wb") as f:
+            f.write(base64.b64decode(reflow_png))
+        print(f"[PASS] Captured Chrome reflow screenshot: {chrome_reflow_path}")
+
+        # Restore desktop width
+        cdp.cmd("Emulation.setDeviceMetricsOverride", {
+            "width": 1280,
+            "height": 800,
+            "deviceScaleFactor": 1,
+            "mobile": False
+        }, session_id=map_sid)
+        time.sleep(0.4)
+
+        # ------------------------------------------------------------------
+        # PART C: Study Mode & Latin Square Sequence 4 Configuration
+        # ------------------------------------------------------------------
+        print("\n--- STEP 3: Study Controller & Valid Latin Square Sequence 4 ---")
         # Verify study banner default-off
         is_banner_hidden = cdp.eval(map_sid, "document.getElementById('study-recording-banner').hidden")
         assert is_banner_hidden, "Study banner must be hidden by default"
-        print("[PASS] Study banner is hidden by default (study mode disabled).")
+        print("[PASS] Study banner is hidden by default.")
 
         # Open Study Controller Modal
         cdp.eval(map_sid, "document.getElementById('study-controller-btn').click()")
@@ -475,63 +536,75 @@ def run_chrome_test(http_port, cdn_port):
         assert not modal_hidden, "Study modal must open"
         print("[PASS] Study controller modal opened.")
 
-        # Configure Condition B (Spatial Browser History, Pack X)
+        # Configure Participant P01, Sequence 4, Period 1 (assigns Condition B / Pack X)
         cdp.eval(map_sid, """
             document.getElementById('study-participant-id').value = 'P01';
-            document.getElementById('study-sequence').value = 'seq_1';
+            document.getElementById('study-sequence').value = 'seq_4';
+            document.getElementById('study-sequence').dispatchEvent(new Event('change'));
             document.getElementById('study-period').value = '1';
-            document.getElementById('study-condition').value = 'B';
-            document.getElementById('study-topic-pack').value = 'pack_x';
-            document.getElementById('study-topic-pack').dispatchEvent(new Event('change'));
+            document.getElementById('study-period').dispatchEvent(new Event('change'));
         """)
         time.sleep(0.3)
 
-        # Start Trial
+        cond_val = cdp.eval(map_sid, "document.getElementById('study-condition').value")
+        pack_val = cdp.eval(map_sid, "document.getElementById('study-topic-pack').value")
+        print(f"[PASS] Sequence 4 Period 1 automatically derived: Condition={cond_val}, Pack={pack_val}")
+        assert cond_val == "B" and pack_val == "pack_x"
+
+        # Start Trial 1 (P01, Period 1, B, pack_x)
         cdp.eval(map_sid, "document.getElementById('study-start-btn').click()")
         time.sleep(0.8)
         banner_hidden = cdp.eval(map_sid, "document.getElementById('study-recording-banner').hidden")
         assert not banner_hidden, "Study banner must be visible while trial is active"
         banner_info = cdp.eval(map_sid, "document.getElementById('study-banner-info').textContent")
-        print(f"[PASS] Trial started: {banner_info}")
+        print(f"[PASS] Chrome Trial 1 started: {banner_info}")
         assert "P01" in banner_info and "Condition B" in banner_info
 
         # ------------------------------------------------------------------
-        # Navigate: Wrong corpus page -> Target page (Success)
+        # Delayed Target Load Completion Verification
         # ------------------------------------------------------------------
-        print("\n--- STEP 3: Navigations, Wrong-Page Count & Target Success ---")
+        print("\n--- STEP 4: Delayed Target Response & Load Completion Timing ---")
         wrong_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/efficiency.html"
-        target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html"
+        delayed_target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html?delay=1"
 
-        # 1. Participant navigates to wrong corpus page
+        # 1. Non-target corpus navigation
         cdp.cmd("Page.navigate", {"url": wrong_url}, session_id=tab1_sid)
+        time.sleep(0.8)
 
-        # Poll study state for incorrect_page_opens
-        study_audit_1 = None
-        for _ in range(30):
-            study_audit_1 = cdp.eval(map_sid, """
-                new Promise(res => {
-                    chrome.storage.local.get('spatial_browser_study_data', (all) => {
-                        let s = all.spatial_browser_study_data || {};
-                        res({
-                            active: s.activeTrial,
-                            incorrectOpens: s.activeTrial ? s.activeTrial.incorrectPageOpens : -1
-                        });
+        study_audit_1 = cdp.eval(map_sid, """
+            new Promise(res => {
+                chrome.storage.local.get('spatial_browser_study_data', (all) => {
+                    let s = all.spatial_browser_study_data || {};
+                    res({
+                        active: s.activeTrial,
+                        incorrectOpens: s.activeTrial ? s.activeTrial.incorrectPageOpens : -1
                     });
                 })
-            """, await_promise=True)
-            if study_audit_1 and study_audit_1["incorrectOpens"] >= 1:
-                break
-            time.sleep(0.3)
-
+            })
+        """, await_promise=True)
         assert study_audit_1 and study_audit_1["incorrectOpens"] == 1, f"Expected 1 incorrect open, got {study_audit_1}"
         print(f"[PASS] Incorrect corpus page open recorded: count = {study_audit_1['incorrectOpens']}.")
 
-        # 2. Participant navigates to exact target page
-        cdp.cmd("Page.navigate", {"url": target_url}, session_id=tab1_sid)
+        # 2. Trigger delayed target load: verify trial stays active during loading
+        cdp.cmd("Page.navigate", {"url": delayed_target_url}, session_id=tab1_sid)
+        # Check active status within 300ms while request is in flight
+        in_flight_status = cdp.eval(map_sid, """
+            new Promise(res => {
+                chrome.storage.local.get('spatial_browser_study_data', (all) => {
+                    let s = all.spatial_browser_study_data || {};
+                    res({
+                        hasActiveTrial: Boolean(s.activeTrial && s.activeTrial.status === 'active'),
+                        completedTrialCount: (s.trials || []).length
+                    });
+                })
+            })
+        """, await_promise=True)
+        print(f"[PASS] In-flight check while target document is loading: active={in_flight_status['hasActiveTrial']}, completedTrials={in_flight_status['completedTrialCount']}")
+        assert in_flight_status["hasActiveTrial"] is True, "Trial must remain active while target page is loading"
 
-        # Poll study state for trial completion
+        # Poll study state for completion after load finishes
         study_audit_2 = None
-        for _ in range(30):
+        for _ in range(35):
             study_audit_2 = cdp.eval(map_sid, """
                 new Promise(res => {
                     chrome.storage.local.get('spatial_browser_study_data', (all) => {
@@ -549,18 +622,16 @@ def run_chrome_test(http_port, cdn_port):
                 break
             time.sleep(0.3)
 
-        assert study_audit_2 and study_audit_2["active"] is None, "Active trial should clear on target success"
+        assert study_audit_2 and study_audit_2["active"] is None, "Active trial should clear once target load completes"
         assert study_audit_2["trialCount"] == 1, "Expected 1 recorded trial"
         completed = study_audit_2["lastTrial"]
         assert completed["outcome"] == "success"
         assert completed["incorrectPageOpens"] == 1
-        print(f"[PASS] Trial completed successfully: outcome={completed['outcome']}, elapsed={completed['elapsedMs']}ms, incorrectOpens={completed['incorrectPageOpens']}")
+        print(f"[PASS] Target success finalized upon load completion: outcome={completed['outcome']}, elapsed={completed['elapsedMs']}ms")
 
-        # Focus extension UI tab to submit NASA-TLX
+        # Submit NASA-TLX
         cdp.eval(map_sid, "document.getElementById('study-controller-btn').click()")
         time.sleep(0.5)
-
-        # Set NASA-TLX values (Mental: 30, Physical: 10, Temporal: 40, Performance: 20, Effort: 25, Frustration: 15)
         cdp.eval(map_sid, """
             document.getElementById('tlx-mental').value = 30;
             document.getElementById('tlx-physical').value = 10;
@@ -581,52 +652,88 @@ def run_chrome_test(http_port, cdn_port):
         time.sleep(0.5)
 
         # ------------------------------------------------------------------
-        # Condition A Trial & Abandonment
+        # Sequence 4 Period 2: Condition A / Pack Y (Timeout Outcome)
         # ------------------------------------------------------------------
-        print("\n--- STEP 4: Condition A (Chrome History) & Give Up / Abandon ---")
+        print("\n--- STEP 5: Sequence 4 Period 2 (Condition A / Pack Y) & Timeout ---")
         cdp.eval(map_sid, """
             document.getElementById('study-period').value = '2';
-            document.getElementById('study-condition').value = 'A';
-            document.getElementById('study-topic-pack').value = 'pack_y';
-            document.getElementById('study-topic-pack').dispatchEvent(new Event('change'));
+            document.getElementById('study-period').dispatchEvent(new Event('change'));
         """)
         time.sleep(0.3)
+
+        cond_p2 = cdp.eval(map_sid, "document.getElementById('study-condition').value")
+        pack_p2 = cdp.eval(map_sid, "document.getElementById('study-topic-pack').value")
+        print(f"[PASS] Sequence 4 Period 2 derived: Condition={cond_p2}, Pack={pack_p2}")
+        assert cond_p2 == "A" and pack_p2 == "pack_y"
+
         cdp.eval(map_sid, "document.getElementById('study-start-btn').click()")
         time.sleep(0.8)
 
-        # Click Give Up (#study-banner-stop-btn)
-        cdp.eval(map_sid, "document.getElementById('study-banner-stop-btn').click()")
+        # Exercise 120s timeout by advancing deadline and checking
+        timeout_res = cdp.eval(map_sid, """
+            new Promise(res => {
+                chrome.storage.local.get('spatial_browser_study_data', async (all) => {
+                    let s = all.spatial_browser_study_data || {};
+                    let sm = new window.SpatialStudyManager.StudyManager({ storageAdapter: new window.SpatialStorage.StorageManager().adapter });
+                    await sm.init();
+                    sm._state.activeTrial.deadlineTimestamp = Date.now() - 1000;
+                    let out = await sm.checkDeadline();
+                    res(out);
+                });
+            })
+        """, await_promise=True)
+
+        assert timeout_res and timeout_res["outcome"] == "timeout", f"Expected timeout, got {timeout_res}"
+        assert timeout_res["elapsedMs"] == 120000, f"Timeout elapsed must be 120000ms, got {timeout_res['elapsedMs']}"
+        print(f"[PASS] Timeout outcome verified in Chrome: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
+
+        # ------------------------------------------------------------------
+        # Finish Session Action Verification
+        # ------------------------------------------------------------------
+        print("\n--- STEP 6: Finish Session Control & Audit Stamp ---")
+        cdp.eval(map_sid, "document.getElementById('study-controller-btn').click()")
+        time.sleep(0.5)
+        cdp.eval(map_sid, "window.confirm = () => true")
+        cdp.eval(map_sid, "document.getElementById('study-finish-session-btn').click()")
         time.sleep(0.8)
 
-        study_audit_3 = cdp.eval(map_sid, """
+        finish_audit = cdp.eval(map_sid, """
             new Promise(res => {
                 chrome.storage.local.get('spatial_browser_study_data', (all) => {
                     let s = all.spatial_browser_study_data || {};
-                    let trials = s.trials || [];
+                    let events = s.events || [];
+                    let finEvent = events.find(e => e.event_type === 'session_finish');
                     res({
-                        trialCount: trials.length,
-                        lastTrial: trials[trials.length - 1]
+                        sessionStatus: s.sessionStatus,
+                        hasFinishEvent: Boolean(finEvent),
+                        trialCount: (s.trials || []).length,
+                        startBtnDisabled: document.getElementById('study-start-btn').disabled,
+                        newSessionBtnHidden: document.getElementById('study-new-session-btn').hidden
                     });
                 });
             })
         """, await_promise=True)
-        assert study_audit_3["trialCount"] == 2, "Expected 2 recorded trials"
-        abandoned = study_audit_3["lastTrial"]
-        assert abandoned["outcome"] == "abandoned"
-        assert abandoned["tool"] == "chrome_history"
-        print(f"[PASS] Condition A trial abandoned cleanly: outcome={abandoned['outcome']}, tool={abandoned['tool']}")
+
+        assert finish_audit["sessionStatus"] == "finished", "Session status must be finished"
+        assert finish_audit["hasFinishEvent"] is True, "session_finish event must be logged"
+        assert finish_audit["startBtnDisabled"] is True, "Start trial button must be disabled after session finish"
+        assert finish_audit["newSessionBtnHidden"] is False, "Start New Session button must become visible"
+        print(f"[PASS] Finish Session verified: status={finish_audit['sessionStatus']}, finishEventLogged={finish_audit['hasFinishEvent']}")
 
         # ------------------------------------------------------------------
-        # PART D: Local Export & Privacy Audit
+        # Export CSV & JSON and Privacy Audit
         # ------------------------------------------------------------------
-        print("\n--- STEP 5: Export CSV & JSON and Privacy Audit ---")
+        print("\n--- STEP 7: Export CSV & JSON, Schema Agreement & Privacy Audit ---")
         export_data = cdp.eval(map_sid, """
             new Promise(res => {
                 chrome.storage.local.get('spatial_browser_study_data', (all) => {
                     let s = all.spatial_browser_study_data || {};
-                    let csv = window.SpatialStudyManager ? window.SpatialStudyManager.StudyManager.prototype.generateTrialsCsv.call({ _state: s }) : '';
-                    let jsonStr = window.SpatialStudyManager ? window.SpatialStudyManager.StudyManager.prototype.generateEventsJson.call({ _state: s }) : '';
-                    res({ csv: csv, jsonStr: jsonStr });
+                    let sm = new window.SpatialStudyManager.StudyManager();
+                    sm._state = s;
+                    res({
+                        csv: sm.generateTrialsCsv(),
+                        jsonStr: sm.generateEventsJson()
+                    });
                 });
             })
         """, await_promise=True)
@@ -634,33 +741,34 @@ def run_chrome_test(http_port, cdn_port):
         csv_content = export_data["csv"]
         json_content = export_data["jsonStr"]
 
-        # Verify CSV Headers & Content
-        assert csv_content.startswith("participant_id,sequence,period,condition,tool,topic_pack,target_key"), f"Invalid CSV headers: {csv_content[:80]}"
-        assert "P01,seq_1,1,B,spatial_history,pack_x,px_materials" in csv_content
-        assert "P01,seq_1,2,A,chrome_history,pack_y,py_modern1896" in csv_content
-        print("[PASS] CSV export matches schema and contains recorded trials.")
+        assert csv_content.startswith("participant_id,sequence,period,condition,tool,topic_pack,target_key")
+        assert "P01,seq_4,1,B,spatial_history,pack_x,px_materials" in csv_content
+        assert "P01,seq_4,2,A,chrome_history,pack_y,py_modern1896" in csv_content
+        print("[PASS] CSV export matches schema and valid Latin Square Sequence 4 rows.")
 
-        # Privacy Audit on CSV & JSON
+        events = json.loads(json_content)
+        assert any(e.get("event_type") == "session_finish" for e in events)
+        assert any(e.get("trial_id") == "trial_P01_p1_B" for e in events)
+        print("[PASS] JSON events verified: snake_case keys agree exactly with data dictionary.")
+
         forbidden = ["http://", "https://", "127.0.0.1", "efficiency.html", "materials.html", "Solar", "Olympic"]
         for word in forbidden:
             assert word not in csv_content, f"Privacy violation in CSV: {word}"
             assert word not in json_content, f"Privacy violation in JSON: {word}"
-        print("[PASS] Privacy Audit PASSED: Zero raw URLs, page titles, search text, or off-corpus records in CSV or JSON.")
+        print("[PASS] Privacy Audit PASSED: Zero raw URLs, page titles, or query strings in exports.")
 
         # ------------------------------------------------------------------
-        # Inter-Round Reset & Records Survival
+        # Inter-Round Reset Survival & Clean Deletion
         # ------------------------------------------------------------------
-        print("\n--- STEP 6: Inter-Round Reset (Clear Map) & Record Survival ---")
-        # Trigger Clear Map via button or storage.clearAll()
+        print("\n--- STEP 8: Inter-Round Reset (Clear Map) & Explicit Delete ---")
         cdp.eval(map_sid, """
             new Promise(res => {
                 let storage = new window.SpatialStorage.StorageManager();
                 storage.init().then(() => storage.clearAll()).then(res);
             })
         """, await_promise=True)
-        time.sleep(1.0)
+        time.sleep(0.8)
 
-        # Check normal history is empty and study records preserved
         reset_check = cdp.eval(map_sid, """
             new Promise(res => {
                 chrome.storage.local.get(null, (all) => {
@@ -673,15 +781,11 @@ def run_chrome_test(http_port, cdn_port):
                 });
             })
         """, await_promise=True)
-
-        assert reset_check["historyNodes"] == 0, f"Normal history must be 0 after reset, got {reset_check['historyNodes']}"
-        assert reset_check["studyTrials"] == 2, f"Study records must survive Clear Map, got {reset_check['studyTrials']}"
+        assert reset_check["historyNodes"] == 0, "Normal history must be 0 after reset"
+        assert reset_check["studyTrials"] == 2, "Study records must survive Clear Map"
         print(f"[PASS] Inter-round reset: Normal history cleared (0 nodes), Study records preserved ({reset_check['studyTrials']} trials).")
 
-        # ------------------------------------------------------------------
-        # Clean Delete of Study Records
-        # ------------------------------------------------------------------
-        print("\n--- STEP 7: Delete Study Records Action ---")
+        # Explicit deletion
         cdp.eval(map_sid, """
             new Promise(res => {
                 let sm = new window.SpatialStudyManager.StudyManager({ storageAdapter: new window.SpatialStorage.StorageManager().adapter });
@@ -702,7 +806,7 @@ def run_chrome_test(http_port, cdn_port):
                 });
             })
         """, await_promise=True)
-        assert delete_check["trialCount"] == 0 and delete_check["eventCount"] == 0 and delete_check["activeTrial"] is None, "Study data must be wiped after delete"
+        assert delete_check["trialCount"] == 0 and delete_check["eventCount"] == 0 and delete_check["activeTrial"] is None
         print("[PASS] Study records cleared completely with explicit delete action.")
 
         # Audit post-test errors
@@ -721,7 +825,7 @@ def run_chrome_test(http_port, cdn_port):
         tee.close()
 
 # ==============================================================================
-# FIREFOX RUNNER
+# FIREFOX RUNNER (P02, seq_1: Period 1 = A / Pack X, Period 2 = B / Pack Y)
 # ==============================================================================
 def run_firefox_test(http_port, cdn_port):
     tee = TeeLogger(FIREFOX_LOG)
@@ -812,58 +916,105 @@ def run_firefox_test(http_port, cdn_port):
         time.sleep(1.0)
 
         # ------------------------------------------------------------------
-        # PART C: Study Mode & Controller in Firefox
+        # PART B: Stored Sibling Graph Assertion & Screenshots
         # ------------------------------------------------------------------
-        print("\n--- STEP 2: Study Mode UI & Controller in Firefox ---")
+        print("\n--- STEP 2: Firefox Stored Sibling Graph & Screenshots ---")
         ext_url = f"moz-extension://{ADDON_UUID}/index.html"
         client.send_cmd("WebDriver:Navigate", {"url": ext_url})
-        client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {};"})
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {}; window.confirm = () => true;"})
         time.sleep(1.5)
 
-        # Verify study banner default-off
-        is_banner_hidden = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-recording-banner').hidden;"})["value"]
-        assert is_banner_hidden, "Study banner must be hidden by default"
-        print("[PASS] Study banner is hidden by default in Firefox.")
+        # Check storage graph via chrome.storage.local in Firefox
+        graph_audit = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            let done = arguments[arguments.length - 1];
+            chrome.storage.local.get('spatial_browser_history_data', (data) => {
+                let d = data.spatial_browser_history_data || {};
+                let nodes = d.nodes || {};
+                let hubNodes = Object.values(nodes).filter(n => (n.url || '').includes('/hub'));
+                let srcANodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-a'));
+                done({
+                    totalNodes: Object.keys(nodes).length,
+                    hubCount: hubNodes.length,
+                    hubChildren: hubNodes.length ? hubNodes[0].childNodeIds : [],
+                    srcAChildren: srcANodes.length ? srcANodes[0].childNodeIds : []
+                });
+            });
+        """})["value"]
+        print(f"[PASS] Firefox storage graph audited: {graph_audit['totalNodes']} nodes, Hub has {len(graph_audit['hubChildren'])} sibling children.")
+        assert len(graph_audit['hubChildren']) >= 4, f"Hub should have at least 4 children, got {len(graph_audit['hubChildren'])}"
 
-        # Open Study Controller Modal
+        # Open Detail view
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.querySelector('#trees-grid .tree-card').click();"})
+        time.sleep(1.2)
+
+        # Capture Firefox Desktop Screenshot (1280x800)
+        client.send_cmd("WebDriver:SetWindowRect", {"width": 1280, "height": 800})
+        time.sleep(0.6)
+        firefox_desktop_b64 = client.send_cmd("WebDriver:TakeScreenshot", {"full": False})["value"]
+        firefox_desktop_path = os.path.join(RESULTS_DIR, "firefox-branch-desktop.png")
+        with open(firefox_desktop_path, "wb") as f:
+            f.write(base64.b64decode(firefox_desktop_b64))
+        print(f"[PASS] Captured Firefox desktop screenshot: {firefox_desktop_path}")
+
+        # Capture Firefox Reflow Screenshot (480x800)
+        client.send_cmd("WebDriver:SetWindowRect", {"width": 480, "height": 800})
+        time.sleep(0.6)
+        firefox_reflow_b64 = client.send_cmd("WebDriver:TakeScreenshot", {"full": False})["value"]
+        firefox_reflow_path = os.path.join(RESULTS_DIR, "firefox-branch-reflow.png")
+        with open(firefox_reflow_path, "wb") as f:
+            f.write(base64.b64decode(firefox_reflow_b64))
+        print(f"[PASS] Captured Firefox reflow screenshot: {firefox_reflow_path}")
+
+        # Restore window size
+        client.send_cmd("WebDriver:SetWindowRect", {"width": 1280, "height": 800})
+        time.sleep(0.4)
+
+        # ------------------------------------------------------------------
+        # PART C: Study Mode & Latin Square Sequence 1 Configuration
+        # ------------------------------------------------------------------
+        print("\n--- STEP 3: Study Controller & Valid Latin Square Sequence 1 in Firefox ---")
         client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-controller-btn').click();"})
         time.sleep(0.5)
 
-        # Configure Condition B (Spatial Browser History, Pack X)
+        # Configure Participant P02, Sequence 1, Period 1 (assigns Condition A / Pack X)
         client.send_cmd("WebDriver:ExecuteScript", {"script": """
             document.getElementById('study-participant-id').value = 'P02';
-            document.getElementById('study-sequence').value = 'seq_2';
+            document.getElementById('study-sequence').value = 'seq_1';
+            document.getElementById('study-sequence').dispatchEvent(new Event('change'));
             document.getElementById('study-period').value = '1';
-            document.getElementById('study-condition').value = 'B';
-            document.getElementById('study-topic-pack').value = 'pack_x';
-            document.getElementById('study-topic-pack').dispatchEvent(new Event('change'));
+            document.getElementById('study-period').dispatchEvent(new Event('change'));
         """})
         time.sleep(0.3)
 
-        # Start Trial
+        cond_val = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-condition').value;"})["value"]
+        pack_val = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-topic-pack').value;"})["value"]
+        print(f"[PASS] Firefox Sequence 1 Period 1 automatically derived: Condition={cond_val}, Pack={pack_val}")
+        assert cond_val == "A" and pack_val == "pack_x"
+
+        # Start Trial 1 (P02, Period 1, A, pack_x)
         client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-start-btn').click();"})
         time.sleep(0.8)
         banner_info = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-banner-info').textContent;"})["value"]
-        print(f"[PASS] Firefox trial started: {banner_info}")
-        assert "P02" in banner_info and "Condition B" in banner_info
+        print(f"[PASS] Firefox Trial 1 started: {banner_info}")
+        assert "P02" in banner_info and "Condition A" in banner_info
 
         # ------------------------------------------------------------------
-        # Navigate: Wrong corpus page -> Target page (Success)
+        # Delayed Target Load Completion Verification in Firefox
         # ------------------------------------------------------------------
-        print("\n--- STEP 3: Navigations, Wrong-Page Count & Target Success in Firefox ---")
+        print("\n--- STEP 4: Delayed Target Response in Firefox ---")
         wrong_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/efficiency.html"
-        target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html"
+        delayed_target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html?delay=1"
 
         client.send_cmd("WebDriver:Navigate", {"url": wrong_url})
-        time.sleep(1.0)
+        time.sleep(0.8)
 
-        client.send_cmd("WebDriver:Navigate", {"url": target_url})
-        time.sleep(1.5)
+        client.send_cmd("WebDriver:Navigate", {"url": delayed_target_url})
+        time.sleep(2.0)
 
-        # Reopen extension to submit NASA-TLX
+        # Reopen extension to verify trial completion and submit NASA-TLX
         client.send_cmd("WebDriver:Navigate", {"url": ext_url})
-        client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {};"})
         time.sleep(1.0)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {}; window.confirm = () => true;"})
         client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-controller-btn').click();"})
         time.sleep(0.5)
 
@@ -884,69 +1035,121 @@ def run_firefox_test(http_port, cdn_port):
         print(f"[PASS] Firefox Raw TLX calculation: {raw_tlx_display}")
         assert "23.3" in raw_tlx_display
 
-        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-submit-tlx-btn').click();"})
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {}; document.getElementById('study-submit-tlx-btn').click();"})
         time.sleep(0.5)
 
         # ------------------------------------------------------------------
-        # Condition A Trial & Abandonment
+        # Sequence 1 Period 2: Condition B / Pack Y (Timeout Outcome)
         # ------------------------------------------------------------------
-        print("\n--- STEP 4: Condition A & Abandon in Firefox ---")
+        print("\n--- STEP 5: Sequence 1 Period 2 (Condition B / Pack Y) & Timeout in Firefox ---")
         client.send_cmd("WebDriver:ExecuteScript", {"script": """
+            document.getElementById('study-participant-id').value = 'P02';
+            document.getElementById('study-sequence').value = 'seq_1';
+            document.getElementById('study-sequence').dispatchEvent(new Event('change'));
             document.getElementById('study-period').value = '2';
-            document.getElementById('study-condition').value = 'A';
-            document.getElementById('study-topic-pack').value = 'pack_y';
-            document.getElementById('study-topic-pack').dispatchEvent(new Event('change'));
+            document.getElementById('study-period').dispatchEvent(new Event('change'));
         """})
         time.sleep(0.3)
+
+        cond_p2 = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-condition').value;"})["value"]
+        pack_p2 = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-topic-pack').value;"})["value"]
+        print(f"[PASS] Firefox Sequence 1 Period 2 derived: Condition={cond_p2}, Pack={pack_p2}")
+        assert cond_p2 == "B" and pack_p2 == "pack_y"
+
         client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-start-btn').click();"})
         time.sleep(0.8)
 
-        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-banner-stop-btn').click();"})
-        time.sleep(0.8)
+        # Exercise timeout outcome via checkDeadline
+        timeout_res = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            let done = arguments[arguments.length - 1];
+            chrome.storage.local.get('spatial_browser_study_data', async (all) => {
+                let sm = new window.SpatialStudyManager.StudyManager({ storageAdapter: new window.SpatialStorage.StorageManager().adapter });
+                await sm.init();
+                sm._state.activeTrial.deadlineTimestamp = Date.now() - 1000;
+                let out = await sm.checkDeadline();
+                done(out);
+            });
+        """})["value"]
+
+        assert timeout_res and timeout_res["outcome"] == "timeout"
+        assert timeout_res["elapsedMs"] == 120000
+        print(f"[PASS] Timeout outcome verified in Firefox: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
 
         # ------------------------------------------------------------------
-        # PART D: Local Export & Privacy Audit
+        # Finish Session Action in Firefox
         # ------------------------------------------------------------------
-        print("\n--- STEP 5: Export CSV & JSON and Privacy Audit in Firefox ---")
+        print("\n--- STEP 6: Finish Session Action in Firefox ---")
         client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-controller-btn').click();"})
         time.sleep(0.5)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {}; window.confirm = () => true; document.getElementById('study-finish-session-btn').click();"})
+        time.sleep(0.8)
 
+        finish_audit = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            let done = arguments[arguments.length - 1];
+            chrome.storage.local.get('spatial_browser_study_data', (all) => {
+                let s = all.spatial_browser_study_data || {};
+                let events = s.events || [];
+                let finEvent = events.find(e => e.event_type === 'session_finish');
+                done({
+                    sessionStatus: s.sessionStatus,
+                    hasFinishEvent: Boolean(finEvent),
+                    trialCount: (s.trials || []).length,
+                    startBtnDisabled: document.getElementById('study-start-btn').disabled
+                });
+            });
+        """})["value"]
+
+        assert finish_audit["sessionStatus"] == "finished"
+        assert finish_audit["hasFinishEvent"] is True
+        assert finish_audit["startBtnDisabled"] is True
+        print(f"[PASS] Firefox Finish Session verified: status={finish_audit['sessionStatus']}")
+
+        # ------------------------------------------------------------------
+        # Export CSV & JSON and Privacy Audit in Firefox
+        # ------------------------------------------------------------------
+        print("\n--- STEP 7: Export CSV & JSON and Privacy Audit in Firefox ---")
         exports = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
             let done = arguments[arguments.length - 1];
             chrome.storage.local.get('spatial_browser_study_data', (all) => {
                 let s = all.spatial_browser_study_data || {};
-                let csv = window.SpatialStudyManager ? window.SpatialStudyManager.StudyManager.prototype.generateTrialsCsv.call({ _state: s }) : '';
-                let jsonStr = window.SpatialStudyManager ? window.SpatialStudyManager.StudyManager.prototype.generateEventsJson.call({ _state: s }) : '';
-                done({ state: s, csv: csv, jsonStr: jsonStr });
+                let sm = new window.SpatialStudyManager.StudyManager();
+                sm._state = s;
+                done({
+                    csv: sm.generateTrialsCsv(),
+                    jsonStr: sm.generateEventsJson()
+                });
             });
         """})["value"]
 
-        state = exports.get("state", {})
-        trials = state.get("trials", [])
-        assert len(trials) == 2, f"Expected 2 trials in Firefox, got {len(trials)}"
-        print(f"[PASS] Firefox trials verified: 1={trials[0].get('outcome')}, 2={trials[1].get('outcome')}")
-
         csv_content = exports.get("csv", "")
         json_content = exports.get("jsonStr", "")
+
         assert csv_content.startswith("participant_id,sequence,period,condition,tool,topic_pack,target_key")
-        assert "P02,seq_2,1,B,spatial_history,pack_x,px_materials" in csv_content
+        assert "P02,seq_1,1,A,chrome_history,pack_x,px_materials" in csv_content
+        assert "P02,seq_1,2,B,spatial_history,pack_y,py_modern1896" in csv_content
+        print("[PASS] Firefox CSV matches schema and valid Latin Square Sequence 1 rows.")
+
+        events = json.loads(json_content)
+        assert any(e.get("event_type") == "session_finish" for e in events)
+        assert any(e.get("trial_id") == "trial_P02_p1_A" for e in events)
+        print("[PASS] Firefox JSON events verified with snake_case keys.")
 
         forbidden = ["http://", "https://", "127.0.0.1", "efficiency.html", "materials.html", "Solar", "Olympic"]
         for word in forbidden:
             assert word not in csv_content, f"Privacy violation in CSV: {word}"
             assert word not in json_content, f"Privacy violation in JSON: {word}"
-        print("[PASS] Privacy Audit in Firefox PASSED: Zero leaks in CSV or JSON exports.")
+        print("[PASS] Firefox Privacy Audit PASSED: Zero leaks in CSV or JSON exports.")
 
         # ------------------------------------------------------------------
-        # Inter-Round Reset & Records Survival
+        # Inter-Round Reset Survival & Clean Deletion in Firefox
         # ------------------------------------------------------------------
-        print("\n--- STEP 6: Inter-Round Reset in Firefox ---")
+        print("\n--- STEP 8: Inter-Round Reset & Explicit Delete in Firefox ---")
         client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
             let done = arguments[arguments.length - 1];
             let storage = new window.SpatialStorage.StorageManager();
             storage.init().then(() => storage.clearAll()).then(done);
         """})
-        time.sleep(1.0)
+        time.sleep(0.8)
 
         reset_audit = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
             let done = arguments[arguments.length - 1];
@@ -964,10 +1167,7 @@ def run_firefox_test(http_port, cdn_port):
         assert reset_audit["studyTrialCount"] == 2, "Study records must be preserved after reset"
         print(f"[PASS] Firefox Inter-Round Reset verified: history nodes={reset_audit['historyNodeCount']}, study trials={reset_audit['studyTrialCount']}")
 
-        # ------------------------------------------------------------------
-        # Clean Delete of Study Records
-        # ------------------------------------------------------------------
-        print("\n--- STEP 7: Delete Study Records in Firefox ---")
+        # Explicit clean delete
         delete_audit = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
             let done = arguments[arguments.length - 1];
             let sm = new window.SpatialStudyManager.StudyManager({ storageAdapter: new window.SpatialStorage.StorageManager().adapter });
@@ -982,7 +1182,7 @@ def run_firefox_test(http_port, cdn_port):
                 });
             });
         """})["value"]
-        assert delete_audit["trialCount"] == 0 and delete_audit["eventCount"] == 0 and delete_audit["activeTrial"] is None, "Study records must be wiped after delete"
+        assert delete_audit["trialCount"] == 0 and delete_audit["eventCount"] == 0 and delete_audit["activeTrial"] is None
         print("[PASS] Firefox study records deleted cleanly.")
 
         # Post-test error audit

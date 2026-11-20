@@ -45,22 +45,39 @@
 
   /**
    * Matches a raw URL against the allowlist definitions.
+   * Restricts matching strictly to the local loopback origin (http://127.0.0.1 or http://localhost)
+   * and expected study fixture paths.
    * Returns matching opaque page key (e.g. 'px_materials') or null if not in corpus.
    */
   function matchCorpusPage(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return null;
-    let pathname = '';
+    let u;
     try {
-      const u = new URL(rawUrl);
-      pathname = u.pathname.toLowerCase();
+      u = new URL(rawUrl);
     } catch (_) {
-      pathname = String(rawUrl).toLowerCase();
+      return null;
     }
 
+    // 1. Strict local loopback origin check: must be http: on 127.0.0.1 or localhost
+    if (u.protocol !== 'http:') return null;
+    if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return null;
+
+    let pathname = u.pathname.toLowerCase();
+
+    // 2. Strict pathname matching: must match exact study fixture pattern or /study/fixtures prefix
     for (const def of ALLOWLIST_DEFINITIONS) {
       for (const pattern of def.patterns) {
-        if (pathname.endsWith(pattern) || (pattern.endsWith('/') && (pathname.endsWith(pattern.slice(0, -1)) || pathname === pattern))) {
+        const studyPrefixed = '/study/fixtures' + pattern;
+        if (pathname === pattern || pathname === studyPrefixed) {
           return def.key;
+        }
+        // Handle hub root with or without trailing slash
+        if (pattern.endsWith('/')) {
+          const trimmed = pattern.slice(0, -1);
+          const trimmedPrefixed = studyPrefixed.slice(0, -1);
+          if (pathname === trimmed || pathname === trimmedPrefixed) {
+            return def.key;
+          }
         }
       }
     }

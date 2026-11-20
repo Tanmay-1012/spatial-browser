@@ -78,6 +78,7 @@
         <span id="study-banner-info">Participant P01 &bull; Condition B &bull; Period 1</span>
         <span class="study-banner-deadline" id="study-banner-timer">120s</span>
         <button id="study-banner-stop-btn" type="button" class="btn btn-danger btn-xs">Give Up / Stop</button>
+        <button id="study-banner-finish-btn" type="button" class="btn btn-warning btn-xs">Finish Session</button>
       </div>
     </div>
 
@@ -324,7 +325,8 @@
               <div class="study-grid-row">
                 <div class="study-field">
                   <label for="study-participant-id" class="study-label">Participant ID</label>
-                  <input type="text" id="study-participant-id" value="P01" maxlength="10" class="study-input" aria-label="Pseudonymous participant code">
+                  <input type="text" id="study-participant-id" value="P01" maxlength="4" pattern="P\d{2,3}" placeholder="e.g. P01" class="study-input" aria-label="Pseudonymous participant code">
+                  <span class="study-help-text">Format: P01&ndash;P999 (pseudonymous code)</span>
                 </div>
                 <div class="study-field">
                   <label for="study-sequence" class="study-label">Sequence (Latin Square)</label>
@@ -347,17 +349,19 @@
                 </div>
                 <div class="study-field">
                   <label for="study-condition" class="study-label">Condition &amp; Tool</label>
-                  <select id="study-condition" class="study-select">
+                  <select id="study-condition" class="study-select" disabled>
+                    <option value="A">Condition A (Chrome History)</option>
                     <option value="B">Condition B (Spatial History Map)</option>
-                    <option value="A">Condition A (Chrome Built-in History)</option>
                   </select>
+                  <span class="study-help-text">Derived automatically from Sequence &amp; Period</span>
                 </div>
                 <div class="study-field">
                   <label for="study-topic-pack" class="study-label">Topic Pack</label>
-                  <select id="study-topic-pack" class="study-select">
+                  <select id="study-topic-pack" class="study-select" disabled>
                     <option value="pack_x">Pack X (Solar Energy)</option>
                     <option value="pack_y">Pack Y (Olympic History)</option>
                   </select>
+                  <span class="study-help-text">Derived automatically from Sequence &amp; Period</span>
                 </div>
               </div>
 
@@ -376,6 +380,8 @@
               <div class="study-actions-row">
                 <button id="study-start-btn" type="button" class="btn btn-primary">Start Timed Retrieval (120s)</button>
                 <button id="study-stop-btn" type="button" class="btn btn-danger" disabled>Give Up / Stop</button>
+                <button id="study-finish-session-btn" type="button" class="btn btn-warning">Finish Session</button>
+                <button id="study-new-session-btn" type="button" class="btn btn-secondary" hidden>Start New Session</button>
               </div>
 
               <div id="study-trial-status" class="study-status-banner" role="status">Status: Standby (Not Recording)</div>
@@ -384,7 +390,7 @@
             <!-- Post-Trial NASA-TLX Assessment -->
             <fieldset class="study-fieldset" id="study-tlx-fieldset">
               <legend class="study-legend">Post-Trial NASA-TLX Workload Assessment</legend>
-              <p class="study-tlx-desc">Administer immediately following retrieval attempt. Rate each dimension on official 0&ndash;100 scale.</p>
+              <p class="study-tlx-desc">Administer immediately following retrieval attempt. Rate each dimension on official 0&ndash;100 scale (increments of 5).</p>
 
               <div class="tlx-grid">
                 <div class="tlx-item">
@@ -393,7 +399,7 @@
                     <span id="tlx-mental-val" class="tlx-val-badge">50</span>
                   </div>
                   <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
-                  <input type="range" id="tlx-mental" min="0" max="100" value="50" class="tlx-slider">
+                  <input type="range" id="tlx-mental" min="0" max="100" step="5" value="50" class="tlx-slider">
                 </div>
 
                 <div class="tlx-item">
@@ -402,7 +408,7 @@
                     <span id="tlx-physical-val" class="tlx-val-badge">50</span>
                   </div>
                   <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
-                  <input type="range" id="tlx-physical" min="0" max="100" value="50" class="tlx-slider">
+                  <input type="range" id="tlx-physical" min="0" max="100" step="5" value="50" class="tlx-slider">
                 </div>
 
                 <div class="tlx-item">
@@ -411,7 +417,7 @@
                     <span id="tlx-temporal-val" class="tlx-val-badge">50</span>
                   </div>
                   <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
-                  <input type="range" id="tlx-temporal" min="0" max="100" value="50" class="tlx-slider">
+                  <input type="range" id="tlx-temporal" min="0" max="100" step="5" value="50" class="tlx-slider">
                 </div>
 
                 <div class="tlx-item">
@@ -420,7 +426,7 @@
                     <span id="tlx-performance-val" class="tlx-val-badge">50</span>
                   </div>
                   <div class="tlx-anchor-row"><span>Perfect</span><span>Failure</span></div>
-                  <input type="range" id="tlx-performance" min="0" max="100" value="50" class="tlx-slider">
+                  <input type="range" id="tlx-performance" min="0" max="100" step="5" value="50" class="tlx-slider">
                 </div>
 
                 <div class="tlx-item">
@@ -429,7 +435,7 @@
                     <span id="tlx-effort-val" class="tlx-val-badge">50</span>
                   </div>
                   <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
-                  <input type="range" id="tlx-effort" min="0" max="100" value="50" class="tlx-slider">
+                  <input type="range" id="tlx-effort" min="0" max="100" step="5" value="50" class="tlx-slider">
                 </div>
 
                 <div class="tlx-item">
@@ -438,7 +444,7 @@
                     <span id="tlx-frustration-val" class="tlx-val-badge">50</span>
                   </div>
                   <div class="tlx-anchor-row"><span>Very Low</span><span>Very High</span></div>
-                  <input type="range" id="tlx-frustration" min="0" max="100" value="50" class="tlx-slider">
+                  <input type="range" id="tlx-frustration" min="0" max="100" step="5" value="50" class="tlx-slider">
                 </div>
               </div>
 
@@ -457,7 +463,13 @@
               <div class="study-export-actions">
                 <button id="study-export-csv-btn" type="button" class="btn btn-secondary btn-sm">Export study-trials.csv</button>
                 <button id="study-export-json-btn" type="button" class="btn btn-secondary btn-sm">Export study-events.json</button>
+                <button id="study-dict-toggle-btn" type="button" class="btn btn-secondary btn-sm">View Data Dictionary</button>
+                <button id="study-export-dict-btn" type="button" class="btn btn-secondary btn-sm">Download Dictionary (.md)</button>
                 <button id="study-clear-data-btn" type="button" class="btn btn-danger btn-sm">Delete Study Records</button>
+              </div>
+              <div id="study-dict-panel" class="study-dict-panel" hidden>
+                <div class="study-dict-header">Study Data Dictionary (Schema V1.0.0)</div>
+                <div id="study-dict-content" class="study-dict-content"></div>
               </div>
             </fieldset>
           </div>
