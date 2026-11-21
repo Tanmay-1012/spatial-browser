@@ -61,7 +61,7 @@ Add automated coverage for CSV escaping and Back/Forward events if not already p
 
 ## Lead re-review closeout — accepted 2026-11-21
 
-The lead made one final correction before acceptance: removed timestamp-only duplicate suppression, which could discard distinct same-page commits if navigation IDs were unavailable and timestamps collided. Added a regression case for two such commits; both count as separate opens. The follow-up test also retains coverage for repeated navigation IDs and identical event-object redelivery.
+Before acceptance, the lead removed timestamp-only duplicate suppression, which could discard distinct same-page commits if navigation IDs were unavailable and timestamps collided. Regression cases prove distinct commits count in both ID-present and ID-absent collisions. The lead also fixed title corruption found in the regenerated Firefox screenshot: an extension-page title could overwrite the last web visit's title. Title updates now require a matching HTTP/HTTPS URL, and the browser runner asserts the Source B title remains correct and no extension URL is recorded.
 
 Final checks on the corrected workspace passed:
 
@@ -69,6 +69,6 @@ Final checks on the corrected workspace passed:
 - `npm.cmd test`: 80 passed, 0 failed.
 - `python scripts/e2e-task18-runtime.py`: Chrome 157.0.8103.80 and Firefox 160.0.1 both passed; 0 pre-test and post-test console errors in each browser.
 - Real HTTP 302 wrong-page destination and meta-refresh client redirect were exercised in both browsers. A 302 redirect to the delayed target remained active during load and completed only after the target loaded.
-- Four actual detail-view branch screenshots were captured and visually inspected.
+- Four actual detail-view branch screenshots were captured and visually inspected; both Firefox screenshots show Source B correctly.
 
 Task 18 is accepted for implementation/study readiness. No human study or recruitment is authorized by this acceptance. Supervisor/institution approval and explicit owner authorization are still required before a pilot.
