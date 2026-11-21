@@ -425,19 +425,11 @@
       // Suppress only duplicate signals that are demonstrably the same navigation:
       // - matching documentId / navigationId
       // - identical event details object reference
-      // - identical event timestamp on the same tab and pageKey
       const navKey = details.documentId || details.navigationId || null;
       const isSameNavKey = Boolean(navKey && tabState && navKey === tabState.lastNavKey);
       const isSameObject = Boolean(details && tabState && details === tabState.lastDetails);
-      const isSameEventTimestamp = Boolean(
-        details.timeStamp &&
-        tabState &&
-        tabState.lastCommitTimestamp &&
-        details.timeStamp === tabState.lastCommitTimestamp &&
-        pageKey === tabState.lastCommittedKey
-      );
 
-      if (isSameNavKey || isSameObject || isSameEventTimestamp) {
+      if (isSameNavKey || isSameObject) {
         return null;
       }
 

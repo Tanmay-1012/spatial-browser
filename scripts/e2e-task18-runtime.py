@@ -270,6 +270,9 @@ class MarionetteClient:
                 self.sock.settimeout(5.0)
                 self.sock.connect((self.host, self.port))
                 greeting = self._recv_msg()
+                # Firefox can need several seconds to initialize its WebDriver session on a busy host.
+                # Keep connection polling frequent, but allow commands after the greeting more time.
+                self.sock.settimeout(30.0)
                 return True
             except (ConnectionRefusedError, ConnectionResetError, OSError):
                 try:
@@ -609,7 +612,8 @@ def run_chrome_test(http_port, cdn_port):
         print("\n--- STEP 4: Redirects, Storage Privacy & Delayed Target Completion Timing ---")
         wrong_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/efficiency.html"
         redirect_wrong_url = f"http://127.0.0.1:{http_port}/redirect-wrong-302"
-        delayed_target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html?delay=1"
+        redirect_client_url = f"http://127.0.0.1:{http_port}/redirect-client"
+        delayed_target_url = f"http://127.0.0.1:{http_port}/redirect-target-302"
 
         # 1. Non-target corpus navigation via HTTP 302 server redirect
         cdp.cmd("Page.navigate", {"url": redirect_wrong_url}, session_id=tab1_sid)
@@ -632,7 +636,20 @@ def run_chrome_test(http_port, cdn_port):
         assert "tabNavState" not in study_audit_1["rawJson"] and "lastCommittedUrl" not in study_audit_1["rawJson"]
         print(f"[PASS] 3xx redirect destination counted: count = {study_audit_1['incorrectOpens']}; storage privacy verified (zero URLs/tab IDs in storage).")
 
-        # 2. Trigger asynchronous delayed target load: verify trial stays active during loading
+        # 2. Exercise a real meta-refresh client redirect from an off-corpus trampoline to an allowlisted page.
+        cdp.cmd("Page.navigate", {"url": redirect_client_url}, session_id=tab1_sid)
+        time.sleep(1.0)
+        client_redirect_audit = cdp.eval(map_sid, """
+            new Promise(res => chrome.storage.local.get('spatial_browser_study_data', (all) => {
+                const s = all.spatial_browser_study_data || {};
+                res({count: s.activeTrial ? s.activeTrial.incorrectPageOpens : -1, events: s.events || []});
+            }))
+        """, await_promise=True)
+        assert client_redirect_audit["count"] == 2, f"Meta-refresh client redirect should count final corpus destination once, got {client_redirect_audit}"
+        assert sum(1 for e in client_redirect_audit["events"] if e.get("event_type") == "corpus_navigation" and e.get("page_key") == "px_grid") == 1
+        print("[PASS] Meta-refresh client redirect counted final corpus destination once (no intermediate event).")
+
+        # 3. Trigger an HTTP 302 redirect to the delayed target: verify trial stays active during loading.
         cdp.eval(tab1_sid, f"window.location.href = '{delayed_target_url}'")
         # Check active status within 300ms while request is in flight
         in_flight_status = cdp.eval(map_sid, """
@@ -673,7 +690,7 @@ def run_chrome_test(http_port, cdn_port):
         assert study_audit_2["trialCount"] == 1, "Expected 1 recorded trial"
         completed = study_audit_2["lastTrial"]
         assert completed["outcome"] == "success"
-        assert completed["incorrectPageOpens"] == 1
+        assert completed["incorrectPageOpens"] == 2
         print(f"[PASS] Target success finalized upon load completion: outcome={completed['outcome']}, elapsed={completed['elapsedMs']}ms")
 
         # Submit NASA-TLX
@@ -1082,7 +1099,8 @@ def run_firefox_test(http_port, cdn_port):
         # ------------------------------------------------------------------
         print("\n--- STEP 4: Delayed Target Response & Asynchronous In-Flight Timing in Firefox ---")
         redirect_wrong_url = f"http://127.0.0.1:{http_port}/redirect-wrong-302"
-        delayed_target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html?delay=1"
+        redirect_client_url = f"http://127.0.0.1:{http_port}/redirect-client"
+        delayed_target_url = f"http://127.0.0.1:{http_port}/redirect-target-302"
 
         ext_handle = client.send_cmd("WebDriver:GetWindowHandle")["value"]
         new_tab = client.send_cmd("WebDriver:NewWindow", {"type": "tab"})
@@ -1111,7 +1129,23 @@ def run_firefox_test(http_port, cdn_port):
         assert "tabNavState" not in audit_res["rawJson"] and "lastCommittedUrl" not in audit_res["rawJson"]
         print(f"[PASS] Firefox 3xx redirect destination counted: incorrectOpens = {audit_res['incorrectOpens']}; storage privacy verified (zero URLs/tab IDs in storage).")
 
-        # 2. Trigger asynchronous navigation to delayed target page
+        # 2. Exercise a real meta-refresh client redirect to an allowlisted wrong page.
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": content_handle})
+        client.send_cmd("WebDriver:Navigate", {"url": redirect_client_url})
+        time.sleep(1.0)
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": ext_handle})
+        client_redirect_audit = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            const resolve = arguments[arguments.length - 1];
+            browser.storage.local.get('spatial_browser_study_data', (all) => {
+                const s = all.spatial_browser_study_data || {};
+                resolve({count: s.activeTrial ? s.activeTrial.incorrectPageOpens : -1, events: s.events || []});
+            });
+        """})["value"]
+        assert client_redirect_audit["count"] == 2, f"Firefox meta-refresh client redirect should count final corpus destination once, got {client_redirect_audit}"
+        assert sum(1 for e in client_redirect_audit["events"] if e.get("event_type") == "corpus_navigation" and e.get("page_key") == "px_grid") == 1
+        print("[PASS] Firefox meta-refresh client redirect counted final corpus destination once (no intermediate event).")
+
+        # 3. Trigger asynchronous navigation through an HTTP 302 redirect to the delayed target.
         client.send_cmd("WebDriver:SwitchToWindow", {"handle": content_handle})
         client.send_cmd("WebDriver:ExecuteScript", {"script": f"window.location.href = '{delayed_target_url}';"})
 
@@ -1149,6 +1183,7 @@ def run_firefox_test(http_port, cdn_port):
         assert completed_status["hasActiveTrial"] is False, "Firefox trial must complete once target finishes loading"
         assert completed_status["completedTrialCount"] == 1, "Expected 1 completed trial in Firefox"
         assert completed_status["lastTrial"]["outcome"] == "success"
+        assert completed_status["lastTrial"]["incorrectPageOpens"] == 2
         print(f"[PASS] Target success finalized upon load completion in Firefox: outcome={completed_status['lastTrial']['outcome']}, elapsed={completed_status['lastTrial']['elapsedMs']}ms")
 
         # Close content tab and stay on extension tab

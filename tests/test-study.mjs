@@ -697,6 +697,29 @@ test('Fast genuine repeat opens within 600ms vs duplicate signals: counts distin
     timeStamp: 1300
   });
   assert.strictEqual(open2.incorrectPageOpens, 3, 'Fast genuine repeat open within 600ms must be counted');
+
+  // Distinct navigation IDs can share the same millisecond timestamp on a fast system.
+  const open3 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    documentId: 'doc_3',
+    timeStamp: 1300
+  });
+  assert.strictEqual(open3.incorrectPageOpens, 4, 'Distinct document IDs must count even when browser timestamps collide');
+
+  // If a browser omits navigation IDs, timestamp equality alone must not suppress a commit.
+  const noIdOpen1 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    timeStamp: 1400
+  });
+  assert.strictEqual(noIdOpen1.incorrectPageOpens, 5);
+  const noIdOpen2 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    timeStamp: 1400
+  });
+  assert.strictEqual(noIdOpen2.incorrectPageOpens, 6, 'Distinct commit events must count even when IDs are absent and timestamps collide');
 });
 
 test('Back/Forward navigation: counts destination visits and records forward_back transition qualifiers', async () => {
