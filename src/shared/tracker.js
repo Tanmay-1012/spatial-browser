@@ -647,7 +647,7 @@
       return this._withSessionGate(() => {
         return this._enqueueTab(tabId, async () => {
           let urlResult = null;
-          if (this.studyManager && (changeInfo.status === 'complete' || changeInfo.url)) {
+          if (this.studyManager && changeInfo.status === 'complete') {
             try {
               const currentUrl = (tab && tab.url) || changeInfo.url;
               if (currentUrl) {

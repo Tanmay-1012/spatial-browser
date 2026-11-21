@@ -37,7 +37,8 @@ const {
   STUDY_STORAGE_KEY,
   LATIN_SQUARE_SEQUENCES,
   isValidParticipantId,
-  getSequenceAssignment
+  getSequenceAssignment,
+  escapeCsvCell
 } = globalThis.SpatialStudyManager;
 const { matchCorpusPage, isCorpusTarget, getDefaultTargetKey } = globalThis.SpatialStudyCorpus;
 
@@ -147,14 +148,20 @@ test('Counterbalanced Latin Square: enforces all 8 valid cells and rejects inval
   );
 });
 
-test('Participant ID validation: enforces P01-P999 and rejects formula injection or free-form names', async () => {
+test('Participant ID validation: enforces P01-P999 and rejects formula injection, P00, P000, P001, or free-form names', async () => {
+  // Valid boundary codes P01, P99, P100, P999
   assert.strictEqual(isValidParticipantId('P01'), true);
   assert.strictEqual(isValidParticipantId('P15'), true);
+  assert.strictEqual(isValidParticipantId('P99'), true);
+  assert.strictEqual(isValidParticipantId('P100'), true);
   assert.strictEqual(isValidParticipantId('P999'), true);
 
-  // Rejections
+  // Rejections: P00, P000, P001, out of bounds, formula injection, names
+  assert.strictEqual(isValidParticipantId('P00'), false, 'Must reject P00');
+  assert.strictEqual(isValidParticipantId('P000'), false, 'Must reject P000');
+  assert.strictEqual(isValidParticipantId('P001'), false, 'Must reject P001');
   assert.strictEqual(isValidParticipantId(''), false);
-  assert.strictEqual(isValidParticipantId('P1'), false); // Needs 2 or 3 digits
+  assert.strictEqual(isValidParticipantId('P1'), false, 'Needs 2 or 3 digits (P01-P999)');
   assert.strictEqual(isValidParticipantId('P1000'), false);
   assert.strictEqual(isValidParticipantId('Alice'), false);
   assert.strictEqual(isValidParticipantId('student_123'), false);
@@ -171,6 +178,14 @@ test('Participant ID validation: enforces P01-P999 and rejects formula injection
 
   await assert.rejects(
     study.startTrial({ participantId: '=1+1', sequence: 'seq_1', period: 1 }),
+    /Invalid participant code/
+  );
+  await assert.rejects(
+    study.startTrial({ participantId: 'P000', sequence: 'seq_1', period: 1 }),
+    /Invalid participant code/
+  );
+  await assert.rejects(
+    study.startTrial({ participantId: 'P00', sequence: 'seq_1', period: 1 }),
     /Invalid participant code/
   );
 });
@@ -280,14 +295,6 @@ test('Event-level deduplication: counts across tabs and after off-corpus visits,
     isHashChange: true
   });
   assert.strictEqual(hash, null, 'Hash update must be excluded');
-
-  // Tab 10 client redirect intermediate -> excluded
-  const redirect = await study.handleNavigationCommitted({
-    tabId: 10,
-    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
-    transitionQualifiers: ['client_redirect']
-  });
-  assert.strictEqual(redirect, null, 'Redirect intermediate must be excluded');
 
   // Tab 10 navigates off-corpus (e.g. google.com)
   const off = await study.handleNavigationCommitted({
@@ -492,6 +499,271 @@ test('Data dictionary file and manager export match exact schema and snake_case 
   const managerDict = manager.getDataDictionaryText();
   assert(typeof managerDict === 'string' && managerDict.length > 100);
   assert(managerDict.includes('trial_{participant_id}_p{period}_{condition}'));
+});
+
+test('Storage privacy boundary: zero raw URLs, query/hash material, or browser tab IDs in storage during active trial or after session finish', async () => {
+  const memStore = createMemoryStorage();
+  const storage = new StorageManager({ storageBackend: memStore });
+  await storage.init();
+
+  const study = new StudyManager({ storageAdapter: storage.adapter });
+  await study.init();
+
+  await study.startTrial({
+    participantId: 'P01',
+    sequence: 'seq_1',
+    period: 1,
+    condition: 'A',
+    topicPack: 'pack_x'
+  });
+
+  // Navigate with secret query, hash, and specific numeric tab ID 42
+  const sentinelUrl = 'http://127.0.0.1:8000/study/fixtures/pack_x/efficiency.html?sentinelSecret=topSecret123#fragSection';
+  await study.handleNavigationCommitted({
+    tabId: 42,
+    url: sentinelUrl,
+    transitionType: 'link'
+  });
+
+  // 1. Inspect actual study storage object while trial is ACTIVE
+  const rawStorageActive = await storage.adapter.get(STUDY_STORAGE_KEY);
+  const activeJson = JSON.stringify(rawStorageActive);
+
+  // Assert sentinel query, hash, raw URL, and numeric tab ID are strictly absent
+  assert(!activeJson.includes('sentinelSecret'), 'Active study storage must not contain query parameters');
+  assert(!activeJson.includes('topSecret123'), 'Active study storage must not contain query values');
+  assert(!activeJson.includes('fragSection'), 'Active study storage must not contain fragment hashes');
+  assert(!activeJson.includes('efficiency.html'), 'Active study storage must not contain raw URLs or filenames');
+  assert(!activeJson.includes('http://'), 'Active study storage must not contain protocols');
+  assert(!activeJson.includes('lastCommittedUrl'), 'Active study storage must not contain lastCommittedUrl');
+  assert(!activeJson.includes(':42') && !activeJson.includes('"42"'), 'Active study storage must not contain numeric tab ID');
+
+  const storedActive = rawStorageActive[STUDY_STORAGE_KEY];
+  assert.strictEqual(storedActive.activeTrial.tabMap, undefined, 'Active trial must not store tabMap in storage');
+  assert.strictEqual(storedActive.activeTrial.tabNavState, undefined, 'Active trial must not store tabNavState in storage');
+
+  // Verify event only has opaque page key and ephemeral tab key
+  assert.strictEqual(storedActive.events.length, 2); // trial_start + corpus_navigation
+  const navEv = storedActive.events[1];
+  assert.strictEqual(navEv.page_key, 'px_efficiency');
+  assert.strictEqual(navEv.tab_ephemeral_key, 'tab_1');
+
+  // 2. Finish session during active trial
+  await study.finishSession();
+
+  // 3. Inspect actual study storage object after FINISH SESSION
+  const rawStorageFinished = await storage.adapter.get(STUDY_STORAGE_KEY);
+  const finishedJson = JSON.stringify(rawStorageFinished);
+
+  assert(!finishedJson.includes('sentinelSecret'), 'Finished study storage must not contain query parameters');
+  assert(!finishedJson.includes('topSecret123'), 'Finished study storage must not contain query values');
+  assert(!finishedJson.includes('fragSection'), 'Finished study storage must not contain fragment hashes');
+  assert(!finishedJson.includes('efficiency.html'), 'Finished study storage must not contain raw URLs');
+  assert(!finishedJson.includes('lastCommittedUrl'), 'Finished study storage must not contain lastCommittedUrl');
+  assert(!finishedJson.includes(':42') && !finishedJson.includes('"42"'), 'Finished study storage must not contain numeric tab ID');
+
+  const storedFinished = rawStorageFinished[STUDY_STORAGE_KEY];
+  assert.strictEqual(storedFinished.activeTrial, null);
+  assert.strictEqual(storedFinished.trials.length, 1);
+  const trialRow = storedFinished.trials[0];
+  assert.strictEqual(trialRow.tabMap, undefined, 'Finalized trial record must not contain tabMap');
+  assert.strictEqual(trialRow.tabNavState, undefined, 'Finalized trial record must not contain tabNavState');
+  assert.strictEqual(trialRow.outcome, 'abandoned');
+  assert.strictEqual(trialRow.incorrectPageOpens, 1);
+});
+
+test('Redirect destination handling: counts server redirect destinations and collapses client redirect intermediates', async () => {
+  const memStore = createMemoryStorage();
+  const storage = new StorageManager({ storageBackend: memStore });
+  await storage.init();
+
+  const study = new StudyManager({ storageAdapter: storage.adapter });
+  await study.init();
+
+  await study.startTrial({
+    participantId: 'P01',
+    sequence: 'seq_4',
+    period: 1,
+    condition: 'B',
+    topicPack: 'pack_x'
+  });
+
+  // 1. Server redirect to wrong corpus page:
+  // Browser receives HTTP 302 and commits the final destination with transitionQualifiers: ['server_redirect']
+  const serverRedirect = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    transitionQualifiers: ['server_redirect']
+  });
+  assert.notStrictEqual(serverRedirect, null, 'Server redirect destination commit must not be dropped');
+  assert.strictEqual(serverRedirect.incorrectPageOpens, 1, 'Server redirect to wrong corpus page must increment count once');
+  assert.strictEqual(serverRedirect.pageKey, 'px_efficiency');
+
+  // 2. Client redirect intermediate collapsing:
+  // Intermediate corpus page (px_silicon) commits, then destination (px_grid) commits with client_redirect within 400ms
+  const inter1 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/silicon.html',
+    transitionType: 'link'
+  });
+  assert.strictEqual(inter1.incorrectPageOpens, 2);
+
+  const dest1 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/grid.html',
+    transitionQualifiers: ['client_redirect']
+  });
+  assert.strictEqual(dest1.incorrectPageOpens, 2, 'Intermediate redirect must collapse so count remains 2 (not 3)');
+  assert.strictEqual(dest1.pageKey, 'px_grid');
+
+  // 3. Client redirect to TARGET collapsing:
+  // Intermediate corpus page commits, then destination target commits with client_redirect
+  const inter2 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/storage.html',
+    transitionType: 'link'
+  });
+  assert.strictEqual(inter2.incorrectPageOpens, 3);
+
+  const targetRedirect = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/materials.html',
+    transitionQualifiers: ['client_redirect']
+  });
+  assert.strictEqual(targetRedirect.outcome, 'target_committed');
+  assert.strictEqual(study._state.activeTrial.incorrectPageOpens, 2, 'Intermediate error must be undone when redirecting to target');
+
+  // Target load completion succeeds
+  const comp = await study.handleNavigationCompleted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/materials.html',
+    status: 'complete'
+  });
+  assert.strictEqual(comp.outcome, 'success');
+  assert.strictEqual(comp.incorrectPageOpens, 2);
+});
+
+test('Fast genuine repeat opens within 600ms vs duplicate signals: counts distinct visits and suppresses exact signal re-deliveries', async () => {
+  const memStore = createMemoryStorage();
+  const storage = new StorageManager({ storageBackend: memStore });
+  await storage.init();
+
+  const study = new StudyManager({ storageAdapter: storage.adapter });
+  await study.init();
+
+  await study.startTrial({
+    participantId: 'P01',
+    sequence: 'seq_4',
+    period: 1,
+    condition: 'B',
+    topicPack: 'pack_x'
+  });
+
+  // First genuine open at t=1000
+  const open1 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    documentId: 'doc_1',
+    timeStamp: 1000
+  });
+  assert.strictEqual(open1.incorrectPageOpens, 1);
+
+  // Duplicate signal for doc_1 (e.g. repeated listener firing with same documentId)
+  const dup1 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    documentId: 'doc_1',
+    timeStamp: 1000
+  });
+  assert.strictEqual(dup1, null, 'Duplicate signal with same documentId must be suppressed');
+  assert.strictEqual(study._state.activeTrial.incorrectPageOpens, 1);
+
+  // Duplicate signal with same event object reference
+  const objEvent = {
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    timeStamp: 1100
+  };
+  const firstDelivery = await study.handleNavigationCommitted(objEvent);
+  assert.strictEqual(firstDelivery.incorrectPageOpens, 2);
+  const secondDelivery = await study.handleNavigationCommitted(objEvent);
+  assert.strictEqual(secondDelivery, null, 'Same event object delivered twice must be suppressed');
+
+  // Second genuine open 200ms later (e.g. fast repeat click in same tab to same URL)
+  const open2 = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    documentId: 'doc_2',
+    timeStamp: 1300
+  });
+  assert.strictEqual(open2.incorrectPageOpens, 3, 'Fast genuine repeat open within 600ms must be counted');
+});
+
+test('Back/Forward navigation: counts destination visits and records forward_back transition qualifiers', async () => {
+  const memStore = createMemoryStorage();
+  const storage = new StorageManager({ storageBackend: memStore });
+  await storage.init();
+
+  const study = new StudyManager({ storageAdapter: storage.adapter });
+  await study.init();
+
+  await study.startTrial({
+    participantId: 'P01',
+    sequence: 'seq_4',
+    period: 1,
+    condition: 'B',
+    topicPack: 'pack_x'
+  });
+
+  // Initial visit to px_efficiency
+  await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    transitionType: 'link'
+  });
+
+  // Navigate to px_grid
+  await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/grid.html',
+    transitionType: 'link'
+  });
+
+  // Press Back to return to px_efficiency (transitionQualifiers: ['forward_back'])
+  const backNav = await study.handleNavigationCommitted({
+    tabId: 10,
+    url: 'http://127.0.0.1:8000/pack_x/efficiency.html',
+    transitionType: 'link',
+    transitionQualifiers: ['forward_back']
+  });
+
+  assert.strictEqual(backNav.incorrectPageOpens, 3, 'Back navigation destination must be counted as a page open');
+
+  const state = await study.getState();
+  const backEvent = state.events.find((e) => e.qualifiers && e.qualifiers.includes('forward_back'));
+  assert(backEvent, 'Event log must contain forward_back qualifier');
+  assert.strictEqual(backEvent.page_key, 'px_efficiency');
+});
+
+test('CSV escaping: correctly handles commas, double quotes, and newlines', () => {
+  assert.strictEqual(escapeCsvCell('simple'), 'simple');
+  assert.strictEqual(escapeCsvCell(123), '123');
+  assert.strictEqual(escapeCsvCell(''), '');
+  assert.strictEqual(escapeCsvCell(null), '');
+  assert.strictEqual(escapeCsvCell(undefined), '');
+
+  // Comma requires quoting
+  assert.strictEqual(escapeCsvCell('Hello, World'), '"Hello, World"');
+
+  // Quotes require escaping and quoting
+  assert.strictEqual(escapeCsvCell('He said "hello"'), '"He said ""hello"""');
+
+  // Newlines require quoting
+  assert.strictEqual(escapeCsvCell("Line 1\nLine 2"), '"Line 1\nLine 2"');
+  assert.strictEqual(escapeCsvCell("Line 1\r\nLine 2"), '"Line 1\r\nLine 2"');
+
+  // Combined commas, quotes, and newlines
+  assert.strictEqual(escapeCsvCell('Item "A", with details\nSecond line'), '"Item ""A"", with details\nSecond line"');
 });
 
 await Promise.all(pendingTests);

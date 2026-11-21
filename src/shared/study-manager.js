@@ -49,7 +49,7 @@
     }
   };
 
-  const PARTICIPANT_ID_REGEX = /^P\d{2,3}$/;
+  const PARTICIPANT_ID_REGEX = /^P([1-9]\d{1,2}|0[1-9])$/;
 
   function isValidParticipantId(id) {
     if (!id || typeof id !== 'string') return false;
@@ -103,6 +103,29 @@
     return str;
   }
 
+  function projectTrialRecord(active, outcome, endTimeUtc, elapsedMs, options = {}) {
+    return {
+      trialId: active.trialId,
+      participantId: active.participantId,
+      sequence: active.sequence,
+      period: active.period,
+      condition: active.condition,
+      tool: active.tool,
+      topicPack: active.topicPack,
+      targetKey: active.targetKey,
+      startTimeUtc: active.startTimeUtc,
+      endTimeUtc: endTimeUtc,
+      elapsedMs: elapsedMs,
+      outcome: outcome,
+      targetRevisitedDelay: Boolean(active.targetRevisitedDelay),
+      protocolDeviation: Boolean(active.protocolDeviation),
+      incorrectPageOpens: Number(active.incorrectPageOpens || 0),
+      abandonReason: options.abandonReason || null,
+      tlx: null,
+      rawTlx: null
+    };
+  }
+
   class StudyManager {
     constructor(options = {}) {
       this.adapter = options.storageAdapter || (typeof globalThis !== 'undefined' && globalThis.SpatialStorage && globalThis.SpatialStorage.StorageManager
@@ -110,6 +133,8 @@
         : null);
       this._state = null;
       this._timeoutTimer = null;
+      this._transientTabMap = new Map();
+      this._transientTabNavState = new Map();
     }
 
     async init() {
@@ -153,6 +178,31 @@
       return Boolean(this._state && this._state.studyEnabled);
     }
 
+    _getEphemeralTabKey(rawTabId) {
+      if (rawTabId === undefined || rawTabId === null) return null;
+      const idKey = String(rawTabId);
+      if (!this._transientTabMap.has(idKey)) {
+        this._transientTabMap.set(idKey, 'tab_' + (this._transientTabMap.size + 1));
+      }
+      return this._transientTabMap.get(idKey);
+    }
+
+    _getTransientTabState(rawTabId) {
+      if (rawTabId === undefined || rawTabId === null) return null;
+      const idKey = String(rawTabId);
+      if (!this._transientTabNavState.has(idKey)) {
+        this._transientTabNavState.set(idKey, {
+          lastCommittedKey: null,
+          lastNavKey: null,
+          lastDetails: null,
+          lastCommitTimestamp: 0,
+          lastEventIndex: -1,
+          intermediateIncremented: false
+        });
+      }
+      return this._transientTabNavState.get(idKey);
+    }
+
     getActiveTrial() {
       if (!this._state || !this._state.activeTrial) return null;
       return Object.assign({}, this._state.activeTrial);
@@ -164,6 +214,8 @@
 
     async startNewSession() {
       if (!this._state) await this.init();
+      this._transientTabMap.clear();
+      this._transientTabNavState.clear();
       this._state.sessionStatus = 'active';
       this._state.studyEnabled = true;
       this._state.activeTrial = null;
@@ -180,15 +232,11 @@
       if (this._state.activeTrial && this._state.activeTrial.status === 'active') {
         const active = this._state.activeTrial;
         const elapsedMs = Math.min(now - active.startTimestamp, RETRIEVAL_DEADLINE_MS);
-        active.status = 'abandoned';
-        active.outcome = 'abandoned';
-        active.abandonReason = 'session_finished';
-        active.endTimeUtc = new Date(now).toISOString();
-        active.elapsedMs = elapsedMs;
+        const endTimeUtc = new Date(now).toISOString();
 
         this._appendEvent({
           trial_id: active.trialId,
-          timestamp_utc: active.endTimeUtc,
+          timestamp_utc: endTimeUtc,
           elapsed_ms: elapsedMs,
           event_type: 'trial_abandon',
           page_key: null,
@@ -197,10 +245,16 @@
           tab_ephemeral_key: null
         });
 
-        this._state.trials.push(Object.assign({}, active));
+        const trialRecord = projectTrialRecord(active, 'abandoned', endTimeUtc, elapsedMs, {
+          abandonReason: 'session_finished'
+        });
+        this._state.trials.push(trialRecord);
         this._state.lastCompletedTrialId = active.trialId;
         this._state.activeTrial = null;
       }
+
+      this._transientTabMap.clear();
+      this._transientTabNavState.clear();
 
       this._state.sessionStatus = 'finished';
       this._state.studyEnabled = false;
@@ -273,6 +327,10 @@
       const now = Date.now();
       const trialId = `trial_${participantId}_p${period}_${condition}`;
 
+      // Reset in-memory transient tab state for fresh trial
+      this._transientTabMap.clear();
+      this._transientTabNavState.clear();
+
       const activeTrial = {
         trialId,
         participantId,
@@ -288,9 +346,7 @@
         startTimestamp: now,
         deadlineTimestamp: now + RETRIEVAL_DEADLINE_MS,
         status: 'active',
-        incorrectPageOpens: 0,
-        tabMap: {},
-        tabNavState: {}
+        incorrectPageOpens: 0
       };
 
       this._state.studyEnabled = true;
@@ -339,66 +395,124 @@
       const rawUrl = details.url || '';
       const pageKey = corpus.matchCorpusPage(rawUrl);
 
-      const tabIdStr = String(details.tabId);
-      if (!active.tabNavState) active.tabNavState = {};
-      if (!active.tabNavState[tabIdStr]) active.tabNavState[tabIdStr] = {};
-      const tabState = active.tabNavState[tabIdStr];
+      const tabState = this._getTransientTabState(details.tabId);
 
       // Off-corpus navigation: completely ignored to preserve privacy
       // Clear tab's lastCommittedKey so any later return to a corpus page counts as a genuine open
       if (!pageKey) {
-        tabState.lastCommittedKey = null;
-        tabState.lastCommittedUrl = null;
+        if (tabState) {
+          tabState.lastCommittedKey = null;
+          tabState.intermediateIncremented = false;
+        }
         return null;
       }
 
-      // Assign opaque ephemeral tab key (e.g. 'tab_1')
-      if (!active.tabMap) active.tabMap = {};
-      if (!active.tabMap[tabIdStr]) {
-        active.tabMap[tabIdStr] = 'tab_' + (Object.keys(active.tabMap).length + 1);
-      }
-      const ephemeralTab = active.tabMap[tabIdStr];
-
+      const ephemeralTab = this._getEphemeralTabKey(details.tabId);
       const transitionType = details.transitionType || 'link';
       const qualifiers = Array.isArray(details.transitionQualifiers) ? details.transitionQualifiers : [];
 
-      // 1. Redirect intermediate suppression: collapse client/server redirects onto final destination
-      const isRedirect = qualifiers.includes('client_redirect') || qualifiers.includes('server_redirect');
-      if (isRedirect) {
+      // 1. Reload suppression: ignore page reloads in the same tab
+      if (transitionType === 'reload') {
         return null;
       }
 
-      // 2. Reload suppression: ignore page reloads in the same tab
-      const isReload = transitionType === 'reload';
-      if (isReload) {
+      // 2. Same-document hash changes suppression
+      if (Boolean(details.isHashChange)) {
         return null;
       }
 
-      // 3. Same-document hash changes suppression
-      const isHashChange = Boolean(details.isHashChange);
-      if (isHashChange) {
+      // 3. Duplicate browser signal suppression:
+      // Suppress only duplicate signals that are demonstrably the same navigation:
+      // - matching documentId / navigationId
+      // - identical event details object reference
+      // - identical event timestamp on the same tab and pageKey
+      const navKey = details.documentId || details.navigationId || null;
+      const isSameNavKey = Boolean(navKey && tabState && navKey === tabState.lastNavKey);
+      const isSameObject = Boolean(details && tabState && details === tabState.lastDetails);
+      const isSameEventTimestamp = Boolean(
+        details.timeStamp &&
+        tabState &&
+        tabState.lastCommitTimestamp &&
+        details.timeStamp === tabState.lastCommitTimestamp &&
+        pageKey === tabState.lastCommittedKey
+      );
+
+      if (isSameNavKey || isSameObject || isSameEventTimestamp) {
         return null;
       }
 
-      // 4. Duplicate browser signals for the same navigation in this tab (<600ms on same URL)
-      const isDuplicateSignal = (tabState.lastCommittedUrl === rawUrl && (now - (tabState.lastNavTimestamp || 0)) < 600);
-      if (isDuplicateSignal) {
-        return null;
+      // 4. Redirect intermediate handling:
+      // Server redirects report onCommitted ONLY for the final destination with 'server_redirect' qualifier.
+      // That commit is the qualifying open of the destination page and must be processed.
+      //
+      // Client redirects report onCommitted for the intermediate then onCommitted for destination
+      // with 'client_redirect' qualifier. If an on-corpus intermediate was recorded immediately prior (<2000ms),
+      // collapse the intermediate onto this destination so the user's navigation counts once for the final destination.
+      const isClientRedirect = qualifiers.includes('client_redirect');
+      const isIntermediateCorpusOpen = Boolean(
+        isClientRedirect &&
+        tabState &&
+        tabState.intermediateIncremented &&
+        (now - tabState.lastCommitTimestamp) < 2000
+      );
+
+      if (isIntermediateCorpusOpen) {
+        if (pageKey === active.targetKey) {
+          // Intermediate was a trampoline to target: undo the intermediate error count
+          active.incorrectPageOpens = Math.max(0, active.incorrectPageOpens - 1);
+          if (tabState.lastEventIndex >= 0 && tabState.lastEventIndex < this._state.events.length) {
+            this._state.events.splice(tabState.lastEventIndex, 1);
+          }
+          tabState.lastCommittedKey = pageKey;
+          tabState.lastNavKey = navKey;
+          tabState.lastDetails = details;
+          tabState.lastCommitTimestamp = now;
+          tabState.intermediateIncremented = false;
+          await this._saveState();
+          return { outcome: 'target_committed', pageKey };
+        } else {
+          // Both intermediate and destination are non-target corpus pages:
+          // Keep count as 1, update intermediate event to the final destination page key
+          if (tabState.lastEventIndex >= 0 && tabState.lastEventIndex < this._state.events.length) {
+            const ev = this._state.events[tabState.lastEventIndex];
+            ev.page_key = pageKey;
+            ev.qualifiers = qualifiers;
+            ev.navigation_type = transitionType;
+          }
+          tabState.lastCommittedKey = pageKey;
+          tabState.lastNavKey = navKey;
+          tabState.lastDetails = details;
+          tabState.lastCommitTimestamp = now;
+          await this._saveState();
+          return {
+            outcome: 'in_progress',
+            incorrectPageOpens: active.incorrectPageOpens,
+            pageKey
+          };
+        }
       }
 
-      // Update per-tab navigation state
-      tabState.lastCommittedKey = pageKey;
-      tabState.lastCommittedUrl = rawUrl;
-      tabState.lastNavTimestamp = now;
+      // Update transient tab navigation state
+      if (tabState) {
+        tabState.lastCommittedKey = pageKey;
+        tabState.lastNavKey = navKey;
+        tabState.lastDetails = details;
+        tabState.lastCommitTimestamp = details.timeStamp || now;
+      }
 
-      // If this navigation is to the target page, do NOT finalize success on commit;
+      // Target page commit: do NOT complete trial success upon commit;
       // success is recorded only once the tab completes full document loading (status === 'complete').
       if (pageKey === active.targetKey) {
+        if (tabState) tabState.intermediateIncremented = false;
         return { outcome: 'target_committed', pageKey };
       }
 
       // Qualifying non-target corpus page open:
       active.incorrectPageOpens += 1;
+      if (tabState) {
+        tabState.intermediateIncremented = true;
+        tabState.lastEventIndex = this._state.events ? this._state.events.length : 0;
+      }
       const elapsedMs = Math.max(0, now - active.startTimestamp);
 
       this._appendEvent({
@@ -448,12 +562,7 @@
 
       // Verify exact target reached and fully loaded
       if (pageKey === active.targetKey) {
-        const tabIdStr = String(details.tabId);
-        if (!active.tabMap) active.tabMap = {};
-        if (!active.tabMap[tabIdStr]) {
-          active.tabMap[tabIdStr] = 'tab_' + (Object.keys(active.tabMap).length + 1);
-        }
-        const ephemeralTab = active.tabMap[tabIdStr];
+        const ephemeralTab = this._getEphemeralTabKey(details.tabId);
         const elapsedMs = Math.max(0, now - active.startTimestamp);
         const transitionType = details.transitionType || 'link';
         const qualifiers = Array.isArray(details.transitionQualifiers) ? details.transitionQualifiers : [];
@@ -558,30 +667,16 @@
       const elapsedMs = outcome === 'timeout'
         ? RETRIEVAL_DEADLINE_MS
         : Math.min(Math.max(0, now - active.startTimestamp), RETRIEVAL_DEADLINE_MS);
+      const endTimeUtc = new Date(now).toISOString();
 
-      const trialRecord = {
-        trialId: active.trialId,
-        participantId: active.participantId,
-        sequence: active.sequence,
-        period: active.period,
-        condition: active.condition,
-        tool: active.tool,
-        topicPack: active.topicPack,
-        targetKey: active.targetKey,
-        startTimeUtc: active.startTimeUtc,
-        endTimeUtc: new Date(now).toISOString(),
-        elapsedMs,
-        outcome,
-        targetRevisitedDelay: active.targetRevisitedDelay,
-        protocolDeviation: active.protocolDeviation,
-        incorrectPageOpens: active.incorrectPageOpens,
-        tlx: null,
-        rawTlx: null
-      };
+      const trialRecord = projectTrialRecord(active, outcome, endTimeUtc, elapsedMs);
 
       this._state.trials.push(trialRecord);
       this._state.lastCompletedTrialId = active.trialId;
       this._state.activeTrial = null;
+
+      this._transientTabMap.clear();
+      this._transientTabNavState.clear();
 
       await this._saveState();
       return trialRecord;
@@ -712,6 +807,8 @@
     }
 
     async clearStudyRecords() {
+      this._transientTabMap.clear();
+      this._transientTabNavState.clear();
       this._state = createInitialStudyState();
       if (this.adapter) {
         await this.adapter.set({ [STUDY_STORAGE_KEY]: this._state });
@@ -775,6 +872,7 @@ Array of JSON event objects capturing chronological actions during timed retriev
     PARTICIPANT_ID_REGEX,
     isValidParticipantId,
     getSequenceAssignment,
+    escapeCsvCell,
     StudyManager,
     createInitialStudyState,
     DATA_DICTIONARY_TEXT

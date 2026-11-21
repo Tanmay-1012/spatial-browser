@@ -117,6 +117,22 @@ class AppHTTPHandler(http.server.BaseHTTPRequestHandler):
         elif path == "/source-b":
             self._send_html(200, "<!DOCTYPE html><html><head><title>Source B</title></head><body><h1>Source B</h1></body></html>")
 
+        # Redirect Fixture Endpoints for Study Verification
+        elif path == "/redirect-wrong-302":
+            self.send_response(302)
+            self.send_header("Location", "/study/fixtures/pack_x/efficiency.html")
+            self.end_headers()
+        elif path == "/redirect-target-302":
+            self.send_response(302)
+            self.send_header("Location", "/study/fixtures/pack_x/materials.html?delay=1")
+            self.end_headers()
+        elif path == "/redirect-client":
+            html = """<!DOCTYPE html><html><head>
+            <meta http-equiv="refresh" content="0;url=/study/fixtures/pack_x/grid.html">
+            <title>Client Redirecting</title></head>
+            <body><p>Redirecting to grid...</p></body></html>"""
+            self._send_html(200, html)
+
         # Study Fixtures (pack_x, pack_y)
         elif path.startswith("/study/fixtures/") or path.startswith("/pack_x/") or path.startswith("/pack_y/"):
             rel_path = path.replace("/study/fixtures/", "")
@@ -334,8 +350,8 @@ def run_chrome_test(http_port, cdn_port):
     print("=" * 80)
 
     cdp_port = find_free_port()
-    profile_dir = os.path.abspath("scratch/test-profile-chrome-e2e")
-    os.makedirs(profile_dir, exist_ok=True)
+    profile_owner = tempfile.TemporaryDirectory(prefix="task18-chrome-profile-", ignore_cleanup_errors=True)
+    profile_dir = profile_owner.name
     downloads_dir = os.path.join(profile_dir, "downloads")
     os.makedirs(downloads_dir, exist_ok=True)
 
@@ -463,11 +479,13 @@ def run_chrome_test(http_port, cdn_port):
                     let nodes = d.nodes || {};
                     let hubNodes = Object.values(nodes).filter(n => (n.url || '').includes('/hub'));
                     let srcANodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-a'));
+                    let hubNode = hubNodes.find(n => (n.childNodeIds || []).length >= 4) || hubNodes.find(n => (n.childNodeIds || []).length > 0) || hubNodes[0];
+                    let srcANode = srcANodes.find(n => (n.childNodeIds || []).length > 0) || srcANodes[0];
                     res({
                         totalNodes: Object.keys(nodes).length,
                         hubCount: hubNodes.length,
-                        hubChildren: hubNodes.length ? hubNodes[0].childNodeIds : [],
-                        srcAChildren: srcANodes.length ? srcANodes[0].childNodeIds : []
+                        hubChildren: hubNode ? hubNode.childNodeIds : [],
+                        srcAChildren: srcANode ? srcANode.childNodeIds : []
                     });
                 });
             })
@@ -476,8 +494,25 @@ def run_chrome_test(http_port, cdn_port):
         assert len(graph_audit['hubChildren']) >= 4, f"Hub should have at least 4 children, got {len(graph_audit['hubChildren'])}"
 
         # Open Detail View for screenshots
-        cdp.eval(map_sid, "document.querySelector('#trees-grid .tree-card').click()")
-        time.sleep(1.2)
+        cdp.eval(map_sid, """(() => {
+            const btn = document.querySelector('#trees-grid .tree-open-btn');
+            if (btn) btn.click();
+            else {
+                const card = document.querySelector('#trees-grid .tree-card');
+                if (card) card.click();
+            }
+        })()""")
+        time.sleep(1.0)
+
+        detail_status = cdp.eval(map_sid, """({
+            detailVisible: !document.getElementById('detail-view').hidden,
+            nodesRendered: document.querySelectorAll('#nodes-layer .map-node').length,
+            edgesRendered: document.querySelectorAll('#edges-layer path').length
+        })""")
+        print(f"[PASS] Chrome detail view confirmed: visible={detail_status['detailVisible']}, nodes={detail_status['nodesRendered']}, edges={detail_status['edgesRendered']}")
+        assert detail_status['detailVisible'], "Detail view must be visible"
+        assert detail_status['nodesRendered'] >= 6, f"Expected >=6 nodes in detail view, got {detail_status['nodesRendered']}"
+        assert detail_status['edgesRendered'] >= 4, f"Expected >=4 edges in detail view, got {detail_status['edgesRendered']}"
 
         # Capture Chrome Desktop Screenshot (1280x800)
         cdp.cmd("Emulation.setDeviceMetricsOverride", {
@@ -486,7 +521,10 @@ def run_chrome_test(http_port, cdn_port):
             "deviceScaleFactor": 1,
             "mobile": False
         }, session_id=map_sid)
-        time.sleep(0.6)
+        time.sleep(0.4)
+        cdp.eval(map_sid, "document.getElementById('zoom-reset').click()")
+        time.sleep(0.5)
+
         desktop_png = cdp.cmd("Page.captureScreenshot", {"format": "png"}, session_id=map_sid)["data"]
         chrome_desktop_path = os.path.join(RESULTS_DIR, "chrome-branch-desktop.png")
         with open(chrome_desktop_path, "wb") as f:
@@ -502,7 +540,10 @@ def run_chrome_test(http_port, cdn_port):
             "deviceScaleFactor": 1,
             "mobile": False
         }, session_id=map_sid)
-        time.sleep(0.6)
+        time.sleep(0.4)
+        cdp.eval(map_sid, "document.getElementById('zoom-reset').click()")
+        time.sleep(0.5)
+
         reflow_png = cdp.cmd("Page.captureScreenshot", {"format": "png"}, session_id=map_sid)["data"]
         chrome_reflow_path = os.path.join(RESULTS_DIR, "chrome-branch-reflow.png")
         with open(chrome_reflow_path, "wb") as f:
@@ -511,7 +552,7 @@ def run_chrome_test(http_port, cdn_port):
             f.write(base64.b64decode(reflow_png))
         print(f"[PASS] Captured Chrome reflow screenshot: {chrome_reflow_path}")
 
-        # Restore desktop width
+        # Restore desktop width and return to overview
         cdp.cmd("Emulation.setDeviceMetricsOverride", {
             "width": 1280,
             "height": 800,
@@ -519,6 +560,8 @@ def run_chrome_test(http_port, cdn_port):
             "mobile": False
         }, session_id=map_sid)
         time.sleep(0.4)
+        cdp.eval(map_sid, "document.getElementById('back-to-overview-btn').click()")
+        time.sleep(0.5)
 
         # ------------------------------------------------------------------
         # PART C: Study Mode & Latin Square Sequence 4 Configuration
@@ -561,14 +604,15 @@ def run_chrome_test(http_port, cdn_port):
         assert "P01" in banner_info and "Condition B" in banner_info
 
         # ------------------------------------------------------------------
-        # Delayed Target Load Completion Verification
+        # Delayed Target Load Completion & Redirects Verification
         # ------------------------------------------------------------------
-        print("\n--- STEP 4: Delayed Target Response & Load Completion Timing ---")
+        print("\n--- STEP 4: Redirects, Storage Privacy & Delayed Target Completion Timing ---")
         wrong_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/efficiency.html"
+        redirect_wrong_url = f"http://127.0.0.1:{http_port}/redirect-wrong-302"
         delayed_target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html?delay=1"
 
-        # 1. Non-target corpus navigation
-        cdp.cmd("Page.navigate", {"url": wrong_url}, session_id=tab1_sid)
+        # 1. Non-target corpus navigation via HTTP 302 server redirect
+        cdp.cmd("Page.navigate", {"url": redirect_wrong_url}, session_id=tab1_sid)
         time.sleep(0.8)
 
         study_audit_1 = cdp.eval(map_sid, """
@@ -577,16 +621,19 @@ def run_chrome_test(http_port, cdn_port):
                     let s = all.spatial_browser_study_data || {};
                     res({
                         active: s.activeTrial,
+                        rawJson: JSON.stringify(s),
                         incorrectOpens: s.activeTrial ? s.activeTrial.incorrectPageOpens : -1
                     });
                 })
             })
         """, await_promise=True)
-        assert study_audit_1 and study_audit_1["incorrectOpens"] == 1, f"Expected 1 incorrect open, got {study_audit_1}"
-        print(f"[PASS] Incorrect corpus page open recorded: count = {study_audit_1['incorrectOpens']}.")
+        assert study_audit_1 and study_audit_1["incorrectOpens"] == 1, f"Expected 1 incorrect open after 302 redirect, got {study_audit_1}"
+        assert "redirect-wrong" not in study_audit_1["rawJson"] and "efficiency.html" not in study_audit_1["rawJson"] and "http://" not in study_audit_1["rawJson"]
+        assert "tabNavState" not in study_audit_1["rawJson"] and "lastCommittedUrl" not in study_audit_1["rawJson"]
+        print(f"[PASS] 3xx redirect destination counted: count = {study_audit_1['incorrectOpens']}; storage privacy verified (zero URLs/tab IDs in storage).")
 
-        # 2. Trigger delayed target load: verify trial stays active during loading
-        cdp.cmd("Page.navigate", {"url": delayed_target_url}, session_id=tab1_sid)
+        # 2. Trigger asynchronous delayed target load: verify trial stays active during loading
+        cdp.eval(tab1_sid, f"window.location.href = '{delayed_target_url}'")
         # Check active status within 300ms while request is in flight
         in_flight_status = cdp.eval(map_sid, """
             new Promise(res => {
@@ -685,7 +732,7 @@ def run_chrome_test(http_port, cdn_port):
 
         assert timeout_res and timeout_res["outcome"] == "timeout", f"Expected timeout, got {timeout_res}"
         assert timeout_res["elapsedMs"] == 120000, f"Timeout elapsed must be 120000ms, got {timeout_res['elapsedMs']}"
-        print(f"[PASS] Timeout outcome verified in Chrome: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
+        print(f"[PASS] Simulated deadline check verified timeout outcome in Chrome: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
 
         # ------------------------------------------------------------------
         # Finish Session Action Verification
@@ -837,7 +884,7 @@ def run_firefox_test(http_port, cdn_port):
     print("=" * 80)
 
     marionette_port = find_free_port()
-    profile_owner = tempfile.TemporaryDirectory(prefix="task18-firefox-profile-")
+    profile_owner = tempfile.TemporaryDirectory(prefix="task18-firefox-profile-", ignore_cleanup_errors=True)
     profile_dir = profile_owner.name
     download_dir = os.path.join(profile_dir, "downloads")
     os.makedirs(download_dir, exist_ok=True)
@@ -879,6 +926,7 @@ def run_firefox_test(http_port, cdn_port):
         client.send_cmd("Marionette:SetContext", {"value": "chrome"})
         client.send_cmd("Addon:Install", {"path": FIREFOX_EXT_DIR, "temporary": True})
         print(f"[INIT] Installed unpacked Firefox extension: {ADDON_ID}")
+        time.sleep(1.5)
 
         # Pre-test error audit
         pre_errors = {"phase": "pre-test", "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "errors": []}
@@ -919,6 +967,10 @@ def run_firefox_test(http_port, cdn_port):
         # PART B: Stored Sibling Graph Assertion & Screenshots
         # ------------------------------------------------------------------
         print("\n--- STEP 2: Firefox Stored Sibling Graph & Screenshots ---")
+        tab1_handle = client.send_cmd("WebDriver:GetWindowHandle")["value"]
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": tab1_handle})
+        time.sleep(0.5)
+
         ext_url = f"moz-extension://{ADDON_UUID}/index.html"
         client.send_cmd("WebDriver:Navigate", {"url": ext_url})
         client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {}; window.confirm = () => true;"})
@@ -932,11 +984,13 @@ def run_firefox_test(http_port, cdn_port):
                 let nodes = d.nodes || {};
                 let hubNodes = Object.values(nodes).filter(n => (n.url || '').includes('/hub'));
                 let srcANodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-a'));
+                let hubNode = hubNodes.find(n => (n.childNodeIds || []).length >= 4) || hubNodes.find(n => (n.childNodeIds || []).length > 0) || hubNodes[0];
+                let srcANode = srcANodes.find(n => (n.childNodeIds || []).length > 0) || srcANodes[0];
                 done({
                     totalNodes: Object.keys(nodes).length,
                     hubCount: hubNodes.length,
-                    hubChildren: hubNodes.length ? hubNodes[0].childNodeIds : [],
-                    srcAChildren: srcANodes.length ? srcANodes[0].childNodeIds : []
+                    hubChildren: hubNode ? hubNode.childNodeIds : [],
+                    srcAChildren: srcANode ? srcANode.childNodeIds : []
                 });
             });
         """})["value"]
@@ -944,12 +998,33 @@ def run_firefox_test(http_port, cdn_port):
         assert len(graph_audit['hubChildren']) >= 4, f"Hub should have at least 4 children, got {len(graph_audit['hubChildren'])}"
 
         # Open Detail view
-        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.querySelector('#trees-grid .tree-card').click();"})
-        time.sleep(1.2)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": """
+            const btn = document.querySelector('#trees-grid .tree-open-btn');
+            if (btn) btn.click();
+            else {
+                const card = document.querySelector('#trees-grid .tree-card');
+                if (card) card.click();
+            }
+        """})
+        time.sleep(1.0)
+
+        detail_status = client.send_cmd("WebDriver:ExecuteScript", {"script": """
+            return {
+                detailVisible: !document.getElementById('detail-view').hidden,
+                nodesRendered: document.querySelectorAll('#nodes-layer .map-node').length,
+                edgesRendered: document.querySelectorAll('#edges-layer path').length
+            };
+        """})["value"]
+        print(f"[PASS] Firefox detail view confirmed: visible={detail_status['detailVisible']}, nodes={detail_status['nodesRendered']}, edges={detail_status['edgesRendered']}")
+        assert detail_status['detailVisible'], "Firefox detail view must be visible"
+        assert detail_status['nodesRendered'] >= 6, f"Expected >=6 nodes in Firefox detail view, got {detail_status['nodesRendered']}"
+        assert detail_status['edgesRendered'] >= 4, f"Expected >=4 edges in Firefox detail view, got {detail_status['edgesRendered']}"
 
         # Capture Firefox Desktop Screenshot (1280x800)
         client.send_cmd("WebDriver:SetWindowRect", {"width": 1280, "height": 800})
-        time.sleep(0.6)
+        time.sleep(0.5)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('zoom-reset').click();"})
+        time.sleep(0.5)
         firefox_desktop_b64 = client.send_cmd("WebDriver:TakeScreenshot", {"full": False})["value"]
         firefox_desktop_path = os.path.join(RESULTS_DIR, "firefox-branch-desktop.png")
         with open(firefox_desktop_path, "wb") as f:
@@ -958,16 +1033,20 @@ def run_firefox_test(http_port, cdn_port):
 
         # Capture Firefox Reflow Screenshot (480x800)
         client.send_cmd("WebDriver:SetWindowRect", {"width": 480, "height": 800})
-        time.sleep(0.6)
+        time.sleep(0.5)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('zoom-reset').click();"})
+        time.sleep(0.5)
         firefox_reflow_b64 = client.send_cmd("WebDriver:TakeScreenshot", {"full": False})["value"]
         firefox_reflow_path = os.path.join(RESULTS_DIR, "firefox-branch-reflow.png")
         with open(firefox_reflow_path, "wb") as f:
             f.write(base64.b64decode(firefox_reflow_b64))
         print(f"[PASS] Captured Firefox reflow screenshot: {firefox_reflow_path}")
 
-        # Restore window size
+        # Restore window size and return to overview
         client.send_cmd("WebDriver:SetWindowRect", {"width": 1280, "height": 800})
         time.sleep(0.4)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('back-to-overview-btn').click();"})
+        time.sleep(0.5)
 
         # ------------------------------------------------------------------
         # PART C: Study Mode & Latin Square Sequence 1 Configuration
@@ -999,21 +1078,85 @@ def run_firefox_test(http_port, cdn_port):
         assert "P02" in banner_info and "Condition A" in banner_info
 
         # ------------------------------------------------------------------
-        # Delayed Target Load Completion Verification in Firefox
+        # Delayed Target Load Completion & In-Flight Timing in Firefox
         # ------------------------------------------------------------------
-        print("\n--- STEP 4: Delayed Target Response in Firefox ---")
-        wrong_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/efficiency.html"
+        print("\n--- STEP 4: Delayed Target Response & Asynchronous In-Flight Timing in Firefox ---")
+        redirect_wrong_url = f"http://127.0.0.1:{http_port}/redirect-wrong-302"
         delayed_target_url = f"http://127.0.0.1:{http_port}/study/fixtures/pack_x/materials.html?delay=1"
 
-        client.send_cmd("WebDriver:Navigate", {"url": wrong_url})
+        ext_handle = client.send_cmd("WebDriver:GetWindowHandle")["value"]
+        new_tab = client.send_cmd("WebDriver:NewWindow", {"type": "tab"})
+        content_handle = new_tab["handle"]
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": content_handle})
+
+        # 1. Non-target corpus navigation via HTTP 302 server redirect
+        client.send_cmd("WebDriver:Navigate", {"url": redirect_wrong_url})
         time.sleep(0.8)
 
-        client.send_cmd("WebDriver:Navigate", {"url": delayed_target_url})
-        time.sleep(2.0)
+        # Switch to ext tab and audit incorrect open count and privacy
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": ext_handle})
+        audit_res = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            const resolve = arguments[arguments.length - 1];
+            browser.storage.local.get('spatial_browser_study_data', (all) => {
+                const s = all.spatial_browser_study_data || {};
+                resolve({
+                    active: s.activeTrial,
+                    rawJson: JSON.stringify(s),
+                    incorrectOpens: s.activeTrial ? s.activeTrial.incorrectPageOpens : -1
+                });
+            });
+        """})["value"]
+        assert audit_res["incorrectOpens"] == 1, f"Expected 1 incorrect open after 302 redirect, got {audit_res}"
+        assert "redirect-wrong" not in audit_res["rawJson"] and "efficiency.html" not in audit_res["rawJson"] and "http://" not in audit_res["rawJson"]
+        assert "tabNavState" not in audit_res["rawJson"] and "lastCommittedUrl" not in audit_res["rawJson"]
+        print(f"[PASS] Firefox 3xx redirect destination counted: incorrectOpens = {audit_res['incorrectOpens']}; storage privacy verified (zero URLs/tab IDs in storage).")
 
-        # Reopen extension to verify trial completion and submit NASA-TLX
-        client.send_cmd("WebDriver:Navigate", {"url": ext_url})
-        time.sleep(1.0)
+        # 2. Trigger asynchronous navigation to delayed target page
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": content_handle})
+        client.send_cmd("WebDriver:ExecuteScript", {"script": f"window.location.href = '{delayed_target_url}';"})
+
+        # Switch immediately to ext tab to check in-flight status while request is delayed
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": ext_handle})
+        in_flight_status = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            const resolve = arguments[arguments.length - 1];
+            browser.storage.local.get('spatial_browser_study_data', (all) => {
+                const s = all.spatial_browser_study_data || {};
+                resolve({
+                    hasActiveTrial: Boolean(s.activeTrial && s.activeTrial.status === 'active'),
+                    completedTrialCount: (s.trials || []).length
+                });
+            });
+        """})["value"]
+        print(f"[PASS] In-flight check while Firefox target document is loading: active={in_flight_status['hasActiveTrial']}, completedTrials={in_flight_status['completedTrialCount']}")
+        assert in_flight_status["hasActiveTrial"] is True, "Firefox trial must remain active while target document is loading"
+
+        # Wait for delayed response and document load to complete
+        time.sleep(1.8)
+
+        # Audit trial completion
+        completed_status = client.send_cmd("WebDriver:ExecuteAsyncScript", {"script": """
+            const resolve = arguments[arguments.length - 1];
+            browser.storage.local.get('spatial_browser_study_data', (all) => {
+                const s = all.spatial_browser_study_data || {};
+                const trials = s.trials || [];
+                resolve({
+                    hasActiveTrial: Boolean(s.activeTrial && s.activeTrial.status === 'active'),
+                    completedTrialCount: trials.length,
+                    lastTrial: trials[trials.length - 1] || null
+                });
+            });
+        """})["value"]
+        assert completed_status["hasActiveTrial"] is False, "Firefox trial must complete once target finishes loading"
+        assert completed_status["completedTrialCount"] == 1, "Expected 1 completed trial in Firefox"
+        assert completed_status["lastTrial"]["outcome"] == "success"
+        print(f"[PASS] Target success finalized upon load completion in Firefox: outcome={completed_status['lastTrial']['outcome']}, elapsed={completed_status['lastTrial']['elapsedMs']}ms")
+
+        # Close content tab and stay on extension tab
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": content_handle})
+        client.send_cmd("WebDriver:CloseWindow")
+        client.send_cmd("WebDriver:SwitchToWindow", {"handle": ext_handle})
+
+        # Open controller and submit NASA-TLX
         client.send_cmd("WebDriver:ExecuteScript", {"script": "window.alert = () => {}; window.confirm = () => true;"})
         client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-controller-btn').click();"})
         time.sleep(0.5)
@@ -1073,7 +1216,7 @@ def run_firefox_test(http_port, cdn_port):
 
         assert timeout_res and timeout_res["outcome"] == "timeout"
         assert timeout_res["elapsedMs"] == 120000
-        print(f"[PASS] Timeout outcome verified in Firefox: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
+        print(f"[PASS] Simulated deadline check verified timeout outcome in Firefox: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
 
         # ------------------------------------------------------------------
         # Finish Session Action in Firefox

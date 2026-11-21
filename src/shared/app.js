@@ -870,6 +870,11 @@
     card.className = 'tree-card';
     card.setAttribute('role', 'listitem');
     card.setAttribute('data-tree-id', tree.treeId);
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button, a')) return;
+      openTreeDetail(tree.treeId);
+    });
 
     // Header: domain icon + domain + open-tabs/pruned badges
     const header = document.createElement('div');

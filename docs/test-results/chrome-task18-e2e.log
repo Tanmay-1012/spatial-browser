@@ -1,6 +1,6 @@
 ================================================================================
 TASK 18: GOOGLE CHROME RUNTIME VERIFICATION
-Timestamp: 2026-11-20 23:29:57 UTC
+Timestamp: 2026-11-21 00:39:47 UTC
 Chrome Binary: C:\Program Files\Google\Chrome\Application\chrome.exe
 ================================================================================
 [INIT] Loaded unpacked extension via CDP: edhmggcmhhmlbfmidpeamoiffebfijah
@@ -12,6 +12,7 @@ Chrome Binary: C:\Program Files\Google\Chrome\Application\chrome.exe
 --- STEP 2: Extension UI, Stored Sibling Graph & Screenshots ---
 [PASS] Research Trees Overview rendered 1 tree card(s).
 [PASS] Storage graph audited: 7 total nodes, Hub has 4 sibling children.
+[PASS] Chrome detail view confirmed: visible=True, nodes=7, edges=6
 [PASS] Captured Chrome desktop screenshot: D:\Projects\HCI Project\docs\test-results\chrome-branch-desktop.png
 [PASS] Captured Chrome reflow screenshot: D:\Projects\HCI Project\docs\test-results\chrome-branch-reflow.png
 
@@ -21,15 +22,15 @@ Chrome Binary: C:\Program Files\Google\Chrome\Application\chrome.exe
 [PASS] Sequence 4 Period 1 automatically derived: Condition=B, Pack=pack_x
 [PASS] Chrome Trial 1 started: Participant P01 • Condition B • Period 1
 
---- STEP 4: Delayed Target Response & Load Completion Timing ---
-[PASS] Incorrect corpus page open recorded: count = 1.
+--- STEP 4: Redirects, Storage Privacy & Delayed Target Completion Timing ---
+[PASS] 3xx redirect destination counted: count = 1; storage privacy verified (zero URLs/tab IDs in storage).
 [PASS] In-flight check while target document is loading: active=True, completedTrials=0
 [PASS] Target success finalized upon load completion: outcome=success, elapsed=3036ms
 [PASS] Raw TLX live calculation verified: Raw TLX Summary: 23.3 / 100 (expected 23.3)
 
 --- STEP 5: Sequence 4 Period 2 (Condition A / Pack Y) & Timeout ---
 [PASS] Sequence 4 Period 2 derived: Condition=A, Pack=pack_y
-[PASS] Timeout outcome verified in Chrome: outcome=timeout, elapsed=120000ms
+[PASS] Simulated deadline check verified timeout outcome in Chrome: outcome=timeout, elapsed=120000ms
 
 --- STEP 6: Finish Session Control & Audit Stamp ---
 [PASS] Finish Session verified: status=finished, finishEventLogged=True
