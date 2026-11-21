@@ -4,7 +4,8 @@
 **Author:** Tanmay Tejaswi  
 **GitHub Repository:** [https://github.com/TanmayTejaswi/spatial-browser](https://github.com/TanmayTejaswi/spatial-browser)  
 **Branch:** `codex/task-18-user-study`  
-**Status:** Resubmitted for Lead Review (Addressing Follow-up Review Corrections). See [`tasks/task-18-review-followup.md`](tasks/task-18-review-followup.md).  
+**Status:** Accepted after lead re-review on 2026-11-21. Implementation is accepted for study readiness; human participation remains unauthorized pending supervisor/institution approval and owner authorization. See [`tasks/task-18-review-followup.md`](tasks/task-18-review-followup.md).
+
 **Constraint Notice:** As specified in [`task-18.md`](tasks/task-18.md), [`task-18-review.md`](tasks/task-18-review.md), [`task-18-review-followup.md`](tasks/task-18-review-followup.md), and [`USER_STUDY_PLAN.md`](../docs/USER_STUDY_PLAN.md), no human participants were recruited, no live human study was executed, no efficiency superiority claims are made, and the published `v2.0.0` release remains unaltered.
 
 ---
@@ -15,9 +16,9 @@ Task 18 prepares the Spatial Browser History extension for a future controlled w
 
 1. **Storage Privacy Boundary (Zero URLs / Query / Hash / Tab IDs in Storage):** Eliminated raw URL, query parameter, fragment, and system tab ID storage from active trial state. Ephemeral tab ID mappings and navigation deduplication state now reside strictly in transient in-memory `Map` instances (`_transientTabMap`, `_transientTabNavState`) on `StudyManager`. Standardized projection helper `projectTrialRecord()` across trial completion, finish session, and abandonment so that only approved schema fields are ever saved under `spatial_browser_study_data`. Verified by direct storage inspection during active trials and after session finish in both automated unit tests and live Chrome/Firefox browser runs.
 2. **Redirect Destination Counting (HTTP 3xx Server & Client Redirect Collapsing):** Revised navigation handling so that HTTP 3xx server redirect destinations (with `server_redirect` qualifiers) correctly increment qualifying destination page opens. Intermediate client redirects (e.g. meta-refresh) collapse to a single event for the final destination key. Added real local 302 redirect verification endpoints (`/redirect-wrong-302`, `/redirect-target-302`) in the E2E harness.
-3. **Signal-Level Deduplication (<600ms Genuine Repeat Opens & Back/Forward Counting):** Replaced the fixed 600ms URL time suppression window with signal-level deduplication (`documentId`, `navigationId`, details object identity, or identical event timestamp). Genuine fast repeat opens of the same page within 600ms in the same tab correctly count as distinct visits. Back/Forward (`forward_back`) destination visits are counted and recorded with proper qualifiers.
+3. **Signal-Level Deduplication (<600ms Genuine Repeat Opens & Back/Forward Counting):** Replaced the fixed 600ms URL time suppression window with deduplication only by matching `documentId`/`navigationId` or identical event object reference. Timestamp equality is never used to discard a commit, including when a browser omits navigation IDs. Genuine rapid opens in the same tab, including two commits with identical timestamps and no IDs, count as distinct visits. Back/Forward (`forward_back`) destination visits are counted and recorded with proper qualifiers.
 4. **Actual Branch Graph Detail View Screenshots:** Updated runner to explicitly activate the tree's **Open Tree Detail View** control (`.tree-open-btn`), asserted detail canvas visibility (`#detail-view`), confirmed rendered nodes (`>= 6`) and edges (`>= 4`), executed `#zoom-reset`, and captured actual tree graphs at desktop (1280&times;800) and narrow reflow (480&times;800) in both Google Chrome and Mozilla Firefox. Visually inspected all four resulting PNGs.
-5. **Firefox Asynchronous In-Flight Target Timing:** Converted Firefox target navigation to asynchronous evaluation (`window.location.href = ...`) targeting a delayed response endpoint (`delay=1`). The runner inspects extension storage via Marionette while the request is in flight, logging `hasActiveTrial: true, completedTrialCount: 0`, and confirms completion (`outcome: 'success'`) only after document load completes.
+5. **Firefox Asynchronous In-Flight Target Timing:** Converted Firefox target navigation to asynchronous evaluation (`window.location.href = ...`) through `/redirect-target-302` to a delayed response endpoint. The runner inspects extension storage via Marionette while the request is in flight, logging `hasActiveTrial: true, completedTrialCount: 0`, and confirms completion (`outcome: 'success'`) only after document load completes.
 6. **Tightened Participant Validation & Protocol Clarifications:** Updated participant code validation regex to `/^P([1-9]\d{1,2}|0[1-9])$/`, strictly rejecting `P00`, `P000`, `P001`, `P1`, and `P1000`, while accepting `P01` through `P999`. Added automated test coverage for CSV escaping (commas, double quotes, newlines) and Back/Forward events. Clarified that timeout tests are simulated deadline checks and that Firefox Condition A exercises the shared recording metadata/controller path.
 
 The full automated test suite passes at **80 passed, 0 failed**. Sequential browser runtime checks in **Google Chrome 157.0.8103.80** and **Mozilla Firefox 160.0.1** completed with exit code 0 and 0 console errors pre- and post-test.
@@ -29,10 +30,10 @@ The full automated test suite passes at **80 passed, 0 failed**. Sequential brow
 | Review Item | Required Correction | Implementation Resolution | Verification Evidence |
 | :--- | :--- | :--- | :--- |
 | **1. Storage Privacy Boundary** | Do not persist raw URLs, query strings, fragments, or browser tab IDs in active trial or after session finish. Project only approved schema fields. | Converted `tabMap` and `tabNavState` to transient in-memory Maps (`this._transientTabMap`, `this._transientTabNavState`) on `StudyManager`. Stripped them from `activeTrial`. Implemented `projectTrialRecord()` ensuring only approved schema fields are saved. | `tests/test-study.mjs`: Privacy boundary test inspects active study storage and post-finish storage, asserting zero URLs, query/hash material, or numeric tab IDs. Step 4 in both Chrome & Firefox E2E directly audits `chrome.storage.local.get('spatial_browser_study_data')` during active trial. |
-| **2. Redirect Destination Counting** | Count qualifying final destination commits when `server_redirect` is present. Collapse intermediate client redirects. Remove unit test dropping redirect commits. | Updated `handleNavigationCommitted` to process final destination commits with `server_redirect`. Intermediates collapsed via transient navigation key. Replaced buggy unit assertion with valid destination counting tests. | `tests/test-study.mjs`: Server redirect destination and client redirect collapsing tests pass. Live `/redirect-wrong-302` tested in Chrome & Firefox E2E: asserts `incorrectOpens === 1` for final destination key. |
-| **3. Rapid Repeat-Open Deduplication** | Do not suppress fast genuine repeat opens (<600ms) with fixed URL window. Suppress duplicate signals only. Count Back/Forward visits. | Replaced 600ms time suppression with signal-level deduplication (`documentId`, `navigationId`, details object identity, identical timestamp). Two fast opens within 600ms count as 2. Count Back/Forward (`forward_back`) visits. | `tests/test-study.mjs`: Verified two separate same-tab opens within 600ms produce 2 counts while duplicate signals are suppressed. Back/Forward destination visit counting verified. |
+| **2. Redirect Destination Counting** | Count qualifying final destination commits when `server_redirect` is present. Collapse intermediate client redirects. Remove unit test dropping redirect commits. | Updated `handleNavigationCommitted` to process final destination commits with `server_redirect`. Intermediate client redirect steps collapse to one final destination event. | `tests/test-study.mjs`: Server redirect destination and client redirect collapsing tests pass. Chrome & Firefox E2E: HTTP 302 wrong destination increments once; meta-refresh to a second wrong corpus page adds exactly one final `px_grid` event (total count 2); HTTP 302 target succeeds only after the delayed target load completes. |
+| **3. Rapid Repeat-Open Deduplication** | Do not suppress fast genuine repeat opens (<600ms) with fixed URL window. Suppress duplicate signals only. Count Back/Forward visits. | Suppress only a repeated `documentId`/`navigationId` or the same event object. Do not use timestamp equality as a duplicate signal, because distinct commits can share a timestamp. | `tests/test-study.mjs`: Fast same-tab opens count separately; two opens with distinct document IDs and two opens without IDs at an identical timestamp each count separately. Repeated navigation ID and same-object redelivery are suppressed. Back/Forward destination visit counting is verified. |
 | **4. Actual Branch Graph Screenshots** | Capture actual tree graphs in detail view, not overview cards. Assert detail canvas, nodes, and edges visible. Capture desktop and reflow in Chrome and Firefox. | Updated runner to click `.tree-open-btn`, assert `#detail-view` visible, nodes &ge; 6, edges &ge; 4, click `#zoom-reset`, and capture desktop and reflow screenshots in Chrome and Firefox. | Visually verified 4 screenshots: `chrome-branch-desktop.png` (1280&times;800), `chrome-branch-reflow.png` (480&times;800), `firefox-branch-desktop.png` (1582&times;883 / 1280&times;800 outer), `firefox-branch-reflow.png` (625&times;883 / 514&times;800 outer). |
-| **5. Firefox In-Flight Target Check** | Demonstrate Firefox trial remains active during delayed load using asynchronous navigation. Check state before load finishes, then check success after load. | Used `window.location.href = delayed_target_url` asynchronously via `WebDriver:ExecuteScript`. Switched to extension tab to verify `hasActiveTrial: true, completedTrialCount: 0`. Waited for load and verified `outcome: 'success'`. | Firefox E2E log explicitly records: `[PASS] In-flight check while Firefox target document is loading: active=True, completedTrials=0` followed by `[PASS] Target success finalized upon load completion: outcome=success, elapsed=3028ms`. |
+| **5. Firefox In-Flight Target Check** | Demonstrate Firefox trial remains active during delayed load using asynchronous navigation. Check state before load finishes, then check success after load. | Used `window.location.href = delayed_target_url` asynchronously via `WebDriver:ExecuteScript`. Switched to extension tab to verify `hasActiveTrial: true, completedTrialCount: 0`. Waited for load and verified `outcome: 'success'`. | Firefox E2E log records active trial with zero completed trials during load, then target success after load (`elapsed=4387ms` on the final run). |
 | **6. Tighten Participant Code & Claims** | Reject `P00`, `P000`, `P001`. Test boundaries `P01`, `P99`, `P100`, `P999`. Add CSV escaping & Back/Forward tests. Label timeout tests as simulated deadline checks. Clarify Firefox Cond A. | Regex updated to `/^P([1-9]\d{1,2}\|0[1-9])$/`. Added boundary tests in `tests/test-study.mjs`. Added CSV escaping tests for commas/quotes/newlines. Added Back/Forward test. Documented simulated deadline checks and Firefox Cond A controller role. | Automated tests in `test-study.mjs` pass. E2E logs and report explicitly document simulated deadline check (`elapsed=120000ms`) and Firefox Condition A shared controller path. |
 
 ---
@@ -107,39 +108,23 @@ Both Chrome and Firefox passed this direct audit with zero leaks.
 ## 4. Redirect Handling & Signal-Level Deduplication
 
 ### 4.1 Server Redirect (3xx) & Client Redirect Collapsing
-`webNavigation.onCommitted` delivers `transitionQualifiers` such as `["server_redirect"]` on the final destination commit following an HTTP 301/302 response. Rather than returning early, `handleNavigationCommitted` processes the destination page key:
-
-```javascript
-// Check qualifiers for redirects
-const isServerRedirect = qualifiers.includes('server_redirect');
-const isClientRedirect = qualifiers.includes('client_redirect');
-
-// If this is an intermediate client redirect step, collapse it
-if (isClientRedirect && !pageKey) {
-  return;
-}
-```
-
-In the E2E test, navigating to `http://127.0.0.1:{port}/redirect-wrong-302` triggers a 302 redirect to `/study/fixtures/pack_x/efficiency.html`. The final committed navigation increments `incorrectPageOpens` to exactly `1` for `px_efficiency`. Intermediate redirects do not generate spurious errors.
+The tracker counts the final allowlisted destination of an HTTP 301/302 navigation, including commits carrying the `server_redirect` qualifier. Client/meta-refresh redirects are reduced to one event for the final corpus destination. In Chrome and Firefox E2E, `/redirect-wrong-302` produces one incorrect open for `px_efficiency`; `/redirect-client` then produces exactly one additional event for `px_grid` (total count 2). The delayed target is reached through `/redirect-target-302`; the trial remains active until the final target document finishes loading.
 
 ### 4.2 Signal-Level Deduplication vs. 600ms Time Window
 The former implementation used a blanket 600ms URL time suppression window, which incorrectly discarded genuine rapid reopens. The updated strategy uses signal-level deduplication:
 
 ```javascript
-const navId = details.navigationId || details.documentId || null;
-const isSameNavKey = navId && tabState.lastNavId === navId;
-const isSameObject = tabState.lastDetailsObj === details;
-const isSameEventTimestamp = Number.isFinite(details.timeStamp) &&
-  tabState.lastEventTimestamp === details.timeStamp &&
-  tabState.lastCommittedKey === pageKey;
+const navKey = details.documentId || details.navigationId || null;
+const isSameNavKey = Boolean(navKey && tabState && navKey === tabState.lastNavKey);
+const isSameObject = Boolean(details && tabState && details === tabState.lastDetails);
 
-if (isSameNavKey || isSameObject || isSameEventTimestamp) {
+if (isSameNavKey || isSameObject) {
   return; // Suppress duplicate signal re-delivery
 }
 ```
 
-- **Genuine Rapid Opens:** Two clicks on the same link within 300ms generate distinct navigation events (different `navigationId` / timestamps) and both increment `incorrectPageOpens`.
-- **Duplicate Signals:** Re-delivery of the exact same event by browser listeners is filtered.
+- **Genuine Rapid Opens:** Separate commits count even if they arrive within 600ms, share the same timestamp, or omit navigation IDs.
+- **Duplicate Signals:** Re-delivery with the same navigation ID or the same event object is filtered. Timestamp-only suppression is intentionally not used.
 - **Back/Forward:** Destination visits traversed via `forward_back` transition qualifiers are counted as genuine page opens and recorded in audit events.
 
 ---
@@ -164,11 +149,11 @@ The E2E test enters the tree detail view via `.tree-open-btn`, asserts that `#de
 ### 6.1 Asynchronous In-Flight Target Timing
 In both Google Chrome (via CDP `Runtime.evaluate`) and Mozilla Firefox (via Marionette `WebDriver:ExecuteScript`), target navigation is triggered asynchronously:
 ```javascript
-window.location.href = 'http://127.0.0.1:{port}/study/fixtures/pack_x/materials.html?delay=1';
+window.location.href = 'http://127.0.0.1:{port}/redirect-target-302';
 ```
-The runner switches immediately to the extension tab and inspects storage while the server delay is in flight.
-- **Chrome Step 4:** `In-flight check while target document is loading: active=True, completedTrials=0`. Concluded upon load completion: `outcome=success, elapsed=3036ms`.
-- **Firefox Step 4:** `In-flight check while Firefox target document is loading: active=True, completedTrials=0`. Concluded upon load completion: `outcome=success, elapsed=3028ms`.
+The endpoint responds with HTTP 302 to the allowlisted target with a 1.2-second response delay. The runner switches immediately to the extension tab and inspects storage while the destination is loading.
+- **Chrome Step 4:** `active=True, completedTrials=0` in flight; after load, `outcome=success, elapsed=5360ms`.
+- **Firefox Step 4:** `active=True, completedTrials=0` in flight; after load, `outcome=success, elapsed=4387ms`.
 
 ### 6.2 Simulated Deadline Check (Timeout Outcome)
 In Step 5 of the browser E2E runs, timeout behavior is verified via a **simulated deadline check**:
@@ -288,7 +273,7 @@ The full automated test suite was executed sequentially via `npm.cmd run build; 
   ✓ Storage privacy boundary: zero raw URLs, query/hash material, or browser tab IDs in storage during active trial or after session finish
   ✓ Back/Forward navigation: counts destination visits and records forward_back transition qualifiers
   ✓ Fast genuine repeat opens within 600ms vs duplicate signals: counts distinct visits and suppresses exact signal re-deliveries
-  ✓ Event-level deduplication: counts across tabs and after off-corpus visits, excludes reloads and redirects
+  ✓ Event-level deduplication: counts across tabs and after off-corpus visits, excludes reloads and hash-only updates
   ✓ Finish session action: audits session, completes active trial as abandoned, and blocks further trials
   ✓ NASA-TLX: enforces step-5 increments, validates boundaries, and computes raw TLX
   ✓ Privacy Audit: CSV and JSON exports contain zero raw URLs, titles, search queries, or off-corpus records
@@ -314,8 +299,8 @@ Automated runtime verification was executed via `scripts/e2e-task18-runtime.py`:
 1. **Sibling Branch Scenario:** Research Hub opened, 2 child tabs opened via `target="_blank"`, same-tab Back/Forward traversal with download executed. Storage graph audited: 7 total nodes, Hub has 4 sibling children (`tab2`, `tab3`, `source-a`, `source-b`), `source-a` has 2 children (`child-a`, `download`).
 2. **Detail View & Visual Verification:** Activated `.tree-open-btn`, asserted `#detail-view` visibility, verified rendered nodes (&ge; 6) and edges (&ge; 4), executed `#zoom-reset`, and captured desktop and reflow screenshots.
 3. **Latin Square Sequence Assignment:** Chrome runs `seq_4` (Period 1: B/pack_x, Period 2: A/pack_y); Firefox runs `seq_1` (Period 1: A/pack_x, Period 2: B/pack_y). Auto-derivation and locked inputs confirmed.
-4. **Redirects & Privacy Audit:** Navigated to `/redirect-wrong-302`, verified destination count increments to 1 (`px_efficiency`). Verified zero raw URLs, query strings, hashes, or numeric tab IDs in `spatial_browser_study_data`.
-5. **Asynchronous In-Flight Check:** Navigated asynchronously to delayed target endpoint (`delay=1`). Verified `hasActiveTrial: true, completedTrialCount: 0` while request is in flight. Concluded upon load completion with `outcome: 'success'`.
+4. **Redirects & Privacy Audit:** `/redirect-wrong-302` increments the destination count once for `px_efficiency`; `/redirect-client` adds one final `px_grid` event and no intermediate event. Verified zero raw URLs, query strings, hashes, or numeric tab IDs in `spatial_browser_study_data`.
+5. **Asynchronous In-Flight Check:** Navigated asynchronously through `/redirect-target-302` to a delayed target. Verified `hasActiveTrial: true, completedTrialCount: 0` while the final document was in flight. The trial completed with `outcome: 'success'` only after load completion.
 6. **NASA-TLX Scoring:** Live calculation verified (unweighted arithmetic mean = 23.3 / 100).
 7. **Simulated Deadline Check:** Simulated 120s timeout on Period 2, verified `outcome: 'timeout'` and `elapsedMs = 120000`.
 8. **Finish Session Action:** Audited session, confirmed `status = 'finished'` and `session_finish` audit event logged.
@@ -342,10 +327,15 @@ Automated runtime verification was executed via `scripts/e2e-task18-runtime.py`:
 
 ---
 
-## 11. Conclusion & Submission for Lead Review
+## 11. Lead Re-Review & Acceptance — 2026-11-21
 
-All six correction items from [`tasks/task-18-review-followup.md`](tasks/task-18-review-followup.md) have been implemented, tested, and verified across both Google Chrome and Mozilla Firefox. In accordance with lead instructions:
-- Branch `codex/task-18-user-study` is resubmitted for lead review.
-- The branch is not merged to `main`.
-- No release tags have been created and no packages published.
-- No human participants were recruited, and no live human study results are claimed.
+The lead reproduced the review checks after correcting one remaining deduplication edge case: timestamp-only equality could still suppress two distinct commits when a browser omitted navigation IDs. Timestamp-based suppression was removed, and a regression assertion now proves that two same-page commits with no IDs and identical timestamps both count. A separate-ID/same-timestamp case is covered as well.
+
+Final verification on the accepted source state:
+- Source commit verified on `codex/task-18-user-study`: `6ebcdaf` (`test(study): verify client redirect meta-refresh and timestamp collision handling`).
+- `npm.cmd run build`: passed; Chrome 2.0.0 (minimum Chrome 109) and Firefox 2.0.0 (minimum Firefox 115.0) packages generated.
+- `npm.cmd test`: **80 passed, 0 failed** (12 build/manifest, 35 tracker/storage, 14 UI, 4 branch, 15 study/privacy).
+- `python scripts/e2e-task18-runtime.py`: Chrome 157.0.8103.80 and Firefox 160.0.1 both passed. Each run verified the real HTTP 302 wrong-page destination, meta-refresh final-page count, delayed HTTP 302 target load, storage/export privacy, sequence mapping, reset/delete, and branch detail screenshots; pre/post error audits each recorded 0 errors.
+- The four browser/viewport screenshots show the actual detail graph with visible sibling branches and Source A descendants.
+
+**Task 18 is accepted as implementation and study-readiness work.** The published v2.0.0 release remains unchanged; the branch has not been merged, tagged, or published. No human participants were recruited and no efficacy result is claimed. Do not begin recruitment or run a human pilot until the supervisor/institution has approved the protocol and the owner explicitly authorizes that next phase.

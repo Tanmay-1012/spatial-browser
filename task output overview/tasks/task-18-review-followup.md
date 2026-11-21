@@ -1,6 +1,7 @@
 # Task 18 Follow-up Lead Review — Additional Corrections
 
-**Status:** Changes requested; Task 18 remains unaccepted.  
+**Status:** Accepted after lead re-review on 2026-11-21; historical review findings and corrections are preserved below.
+
 **Reviewed commit:** `95f15cb` (`Address Task 18 review corrections...`)  
 **Active branch:** `codex/task-18-user-study`
 
@@ -48,7 +49,7 @@ Add automated coverage for CSV escaping and Back/Forward events if not already p
 4. Verify and visually inspect four detail-map screenshots (two browsers × two viewport sizes).
 5. Update `task-18-output.md`, README, and indexes to reflect the evidence accurately. Do not mark the task complete or accepted; resubmit for lead review.
 
-## Lead verification baseline
+## Initial lead verification baseline (before follow-up corrections)
 
 - `npm.cmd run build`: passed.
 - `npm.cmd test`: **75 passed, 0 failed**.
@@ -56,4 +57,18 @@ Add automated coverage for CSV escaping and Back/Forward events if not already p
 - Stored graph assertions: 7 nodes; hub has 4 sibling children in each browser.
 - Direct privacy inspection reproduced a raw URL with query/hash and numeric tab ID in active study storage.
 - Visual screenshot inspection found the four named branch images capture overview cards rather than the detail graph.
-- Task 18 remains **not accepted** until the corrections above are evidenced.
+- At that review point, Task 18 remained **not accepted** until the corrections above were evidenced. The final decision is recorded in the closeout section below.
+
+## Lead re-review closeout — accepted 2026-11-21
+
+The lead made one final correction before acceptance: removed timestamp-only duplicate suppression, which could discard distinct same-page commits if navigation IDs were unavailable and timestamps collided. Added a regression case for two such commits; both count as separate opens. The follow-up test also retains coverage for repeated navigation IDs and identical event-object redelivery.
+
+Final checks on the corrected workspace passed:
+
+- `npm.cmd run build`: passed.
+- `npm.cmd test`: 80 passed, 0 failed.
+- `python scripts/e2e-task18-runtime.py`: Chrome 157.0.8103.80 and Firefox 160.0.1 both passed; 0 pre-test and post-test console errors in each browser.
+- Real HTTP 302 wrong-page destination and meta-refresh client redirect were exercised in both browsers. A 302 redirect to the delayed target remained active during load and completed only after the target loaded.
+- Four actual detail-view branch screenshots were captured and visually inspected.
+
+Task 18 is accepted for implementation/study readiness. No human study or recruitment is authorized by this acceptance. Supervisor/institution approval and explicit owner authorization are still required before a pilot.

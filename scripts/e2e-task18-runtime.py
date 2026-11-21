@@ -482,19 +482,28 @@ def run_chrome_test(http_port, cdn_port):
                     let nodes = d.nodes || {};
                     let hubNodes = Object.values(nodes).filter(n => (n.url || '').includes('/hub'));
                     let srcANodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-a'));
+                    let srcBNodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-b'));
                     let hubNode = hubNodes.find(n => (n.childNodeIds || []).length >= 4) || hubNodes.find(n => (n.childNodeIds || []).length > 0) || hubNodes[0];
                     let srcANode = srcANodes.find(n => (n.childNodeIds || []).length > 0) || srcANodes[0];
+                    let srcBNode = srcBNodes[0];
                     res({
                         totalNodes: Object.keys(nodes).length,
                         hubCount: hubNodes.length,
+                        hubNodeId: hubNode ? hubNode.id : null,
                         hubChildren: hubNode ? hubNode.childNodeIds : [],
-                        srcAChildren: srcANode ? srcANode.childNodeIds : []
+                        srcAChildren: srcANode ? srcANode.childNodeIds : [],
+                        sourceBTitle: srcBNode ? srcBNode.title : null,
+                        sourceBParentNodeId: srcBNode ? srcBNode.parentNodeId : null,
+                        extensionNodeCount: Object.values(nodes).filter(n => /^(chrome|moz)-extension:/i.test(n.url || '')).length
                     });
                 });
             })
         """, await_promise=True)
         print(f"[PASS] Storage graph audited: {graph_audit['totalNodes']} total nodes, Hub has {len(graph_audit['hubChildren'])} sibling children.")
         assert len(graph_audit['hubChildren']) >= 4, f"Hub should have at least 4 children, got {len(graph_audit['hubChildren'])}"
+        assert graph_audit['sourceBTitle'] == 'Source B', f"Source B title was not preserved when opening extension UI: {graph_audit}"
+        assert graph_audit['sourceBParentNodeId'] == graph_audit['hubNodeId'], f"Source B must remain a sibling under the hub: {graph_audit}"
+        assert graph_audit['extensionNodeCount'] == 0, f"Extension pages must not be captured as history nodes: {graph_audit}"
 
         # Open Detail View for screenshots
         cdp.eval(map_sid, """(() => {
@@ -1001,18 +1010,27 @@ def run_firefox_test(http_port, cdn_port):
                 let nodes = d.nodes || {};
                 let hubNodes = Object.values(nodes).filter(n => (n.url || '').includes('/hub'));
                 let srcANodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-a'));
+                let srcBNodes = Object.values(nodes).filter(n => (n.url || '').includes('/source-b'));
                 let hubNode = hubNodes.find(n => (n.childNodeIds || []).length >= 4) || hubNodes.find(n => (n.childNodeIds || []).length > 0) || hubNodes[0];
                 let srcANode = srcANodes.find(n => (n.childNodeIds || []).length > 0) || srcANodes[0];
+                let srcBNode = srcBNodes[0];
                 done({
                     totalNodes: Object.keys(nodes).length,
                     hubCount: hubNodes.length,
+                    hubNodeId: hubNode ? hubNode.id : null,
                     hubChildren: hubNode ? hubNode.childNodeIds : [],
-                    srcAChildren: srcANode ? srcANode.childNodeIds : []
+                    srcAChildren: srcANode ? srcANode.childNodeIds : [],
+                    sourceBTitle: srcBNode ? srcBNode.title : null,
+                    sourceBParentNodeId: srcBNode ? srcBNode.parentNodeId : null,
+                    extensionNodeCount: Object.values(nodes).filter(n => /^(chrome|moz)-extension:/i.test(n.url || '')).length
                 });
             });
         """})["value"]
         print(f"[PASS] Firefox storage graph audited: {graph_audit['totalNodes']} nodes, Hub has {len(graph_audit['hubChildren'])} sibling children.")
         assert len(graph_audit['hubChildren']) >= 4, f"Hub should have at least 4 children, got {len(graph_audit['hubChildren'])}"
+        assert graph_audit['sourceBTitle'] == 'Source B', f"Firefox Source B title was not preserved when opening extension UI: {graph_audit}"
+        assert graph_audit['sourceBParentNodeId'] == graph_audit['hubNodeId'], f"Firefox Source B must remain a sibling under the hub: {graph_audit}"
+        assert graph_audit['extensionNodeCount'] == 0, f"Firefox extension pages must not be captured as history nodes: {graph_audit}"
 
         # Open Detail view
         client.send_cmd("WebDriver:ExecuteScript", {"script": """

@@ -493,11 +493,15 @@ await test('Page title updates in place on tabs.onUpdated without creating new n
   assert.strictEqual(state.nodes[nodeId].title, 'https://example.org/article');
 
   // DOM finishes loading and sets document.title
-  await mockEnv.emitTabUpdated(7, { title: 'Human Readable Title' });
+  await mockEnv.emitTabUpdated(7, { title: 'Human Readable Title' }, { url: 'https://example.org/article', status: 'complete' });
 
   state = await storage.getState();
   assert.strictEqual(Object.keys(state.nodes).length, 1, 'Must not create extra node for title update');
   assert.strictEqual(state.nodes[nodeId].title, 'Human Readable Title', 'Title should be updated in place');
+
+  await mockEnv.emitTabUpdated(7, { title: 'Spatial Browser History' }, { url: 'moz-extension://test-id/index.html', status: 'complete' });
+  state = await storage.getState();
+  assert.strictEqual(state.nodes[nodeId].title, 'Human Readable Title', 'Extension-page title must not overwrite the last web visit title');
 });
 
 await test('A title for a pending new URL does not overwrite the previous visit title', async () => {

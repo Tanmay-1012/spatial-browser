@@ -2,11 +2,11 @@
 
 This record separates automated source-level checks from manual browser behavior. Automated mocks and pure logic tests do not prove that an installed extension works end to end.
 
-## Task 11–18 status (2026-11-20)
+## Task 11–18 status (2026-11-21)
 
 Task 11 core backend implementation and Tasks 12–14 are accepted as recorded above. Task 15 remains accepted with the Chrome 109 evidence limitation. Task 16's GitHub-hosted build/test run passed. Task 17 is closed with an environment limitation: the exact Google-signed Chrome `109.0.5414.165` package was verified and extracted, but the available hosted runner could not execute the extension runtime checks. Branded Chrome 109 therefore remains **unverified**; see the [Task 17 closeout](../task%20output%20overview/task-17-output.md).
 
-Task 18 implementation and synthetic-data verification are complete: visible branching repaired (Part A), matched static topic packs X/Y created (Part B), opt-in study controller with NASA-TLX implemented (Part C), and private CSV/JSON export verified across 73 automated checks and isolated-profile Chrome 157 / Firefox 160 E2E runs (Part D). Submitted for lead review; participant recruitment is not authorized under this task. See [`task-18-output.md`](../task%20output%20overview/task-18-output.md) and [`STUDY_PROTOCOL.md`](STUDY_PROTOCOL.md).
+Task 18 is accepted for study readiness after lead re-review: visible branching repaired (Part A), matched static topic packs X/Y created (Part B), opt-in study controller with NASA-TLX implemented (Part C), and private CSV/JSON export verified across 80 automated checks and isolated-profile Chrome 157 / Firefox 160 E2E runs (Part D). The latest runtime run passed with zero pre/post console errors. This acceptance does not authorize recruitment; a pilot still requires supervisor/institution approval and explicit owner authorization. See [`task-18-output.md`](../task%20output%20overview/task-18-output.md) and [`STUDY_PROTOCOL.md`](STUDY_PROTOCOL.md).
 
 ## Test record
 

@@ -1,6 +1,7 @@
 # Task 18 — Study Readiness: Repair Visible Branching and Add Private Study Export
 
-**Status:** Assigned — implementation and verification only; participant recruitment is not authorized by this task.  
+**Status:** Accepted — implementation and verification complete; participant recruitment is not authorized by this task. See [`../task-18-output.md`](../task-18-output.md).
+
 **Study design:** Follow [`docs/USER_STUDY_PLAN.md`](../../docs/USER_STUDY_PLAN.md) as the lead-approved protocol. Raise a question before changing study measures, privacy boundaries, or task semantics.
 
 ## Objective

@@ -672,7 +672,9 @@
           if (typeof changeInfo.title !== 'string' || !changeInfo.title.trim()) return urlResult;
           const currentNode = await this.storage.getCurrentNodeForTab(tabId);
           const newTitle = changeInfo.title.trim();
-          if (currentNode && tab && isTrackableUrl(tab.url) && normalizeUrl(tab.url) !== normalizeUrl(currentNode.url)) {
+          // A title event from an extension, browser-internal, or otherwise non-web page
+          // must never rename the last tracked web visit for this tab.
+          if (currentNode && (!tab || !isTrackableUrl(tab.url) || normalizeUrl(tab.url) !== normalizeUrl(currentNode.url))) {
             return urlResult;
           }
           if (currentNode && currentNode.title !== newTitle) {
