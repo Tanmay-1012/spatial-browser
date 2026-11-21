@@ -47,17 +47,17 @@ Get the supervisor's approval for the consent language, recruitment, data handli
 
 Use two **matched, controlled research mini-sites** rather than live Wikipedia/Amazon pages for the primary comparison. Build stable local pages with realistic titles, short source excerpts, links, and unique facts. This prevents web changes, personalized accounts, ads, and network speed from deciding the result. The task packs can use themes such as solar energy and Olympic history, matching page count, title specificity, link structure, target depth, and target-cue difficulty.
 
-Each pack should contain a landing page and multiple linked source pages that naturally create a visible tree: at least two pages opened from the same parent, one deeper child path, and a same-tab return-and-branch path. The page corpus should include comparable search terms so Chrome History and the extension both get useful search functionality.
+The project now contains two local controlled packs under [`study/fixtures/`](../study/fixtures/), each with eight pages and a comparable landing page, branching links, a depth-two target path, and related source pages. The operational page links, exact task routes, facilitator timing, and answers are in the [Study Runbook](STUDY_PROTOCOL.md); the printable [Researcher Session Sheet](STUDY_SESSION_SHEET.md) tracks each participant's procedure. Serve the pages on the same computer as Chrome over loopback HTTP; `file://` pages are not accepted by the study logger.
 
 Before recruitment, have people outside the study check the two packs for comparable browsing duration and target difficulty. The pack assigned to each tool is counterbalanced. The exact target URL is known to the study controller, but the participant's retrieval prompt identifies it only by a fact or topic cue, not by page title or URL.
 
 ## 5. Session procedure
 
-Expected time: about **45–55 minutes** per participant.
+Expected time: about **50–60 minutes** per participant.
 
-1. **Consent and setup (5 minutes).** Use a fresh, disposable Chrome profile with the extension installed and an empty history/map. Close unrelated tabs, sign out of accounts, and use no personal profile. Explain that the study records only pages in the controlled corpus while a study trial is active. Do not use screen/audio recording or think-aloud in the primary study.
-2. **Equal familiarization (3–4 minutes).** Give a short practice with unrelated pages in both Chrome History and the Spatial map. Demonstrate only how to open each tool and search. Do not coach a retrieval strategy or point out the study target.
-3. **Research round 1 (15 minutes).** Give the assigned topic pack and the same five short fact-finding prompts to every participant. One prompt takes them to the preselected target page around minute 5. After reading it, they close that tab or navigate away and continue the remaining prompts for about 10 minutes. The task script should create branches through ordinary research actions (opening related sources in tabs and following a child page), not by telling them what the map should look like.
+1. **Consent and setup (5 minutes).** Use one dedicated Chrome study profile with an empty browser history and map. Do not sign into accounts, sync personal history, or use personal websites in this profile. Explain that the study log records controlled-corpus navigation only during timed retrieval; the extension's separate normal map stores page addresses while the extension is enabled. Do not use screen/audio recording or think-aloud in the primary study.
+2. **Equal familiarization (3–4 minutes).** Demonstrate how to open both tools and show an empty example map without opening the target pages or coaching a retrieval strategy. Use the same brief demonstration for each participant.
+3. **Research round 1 (15 minutes).** Read the assigned pack's five fact-finding prompts at the fixed times in the runbook. The second prompt leads through a two-link route to the target page around minute 5. After reading it, the participant navigates away and continues the remaining prompts for about 10 minutes. Use the same prompt order and timing for both packs.
 4. **Interruption and retrieval (maximum 120 seconds).** At the 15-minute mark, read the same prompt format for everyone: “Using [Chrome History / Spatial Browser History], find the exact page from earlier that mentioned [fact].” Start the study timer immediately after the final word. Stop automatically when the exact target page finishes loading, or record a timeout at 120 seconds. Allow an explicit “give up” action. No hints during the timed period.
 5. **Immediate workload rating (about 2 minutes).** Administer the same six NASA-TLX ratings for each condition. Use the standard scale wording and 0–100 ratings; calculate and retain each subscale plus the unweighted Raw TLX summary. The NASA TLX covers Mental Demand, Physical Demand, Temporal Demand, Performance, Effort, and Frustration [NASA TLX](https://www.nasa.gov/human-systems-integration-division/nasa-task-load-index-tlx/). The raw (unweighted) scoring method is described in the [validated human-factors scales repository](https://www.dote.osd.mil/Portals/97/pub/memos/Repository%20of%20Validated%20Scales%20for%20Human%20Factors%20Evaluation_WithCover.pdf?ver=2020-07-02-113412-667). Keep Mental Demand as its own endpoint; do not report only a composite.
 6. **Reset (about 4 minutes).** Close the round's pages, clear Chrome History using the browser UI, and clear the extension's normal map while retaining the separate study records. Confirm both tools start the next round empty. This reset must not require adding Chrome's `history` permission.
@@ -68,7 +68,7 @@ If the target was revisited during the 10-minute interval, mark that trial as pr
 
 ## 6. What can be measured automatically
 
-The current extension already records page visit timestamps, tree IDs, parent/child relationships, tab associations, and download provenance. It does **not** currently provide an explicit study session, task target, timer, trial labels, questionnaire, or study report export.
+The v2.1.0 codebase includes the opt-in Study Mode controller, target-aware 120-second timer, trial labels, six NASA-TLX inputs, and local CSV/JSON exports. During a timed trial it stores only allowlisted corpus page keys and coarse study events. Separately, the extension's ordinary History Map records the pages visited while the extension is installed and enabled. The study export and the ordinary browsing map are separate stores; clearing the map between rounds preserves study records.
 
 With an opt-in study mode and the controlled page corpus, the extension can log locally:
 
@@ -76,22 +76,22 @@ With an opt-in study mode and the controlled page corpus, the extension can log 
 - trial start/end timestamps, elapsed time, success/timeout/abandonment, and whether the target was reopened during the delay;
 - top-level navigation events into the known study corpus, with opaque page keys, timestamps, and navigation type/qualifiers;
 - count of **incorrect task-corpus page opens** before success, with event details for audit;
-- selected Spatial map nodes and coarse map actions (search used, zoom/fit used) during the Spatial condition, without recording search text or mouse coordinates;
+- coarse Spatial map actions that the current build records (search used and zoom/fit used), without recording search text or mouse coordinates;
 - six NASA-TLX ratings and a calculated Raw TLX score.
 
 ### Important limit on “misclicks”
 
 The extension cannot see every click made inside Chrome's browser-owned `chrome://history` page, and a page-navigation event does not reveal a person's intent. Therefore, the study must **not** label its automatic count “misclicks.” Call it **incorrect task-corpus page opens**: each top-level load of a known task page other than the target during the timed retrieval window, excluding redirect intermediates, reloads, and same-document/hash changes. Count Back/Forward revisits as page opens and retain the navigation trace. This is an objective, comparable proxy for a wrong result being opened, not a count of every wrong UI click. If literal clicks are essential, a human observer must tally them; this plan intentionally avoids video recording.
 
-The extension can stop the timer when a target tab reports the exact corpus key and finishes loading. It cannot infer attention, confusion, whether someone mentally remembered a path, or whether an unrecorded click was accidental. Those require self-report or observation.
+The extension stops the timer when a target tab reports the exact corpus key and finishes loading. It cannot infer attention, confusion, whether someone mentally remembered a path, or whether an unrecorded click was accidental. Those require self-report or observation. It also does not measure whether a participant read or understood the setup pages.
 
 ## 7. Export format and privacy
 
-Study mode must be **off by default** and visibly active when enabled. It records no study events until a researcher explicitly starts a session/trial. Store study records separately from ordinary browsing history. Keep all data on-device and provide an explicit local export and delete action; do not send telemetry or automatically upload reports.
+Study mode must be **off by default** and visibly active when a retrieval trial is running. It records no study events until a researcher starts a timed trial. The study-event export stores no full URLs, page text, search text, or off-corpus addresses. The extension's separate ordinary map does store page addresses, so an isolated study-only browser profile is required. Keep all data on-device and use explicit local export/delete controls; do not send telemetry or automatically upload reports.
 
 Use a fixed corpus allowlist and opaque page keys. Do not export full URLs, query strings, fragments, page contents, names, account IDs, or browser profile paths. Export two local files:
 
-- **`study-trials.csv`** — one row per participant/condition trial, suitable for analysis, with participant code, sequence, period, tool, topic pack, target key, start/end UTC, elapsed milliseconds, success, timeout/abandonment, target revisit flag, incorrect page-open count, six TLX ratings, Raw TLX score, and protocol-deviation flag.
+- **`study-trials.csv`** — one row per participant/condition trial, suitable for analysis, with participant code, sequence, period, tool, topic pack, target key, start/end UTC, elapsed milliseconds, categorical outcome (`success`, `timeout`, or `abandoned`), target revisit flag, incorrect page-open count, six TLX ratings, Raw TLX score, and protocol-deviation flag.
 - **`study-events.json`** — event-level audit trace keyed to the same trial, containing elapsed time, event type, opaque page key, navigation type/qualifiers, and coarse extension actions. No raw URL or input text.
 
 Include a short data dictionary in the export or alongside it. Keep an encrypted/approved study copy according to the supervisor's retention instructions; clear local study records after successful export and verification. Study records must not be cleared when the participant clears the ordinary map between rounds.
@@ -115,9 +115,9 @@ Do not recruit participants until all gates pass:
 
 1. The supplied branch scenario creates actual sibling edges in saved data and the rendered map shows a visible tree, not a line. Verify both the graph model and screenshots; do not paper over a linear graph with decorative lines.
 2. Topic packs have equivalent page count, target depth, link opportunities, and pilot difficulty.
-3. Study mode is opt-in, corpus-limited, local-only, visibly active, and stores records separately from ordinary history.
+3. Study mode is opt-in, corpus-limited, local-only, visibly active, and stores records separately from the ordinary map; the dedicated profile and map-reset steps are documented.
 4. Retrieval start, target-complete stop, 120-second timeout, abandon, inter-round reset, TLX entry, CSV/JSON export, and deletion have passing tests.
-5. The participant-facing script and questionnaire are frozen, supervisor/institution approval is confirmed, and the pilot sequence assignment sheet is prepared.
+5. The [Study Runbook](STUDY_PROTOCOL.md), participant task wording, and questionnaire are frozen; supervisor/institution approval is confirmed; the sequence assignment sheet and participant-code process are prepared; and the researcher dry-run checklist passes.
 
 ## References
 

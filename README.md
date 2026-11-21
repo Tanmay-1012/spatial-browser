@@ -3,7 +3,7 @@
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
 > **Current Stable Release:** [`v2.1.0`](https://github.com/TanmayTejaswi/spatial-browser/releases/tag/v2.1.0) — Cross-browser Manifest V3 release verified in Google Chrome 157 and Mozilla Firefox 160 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Study Readiness:** Opt-in user study controller, visible branching layout repair, title preservation guard, and privacy-preserving CSV/JSON export are implemented and verified across 80 automated tests and isolated Chrome/Firefox runtime checks. See the [Task 18 report](task%20output%20overview/task-18-output.md) and [Study Protocol](docs/STUDY_PROTOCOL.md).
+> **Study Readiness:** Opt-in user study controller, visible branching layout repair, title preservation guard, and privacy-preserving CSV/JSON export are implemented and verified across 80 automated tests and isolated Chrome/Firefox runtime checks. See the [Task 18 report](task%20output%20overview/task-18-output.md) and the step-by-step [Study Runbook](docs/STUDY_PROTOCOL.md).
 
 ## Project Status & Completed Deliverables
 
@@ -82,6 +82,10 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │   ├── TEST_PLAN.md           # Cross-browser verification checklist and test records
 │   ├── TASK_10.md             # Pointer to the canonical assignment folder
 │   ├── RELEASE_NOTES.md       # Version 2.1.0 release notes, compatibility, and evidence
+│   ├── STUDY_PROTOCOL.md      # Study runbook and standardized procedure
+│   ├── STUDY_SESSION_SHEET.md # Printable researcher session sheet
+│   ├── STUDY_DATA_DICTIONARY.md # Study CSV/JSON data dictionary
+│   ├── USER_STUDY_PLAN.md     # Within-subject comparison study design plan
 │   └── test-results/          # Real browser E2E execution logs and console error audits
 ├── outputs/                   # Generated build deliverables (do not edit manually)
 │   ├── chrome/

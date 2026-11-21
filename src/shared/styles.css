@@ -1356,6 +1356,20 @@ button.lineage-node-pill {
   gap: 16px;
 }
 
+.study-intro,
+.study-step-copy {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.study-intro code {
+  color: var(--color-text-main);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
 .study-privacy-notice {
   background-color: var(--color-bg);
   border-left: 4px solid var(--color-primary);
@@ -1391,7 +1405,7 @@ button.lineage-node-pill {
 
 .study-grid-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -1440,6 +1454,46 @@ button.lineage-node-pill {
   display: flex;
   gap: 10px;
   margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.study-assignment-summary {
+  padding: 10px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.study-optional-details {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.study-optional-details > summary {
+  color: var(--color-text-main);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.study-optional-details[open] > summary {
+  margin-bottom: 8px;
+}
+
+.study-data-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.study-session-actions {
+  margin-top: 2px;
 }
 
 .study-status-banner {
@@ -1451,6 +1505,10 @@ button.lineage-node-pill {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--color-text-muted);
+}
+
+.study-tlx-fieldset[hidden] {
+  display: none !important;
 }
 
 .study-tlx-desc {
@@ -1466,6 +1524,18 @@ button.lineage-node-pill {
 }
 
 @media (max-width: 600px) {
+  .study-modal-body {
+    padding: 14px;
+  }
+
+  .study-grid-row {
+    grid-template-columns: 1fr;
+  }
+
+  .study-actions-row > button {
+    flex: 1 1 100%;
+  }
+
   .tlx-grid {
     grid-template-columns: 1fr;
   }

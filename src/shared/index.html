@@ -75,10 +75,9 @@
       <div class="study-banner-content">
         <span class="study-pulse-dot" aria-hidden="true"></span>
         <strong class="study-banner-tag">STUDY RECORDING ACTIVE:</strong>
-        <span id="study-banner-info">Participant P01 &bull; Condition B &bull; Period 1</span>
+        <span id="study-banner-info">Round 1</span>
         <span class="study-banner-deadline" id="study-banner-timer">120s</span>
-        <button id="study-banner-stop-btn" type="button" class="btn btn-danger btn-xs">Give Up / Stop</button>
-        <button id="study-banner-finish-btn" type="button" class="btn btn-warning btn-xs">Finish Session</button>
+        <button id="study-banner-stop-btn" type="button" class="btn btn-danger btn-xs">Participant gives up</button>
       </div>
     </div>
 
@@ -309,88 +308,83 @@
       <div id="study-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="study-modal-title" tabindex="-1" hidden>
         <div class="modal-card study-modal-card">
           <div class="study-modal-header">
-            <h2 id="study-modal-title" class="modal-title">User Study Controller</h2>
+            <h2 id="study-modal-title" class="modal-title">Run a Study Round</h2>
             <button id="study-modal-close-btn" type="button" class="details-close-btn" aria-label="Close Study Controller">&times;</button>
           </div>
 
           <div class="study-modal-body">
+            <p class="study-intro">Use this panel to record one retrieval round. The full setup, task cards, reset steps, and export instructions are in <code>docs/STUDY_PROTOCOL.md</code>.</p>
+
             <!-- Privacy & Consent Notice -->
             <div class="study-privacy-notice" role="note">
-              <strong>Privacy Notice:</strong> Recording activates strictly during a timed retrieval window. Only visits to allowlisted local corpus pages (<span class="code-pill">pack_x</span>, <span class="code-pill">pack_y</span>) are logged with opaque keys. No personal identities, email, student ID, off-corpus URLs, query strings, or search terms are captured. All records remain on-device.
+              <strong>Use a clean study profile.</strong> During timed retrieval, Study Mode stores the participant code, timing/outcome, approved local page keys, and coarse study actions. It does not store page contents or typed search text. The separate history map can save page addresses while you browse, so use a temporary profile only for the study pages. Study records remain on this device.
             </div>
 
             <!-- Active Configuration / Start -->
             <fieldset class="study-fieldset">
-              <legend class="study-legend">Trial Configuration</legend>
+              <legend class="study-legend">1. Set up this round</legend>
+              <p class="study-step-copy">Do this before the participant starts the 15-minute browsing activity. The timer starts only when you press the button below.</p>
               <div class="study-grid-row">
                 <div class="study-field">
-                  <label for="study-participant-id" class="study-label">Participant ID</label>
-                  <input type="text" id="study-participant-id" value="P01" maxlength="4" pattern="P([1-9]\d{1,2}|0[1-9])" placeholder="e.g. P01" class="study-input" aria-label="Pseudonymous participant code">
-                  <span class="study-help-text">Format: P01&ndash;P999 (pseudonymous code)</span>
+                  <label for="study-participant-id" class="study-label">Participant code</label>
+                  <input type="text" id="study-participant-id" value="" maxlength="4" pattern="P([1-9]\d{1,2}|0[1-9])" placeholder="e.g. P01" class="study-input" aria-label="Pseudonymous participant code">
+                  <span class="study-help-text">Use a code such as P01. Never enter a name or student ID.</span>
                 </div>
                 <div class="study-field">
-                  <label for="study-sequence" class="study-label">Sequence (Latin Square)</label>
+                  <label for="study-sequence" class="study-label">Assigned order</label>
                   <select id="study-sequence" class="study-select">
-                    <option value="seq_1">Seq 1: A/X then B/Y</option>
-                    <option value="seq_2">Seq 2: B/Y then A/X</option>
-                    <option value="seq_3">Seq 3: A/Y then B/X</option>
-                    <option value="seq_4">Seq 4: B/X then A/Y</option>
+                    <option value="" selected>Choose assigned order</option>
+                    <option value="seq_1">1 — Chrome + Solar, then Map + Olympics</option>
+                    <option value="seq_2">2 — Map + Olympics, then Chrome + Solar</option>
+                    <option value="seq_3">3 — Chrome + Olympics, then Map + Solar</option>
+                    <option value="seq_4">4 — Map + Solar, then Chrome + Olympics</option>
                   </select>
                 </div>
-              </div>
-
-              <div class="study-grid-row">
                 <div class="study-field">
-                  <label for="study-period" class="study-label">Period</label>
+                  <label for="study-period" class="study-label">Round</label>
                   <select id="study-period" class="study-select">
-                    <option value="1">Period 1</option>
-                    <option value="2">Period 2</option>
+                    <option value="1">Round 1</option>
+                    <option value="2">Round 2</option>
                   </select>
-                </div>
-                <div class="study-field">
-                  <label for="study-condition" class="study-label">Condition &amp; Tool</label>
-                  <select id="study-condition" class="study-select" disabled>
-                    <option value="A">Condition A (Chrome History)</option>
-                    <option value="B">Condition B (Spatial History Map)</option>
-                  </select>
-                  <span class="study-help-text">Derived automatically from Sequence &amp; Period</span>
-                </div>
-                <div class="study-field">
-                  <label for="study-topic-pack" class="study-label">Topic Pack</label>
-                  <select id="study-topic-pack" class="study-select" disabled>
-                    <option value="pack_x">Pack X (Solar Energy)</option>
-                    <option value="pack_y">Pack Y (Olympic History)</option>
-                  </select>
-                  <span class="study-help-text">Derived automatically from Sequence &amp; Period</span>
                 </div>
               </div>
+              <select id="study-condition" hidden aria-hidden="true" tabindex="-1">
+                <option value="A">Chrome History</option>
+                <option value="B">Spatial History Map</option>
+              </select>
+              <select id="study-topic-pack" hidden aria-hidden="true" tabindex="-1">
+                <option value="pack_x">Solar Energy</option>
+                <option value="pack_y">Olympic History</option>
+              </select>
+              <div id="study-assignment-summary" class="study-assignment-summary" aria-live="polite"></div>
 
-              <!-- Flags -->
-              <div class="study-flags-group">
+              <!-- Optional protocol flags are hidden until the researcher needs them. -->
+              <details class="study-optional-details">
+                <summary>Protocol notes (only if something unusual happened)</summary>
+                <div class="study-flags-group">
                 <label class="study-checkbox-label">
                   <input type="checkbox" id="study-target-revisited">
-                  <span>Target revisited during 10-min setup delay (protocol-deviation flag)</span>
+                  <span>Participant saw the target again after first reaching it during this round</span>
                 </label>
                 <label class="study-checkbox-label">
                   <input type="checkbox" id="study-protocol-deviation">
-                  <span>Other experimental deviation occurred during round</span>
+                  <span>Other protocol deviation occurred (also describe it in researcher notes)</span>
                 </label>
-              </div>
+                </div>
+              </details>
 
               <div class="study-actions-row">
-                <button id="study-start-btn" type="button" class="btn btn-primary">Start Timed Retrieval (120s)</button>
-                <button id="study-stop-btn" type="button" class="btn btn-danger" disabled>Give Up / Stop</button>
-                <button id="study-finish-session-btn" type="button" class="btn btn-warning">Finish Session</button>
-                <button id="study-new-session-btn" type="button" class="btn btn-secondary" hidden>Start New Session</button>
+                <button id="study-start-btn" type="button" class="btn btn-primary">Start retrieval timer (max 2 min)</button>
+                <button id="study-stop-btn" type="button" class="btn btn-danger" disabled>Participant gives up</button>
               </div>
 
-              <div id="study-trial-status" class="study-status-banner" role="status">Status: Standby (Not Recording)</div>
+              <div id="study-trial-status" class="study-status-banner" role="status">Ready. Start the timer after the 15-minute browsing activity, just as you read the retrieval prompt.</div>
             </fieldset>
 
             <!-- Post-Trial NASA-TLX Assessment -->
-            <fieldset class="study-fieldset" id="study-tlx-fieldset">
-              <legend class="study-legend">Post-Trial NASA-TLX Workload Assessment</legend>
-              <p class="study-tlx-desc">Administer immediately following retrieval attempt. Rate each dimension on official 0&ndash;100 scale (increments of 5).</p>
+            <fieldset class="study-fieldset study-tlx-fieldset" id="study-tlx-fieldset" hidden>
+              <legend class="study-legend">2. Ask for workload ratings</legend>
+              <p class="study-tlx-desc">Ask these immediately after retrieval. Set each scale from 0 to 100 in steps of 5. Higher means more of that feeling; for Performance, higher means the participant felt less successful.</p>
 
               <div class="tlx-grid">
                 <div class="tlx-item">
@@ -450,28 +444,38 @@
 
               <div class="tlx-summary-row">
                 <span id="tlx-raw-score" class="tlx-raw-badge">Raw TLX Summary: 50.0 / 100</span>
-                <button id="study-submit-tlx-btn" type="button" class="btn btn-primary btn-sm">Save NASA-TLX Ratings</button>
+                <button id="study-submit-tlx-btn" type="button" class="btn btn-primary btn-sm">Save ratings</button>
               </div>
             </fieldset>
 
-            <!-- Export and Local Data Actions -->
-            <fieldset class="study-fieldset">
-              <legend class="study-legend">Study Data Management &amp; Export</legend>
-              <div class="study-export-summary">
-                <span id="study-records-count">0 recorded trials in local study store</span>
+            <!-- Data actions are available to the researcher, but collapsed during a normal round. -->
+            <details id="study-data-details" class="study-optional-details study-data-details">
+              <summary>Finish the session or manage saved study data</summary>
+              <div class="study-data-content">
+                <div class="study-actions-row study-session-actions">
+                  <button id="study-finish-session-btn" type="button" class="btn btn-warning">Finish session</button>
+                  <button id="study-new-session-btn" type="button" class="btn btn-secondary" hidden>Start new session</button>
+                </div>
+                <fieldset class="study-fieldset">
+                  <legend class="study-legend">Download study results</legend>
+                  <p class="study-step-copy">Downloads are for the researcher after both rounds. They are not required for participants.</p>
+                  <div class="study-export-summary">
+                    <span id="study-records-count">0 recorded trials saved on this device</span>
+                  </div>
+                  <div class="study-export-actions">
+                    <button id="study-export-csv-btn" type="button" class="btn btn-secondary btn-sm">Download trials CSV</button>
+                    <button id="study-export-json-btn" type="button" class="btn btn-secondary btn-sm">Download event log JSON</button>
+                    <button id="study-dict-toggle-btn" type="button" class="btn btn-secondary btn-sm">View data dictionary</button>
+                    <button id="study-export-dict-btn" type="button" class="btn btn-secondary btn-sm">Download dictionary</button>
+                    <button id="study-clear-data-btn" type="button" class="btn btn-danger btn-sm">Delete saved study data</button>
+                  </div>
+                  <div id="study-dict-panel" class="study-dict-panel" hidden>
+                    <div class="study-dict-header">Study Data Dictionary (Schema V1.0.0)</div>
+                    <div id="study-dict-content" class="study-dict-content"></div>
+                  </div>
+                </fieldset>
               </div>
-              <div class="study-export-actions">
-                <button id="study-export-csv-btn" type="button" class="btn btn-secondary btn-sm">Export study-trials.csv</button>
-                <button id="study-export-json-btn" type="button" class="btn btn-secondary btn-sm">Export study-events.json</button>
-                <button id="study-dict-toggle-btn" type="button" class="btn btn-secondary btn-sm">View Data Dictionary</button>
-                <button id="study-export-dict-btn" type="button" class="btn btn-secondary btn-sm">Download Dictionary (.md)</button>
-                <button id="study-clear-data-btn" type="button" class="btn btn-danger btn-sm">Delete Study Records</button>
-              </div>
-              <div id="study-dict-panel" class="study-dict-panel" hidden>
-                <div class="study-dict-header">Study Data Dictionary (Schema V1.0.0)</div>
-                <div id="study-dict-content" class="study-dict-content"></div>
-              </div>
-            </fieldset>
+            </details>
           </div>
         </div>
       </div>

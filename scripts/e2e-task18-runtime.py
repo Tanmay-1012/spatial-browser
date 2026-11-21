@@ -613,7 +613,7 @@ def run_chrome_test(http_port, cdn_port):
         assert not banner_hidden, "Study banner must be visible while trial is active"
         banner_info = cdp.eval(map_sid, "document.getElementById('study-banner-info').textContent")
         print(f"[PASS] Chrome Trial 1 started: {banner_info}")
-        assert "P01" in banner_info and "Condition B" in banner_info
+        assert "Round 1" in banner_info and "P01" not in banner_info, "Visible recording banner must show the round without exposing participant code"
 
         # ------------------------------------------------------------------
         # Delayed Target Load Completion & Redirects Verification
@@ -759,6 +759,18 @@ def run_chrome_test(http_port, cdn_port):
         assert timeout_res and timeout_res["outcome"] == "timeout", f"Expected timeout, got {timeout_res}"
         assert timeout_res["elapsedMs"] == 120000, f"Timeout elapsed must be 120000ms, got {timeout_res['elapsedMs']}"
         print(f"[PASS] Simulated deadline check verified timeout outcome in Chrome: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
+
+        # Submit the required workload assessment for the timeout trial before session close.
+        cdp.eval(map_sid, "document.getElementById('study-controller-btn').click()")
+        time.sleep(0.3)
+        cdp.eval(map_sid, """
+            for (const id of ['tlx-mental', 'tlx-physical', 'tlx-temporal', 'tlx-performance', 'tlx-effort', 'tlx-frustration']) {
+                document.getElementById(id).value = 50;
+                document.getElementById(id).dispatchEvent(new Event('input'));
+            }
+            document.getElementById('study-submit-tlx-btn').click();
+        """)
+        time.sleep(0.4)
 
         # ------------------------------------------------------------------
         # Finish Session Action Verification
@@ -1110,7 +1122,7 @@ def run_firefox_test(http_port, cdn_port):
         time.sleep(0.8)
         banner_info = client.send_cmd("WebDriver:ExecuteScript", {"script": "return document.getElementById('study-banner-info').textContent;"})["value"]
         print(f"[PASS] Firefox Trial 1 started: {banner_info}")
-        assert "P02" in banner_info and "Condition A" in banner_info
+        assert "Round 1" in banner_info and "P02" not in banner_info, "Visible recording banner must show the round without exposing participant code"
 
         # ------------------------------------------------------------------
         # Delayed Target Load Completion & In-Flight Timing in Firefox
@@ -1270,6 +1282,18 @@ def run_firefox_test(http_port, cdn_port):
         assert timeout_res and timeout_res["outcome"] == "timeout"
         assert timeout_res["elapsedMs"] == 120000
         print(f"[PASS] Simulated deadline check verified timeout outcome in Firefox: outcome={timeout_res['outcome']}, elapsed={timeout_res['elapsedMs']}ms")
+
+        # Submit the required workload assessment for the timeout trial before session close.
+        client.send_cmd("WebDriver:ExecuteScript", {"script": "document.getElementById('study-controller-btn').click();"})
+        time.sleep(0.3)
+        client.send_cmd("WebDriver:ExecuteScript", {"script": """
+            for (const id of ['tlx-mental', 'tlx-physical', 'tlx-temporal', 'tlx-performance', 'tlx-effort', 'tlx-frustration']) {
+                document.getElementById(id).value = 50;
+                document.getElementById(id).dispatchEvent(new Event('input'));
+            }
+            document.getElementById('study-submit-tlx-btn').click();
+        """})
+        time.sleep(0.4)
 
         # ------------------------------------------------------------------
         # Finish Session Action in Firefox

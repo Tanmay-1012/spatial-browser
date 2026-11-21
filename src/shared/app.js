@@ -82,8 +82,9 @@
 
   // Study Controller DOM references
   let elStudyControllerBtn, elStudyModal, elStudyModalCloseBtn;
-  let elStudyRecordingBanner, elStudyBannerInfo, elStudyBannerTimer, elStudyBannerStopBtn, elStudyBannerFinishBtn;
+  let elStudyRecordingBanner, elStudyBannerInfo, elStudyBannerTimer, elStudyBannerStopBtn;
   let elStudyParticipantId, elStudySequence, elStudyPeriod, elStudyCondition, elStudyTopicPack;
+  let elStudyAssignmentSummary;
   let elStudyTargetRevisited, elStudyProtocolDeviation, elStudyStartBtn, elStudyStopBtn, elStudyFinishSessionBtn, elStudyNewSessionBtn, elStudyTrialStatus;
   let elStudyTlxFieldset, elTlxMental, elTlxPhysical, elTlxTemporal, elTlxPerformance, elTlxEffort, elTlxFrustration;
   let elTlxMentalVal, elTlxPhysicalVal, elTlxTemporalVal, elTlxPerformanceVal, elTlxEffortVal, elTlxFrustrationVal;
@@ -206,13 +207,13 @@
     elStudyBannerInfo = document.getElementById('study-banner-info');
     elStudyBannerTimer = document.getElementById('study-banner-timer');
     elStudyBannerStopBtn = document.getElementById('study-banner-stop-btn');
-    elStudyBannerFinishBtn = document.getElementById('study-banner-finish-btn');
 
     elStudyParticipantId = document.getElementById('study-participant-id');
     elStudySequence = document.getElementById('study-sequence');
     elStudyPeriod = document.getElementById('study-period');
     elStudyCondition = document.getElementById('study-condition');
     elStudyTopicPack = document.getElementById('study-topic-pack');
+    elStudyAssignmentSummary = document.getElementById('study-assignment-summary');
     elStudyTargetRevisited = document.getElementById('study-target-revisited');
     elStudyProtocolDeviation = document.getElementById('study-protocol-deviation');
     elStudyStartBtn = document.getElementById('study-start-btn');
@@ -406,25 +407,22 @@
 
     elStudySequence.addEventListener('change', () => {
       syncStudySequenceAssignment();
+      updateStudyUiFromState();
     });
 
     elStudyPeriod.addEventListener('change', () => {
       syncStudySequenceAssignment();
+      updateStudyUiFromState();
     });
 
     elStudyParticipantId.addEventListener('input', () => {
       validateParticipantInput();
+      updateStudyUiFromState();
     });
 
     elStudyFinishSessionBtn.addEventListener('click', () => {
       handleStudyFinishSession();
     });
-
-    if (elStudyBannerFinishBtn) {
-      elStudyBannerFinishBtn.addEventListener('click', () => {
-        handleStudyFinishSession();
-      });
-    }
 
     elStudyNewSessionBtn.addEventListener('click', () => {
       handleStudyNewSession();
@@ -511,14 +509,22 @@
   }
 
   function syncStudySequenceAssignment() {
-    if (!globalThis.SpatialStudyManager) return;
-    const seq = elStudySequence ? elStudySequence.value : 'seq_1';
+    if (!globalThis.SpatialStudyManager) return null;
+    const seq = elStudySequence ? elStudySequence.value : '';
     const period = Number(elStudyPeriod ? elStudyPeriod.value : 1) || 1;
     const assigned = globalThis.SpatialStudyManager.getSequenceAssignment(seq, period);
     if (assigned) {
       if (elStudyCondition) elStudyCondition.value = assigned.condition;
       if (elStudyTopicPack) elStudyTopicPack.value = assigned.topicPack;
+      if (elStudyAssignmentSummary) {
+        const toolName = assigned.condition === 'A' ? 'Chrome History' : 'Spatial History Map';
+        const packName = assigned.topicPack === 'pack_x' ? 'Solar Energy (Pack X)' : 'Olympic History (Pack Y)';
+        elStudyAssignmentSummary.textContent = `This round: ${toolName} \u00b7 ${packName}`;
+      }
+    } else if (elStudyAssignmentSummary) {
+      elStudyAssignmentSummary.textContent = 'Choose the assigned order to see this round’s tool and topic.';
     }
+    return assigned;
   }
 
   function validateParticipantInput() {
@@ -537,15 +543,24 @@
 
   function updateStudyUiFromState() {
     if (!studyManager) return;
+    const assignment = syncStudySequenceAssignment();
     const active = studyManager.getActiveTrial();
     const isRecording = Boolean(active && active.status === 'active');
     const sessionStatus = studyManager.getSessionStatus();
     const isFinished = sessionStatus === 'finished';
+    const state = studyManager._state;
+    const lastId = state ? state.lastCompletedTrialId : null;
+    const lastTrial = lastId && state && Array.isArray(state.trials)
+      ? state.trials.find((trial) => trial.trialId === lastId)
+      : null;
+    const needsTlx = Boolean(lastTrial && !lastTrial.tlx && !isRecording);
+    const lockSetup = isRecording || isFinished || needsTlx;
+    const hasValidParticipantId = validateParticipantInput();
 
     // Indicator banner
     elStudyRecordingBanner.hidden = !isRecording;
     if (isRecording) {
-      elStudyBannerInfo.textContent = `Participant ${active.participantId} \u2022 Condition ${active.condition} \u2022 Period ${active.period}`;
+      elStudyBannerInfo.textContent = `Round ${active.period}`;
       const remSec = Math.max(0, Math.ceil((active.deadlineTimestamp - Date.now()) / 1000));
       elStudyBannerTimer.textContent = remSec + 's';
       startStudyTimerLoop();
@@ -554,29 +569,43 @@
     }
 
     // Modal buttons & status
-    elStudyStartBtn.disabled = isRecording || isFinished;
+    elStudyStartBtn.disabled = isRecording || isFinished || needsTlx || !assignment || !hasValidParticipantId;
     elStudyStopBtn.disabled = !isRecording;
+    elStudyParticipantId.disabled = lockSetup;
+    elStudySequence.disabled = lockSetup;
+    elStudyPeriod.disabled = lockSetup;
+    elStudyTargetRevisited.disabled = lockSetup;
+    elStudyProtocolDeviation.disabled = lockSetup;
+    elStudyTlxFieldset.hidden = !needsTlx;
     if (elStudyBannerStopBtn) elStudyBannerStopBtn.disabled = !isRecording;
     if (elStudyFinishSessionBtn) elStudyFinishSessionBtn.hidden = isFinished;
+    if (elStudyFinishSessionBtn) elStudyFinishSessionBtn.disabled = isRecording || needsTlx;
     if (elStudyNewSessionBtn) elStudyNewSessionBtn.hidden = !isFinished;
-    if (elStudyBannerFinishBtn) elStudyBannerFinishBtn.disabled = isFinished;
 
     if (isFinished) {
-      elStudyTrialStatus.textContent = 'Status: Session Finished (Audited). Start New Session to record further trials.';
+      elStudyTrialStatus.textContent = 'Session finished. Download and verify the study files below.';
       elStudyTrialStatus.style.color = '#F59E0B';
     } else if (isRecording) {
-      elStudyTrialStatus.textContent = `Recording Active: ${active.trialId} (${active.topicPack}) \u2014 Incorrect Opens: ${active.incorrectPageOpens}`;
+      elStudyTrialStatus.textContent = 'Timer running. It stops when the target page finishes loading, or at 2 minutes.';
       elStudyTrialStatus.style.color = '#EF4444';
+    } else if (needsTlx) {
+      elStudyTrialStatus.textContent = 'Retrieval ended. Save the six workload ratings before starting the next round.';
+      elStudyTrialStatus.style.color = '#F59E0B';
     } else {
-      const state = studyManager._state;
-      const lastId = state ? state.lastCompletedTrialId : null;
-      if (lastId) {
-        const lastTrial = state.trials.find((t) => t.trialId === lastId);
-        const outcome = lastTrial ? lastTrial.outcome : 'completed';
-        elStudyTrialStatus.textContent = `Last Trial: ${lastId} (${outcome}) \u2014 Ready for Next Round`;
+      if (!assignment && !hasValidParticipantId) {
+        elStudyTrialStatus.textContent = 'Enter a participant code and choose the assigned order before this round.';
+        elStudyTrialStatus.style.color = '';
+      } else if (!hasValidParticipantId) {
+        elStudyTrialStatus.textContent = 'Enter a valid participant code (P01–P999) before this round.';
+        elStudyTrialStatus.style.color = '';
+      } else if (!assignment) {
+        elStudyTrialStatus.textContent = 'Choose the assigned order to see this round’s tool and topic.';
+        elStudyTrialStatus.style.color = '';
+      } else if (lastTrial) {
+        elStudyTrialStatus.textContent = 'Ratings saved. Set the next round, or finish this session after Round 2.';
         elStudyTrialStatus.style.color = '#10B981';
       } else {
-        elStudyTrialStatus.textContent = 'Status: Standby (Not Recording)';
+        elStudyTrialStatus.textContent = 'Ready. Finish the 15-minute browsing activity before starting retrieval.';
         elStudyTrialStatus.style.color = '';
       }
     }
@@ -585,7 +614,7 @@
     const trialCount = (studyManager._state && Array.isArray(studyManager._state.trials))
       ? studyManager._state.trials.length
       : 0;
-    elStudyRecordsCount.textContent = `${trialCount} recorded ${trialCount === 1 ? 'trial' : 'trials'} in local study store`;
+    elStudyRecordsCount.textContent = `${trialCount} ${trialCount === 1 ? 'trial' : 'trials'} saved on this device`;
   }
 
   function startStudyTimerLoop() {
@@ -625,6 +654,14 @@
     }
     try {
       const participantId = elStudyParticipantId.value.trim() || 'P01';
+      const state = studyManager._state;
+      const previousId = state ? state.lastCompletedTrialId : null;
+      const previousTrial = previousId && state && Array.isArray(state.trials)
+        ? state.trials.find((trial) => trial.trialId === previousId)
+        : null;
+      if (previousTrial && !previousTrial.tlx) {
+        throw new Error('Save the previous round’s workload ratings before starting another round.');
+      }
       const sequence = elStudySequence.value;
       const period = Number(elStudyPeriod.value) || 1;
       const condition = elStudyCondition.value;
@@ -642,7 +679,10 @@
         protocolDeviation
       });
 
+      elStudyTargetRevisited.checked = false;
+      elStudyProtocolDeviation.checked = false;
       updateStudyUiFromState();
+      closeStudyModal();
     } catch (err) {
       alert(err.message || 'Could not start study trial');
     }
@@ -657,6 +697,19 @@
 
   async function handleStudyFinishSession() {
     if (!studyManager) return;
+    if (studyManager.getActiveTrial()) {
+      alert('End the active retrieval attempt before finishing the session.');
+      return;
+    }
+    const state = studyManager._state;
+    const lastId = state ? state.lastCompletedTrialId : null;
+    const lastTrial = lastId && state && Array.isArray(state.trials)
+      ? state.trials.find((trial) => trial.trialId === lastId)
+      : null;
+    if (lastTrial && !lastTrial.tlx) {
+      alert('Save the final round’s workload ratings before finishing the session.');
+      return;
+    }
     if (!confirm('Finish researcher study session? This will audit-stamp the session and prevent accidental extra trials.')) {
       return;
     }
@@ -668,6 +721,11 @@
   async function handleStudyNewSession() {
     if (!studyManager) return;
     await studyManager.startNewSession();
+    elStudyParticipantId.value = '';
+    elStudySequence.value = '';
+    elStudyPeriod.value = '1';
+    elStudyTargetRevisited.checked = false;
+    elStudyProtocolDeviation.checked = false;
     updateStudyUiFromState();
   }
 
@@ -729,7 +787,10 @@
     };
     try {
       await studyManager.submitTlx(lastId, ratings);
-      alert(`NASA-TLX ratings saved for ${lastId}.`);
+      for (const slider of [elTlxMental, elTlxPhysical, elTlxTemporal, elTlxPerformance, elTlxEffort, elTlxFrustration]) {
+        slider.value = '50';
+      }
+      updateTlxValues();
       updateStudyUiFromState();
     } catch (err) {
       alert(err.message || 'Could not submit NASA-TLX ratings');

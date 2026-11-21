@@ -22,9 +22,9 @@ All distribution packages are generated deterministically with zero external dep
 
 | Deliverable | Path | Size | SHA-256 Hash |
 | :--- | :--- | :--- | :--- |
-| **Chrome Release Archive** | `outputs/chrome/spatial-browser-history-extension.zip` | 61,111 bytes | `28c32cffbf5be42e47615f8c612e6c9d88826daebdc663d506b0edaa577da8ea` |
-| **Firefox Release Archive** | `outputs/firefox/spatial-browser-history-firefox.zip` | 61,073 bytes | `876071f2c4c3687d327abb614471387bc6b848baa0dd42b27ddc1330659f65f9` |
-| **Firefox Add-on Package** | `outputs/firefox/spatial-browser-history-firefox.xpi` | 61,073 bytes | `876071f2c4c3687d327abb614471387bc6b848baa0dd42b27ddc1330659f65f9` |
+| **Chrome Release Archive** | `outputs/chrome/spatial-browser-history-extension.zip` | 62,236 bytes | `b923e628a3130f10964a13020d447d151613a92a28acb3d6dab344562630188d` |
+| **Firefox Release Archive** | `outputs/firefox/spatial-browser-history-firefox.zip` | 62,198 bytes | `3563069920cb4fab66064340270df516b9cda6e23125074456046cf29b3306b6` |
+| **Firefox Add-on Package** | `outputs/firefox/spatial-browser-history-firefox.xpi` | 62,198 bytes | `3563069920cb4fab66064340270df516b9cda6e23125074456046cf29b3306b6` |
 | **Chrome Unpacked Build** | `outputs/chrome/unpacked/` | Directory | Matches zip contents byte-for-byte |
 | **Firefox Unpacked Build** | `outputs/firefox/unpacked/` | Directory | Matches zip/xpi contents byte-for-byte |
 

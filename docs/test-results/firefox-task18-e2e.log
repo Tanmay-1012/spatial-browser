@@ -1,9 +1,9 @@
 ================================================================================
 TASK 18: MOZILLA FIREFOX RUNTIME VERIFICATION
-Timestamp: 2026-11-21 05:20:55 UTC
+Timestamp: 2026-11-21 06:55:43 UTC
 Firefox Binary: C:\Program Files\Mozilla Firefox\firefox.exe
 ================================================================================
-[INIT] Connected to Firefox Marionette on port 62541
+[INIT] Connected to Firefox Marionette on port 61649
 [INIT] Installed unpacked Firefox extension: spatial-browser-history@term-project.local
 [AUDIT] Pre-test error log recorded: D:\Projects\HCI Project\docs\test-results\firefox-task18-errors-pre.json (0 errors)
 
@@ -17,13 +17,13 @@ Firefox Binary: C:\Program Files\Mozilla Firefox\firefox.exe
 
 --- STEP 3: Study Controller & Valid Latin Square Sequence 1 in Firefox ---
 [PASS] Firefox Sequence 1 Period 1 automatically derived: Condition=A, Pack=pack_x
-[PASS] Firefox Trial 1 started: Participant P02 • Condition A • Period 1
+[PASS] Firefox Trial 1 started: Round 1
 
 --- STEP 4: Delayed Target Response & Asynchronous In-Flight Timing in Firefox ---
 [PASS] Firefox 3xx redirect destination counted: incorrectOpens = 1; storage privacy verified (zero URLs/tab IDs in storage).
 [PASS] Firefox meta-refresh client redirect counted final corpus destination once (no intermediate event).
 [PASS] In-flight check while Firefox target document is loading: active=True, completedTrials=0
-[PASS] Target success finalized upon load completion in Firefox: outcome=success, elapsed=6334ms
+[PASS] Target success finalized upon load completion in Firefox: outcome=success, elapsed=4049ms
 [PASS] Firefox Raw TLX calculation: Raw TLX Summary: 23.3 / 100
 
 --- STEP 5: Sequence 1 Period 2 (Condition B / Pack Y) & Timeout in Firefox ---

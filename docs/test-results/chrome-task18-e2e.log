@@ -1,6 +1,6 @@
 ================================================================================
 TASK 18: GOOGLE CHROME RUNTIME VERIFICATION
-Timestamp: 2026-11-21 05:20:19 UTC
+Timestamp: 2026-11-21 06:55:15 UTC
 Chrome Binary: C:\Program Files\Google\Chrome\Application\chrome.exe
 ================================================================================
 [INIT] Loaded unpacked extension via CDP: edhmggcmhhmlbfmidpeamoiffebfijah
@@ -20,13 +20,13 @@ Chrome Binary: C:\Program Files\Google\Chrome\Application\chrome.exe
 [PASS] Study banner is hidden by default.
 [PASS] Study controller modal opened.
 [PASS] Sequence 4 Period 1 automatically derived: Condition=B, Pack=pack_x
-[PASS] Chrome Trial 1 started: Participant P01 • Condition B • Period 1
+[PASS] Chrome Trial 1 started: Round 1
 
 --- STEP 4: Redirects, Storage Privacy & Delayed Target Completion Timing ---
 [PASS] 3xx redirect destination counted: count = 1; storage privacy verified (zero URLs/tab IDs in storage).
 [PASS] Meta-refresh client redirect counted final corpus destination once (no intermediate event).
 [PASS] In-flight check while target document is loading: active=True, completedTrials=0
-[PASS] Target success finalized upon load completion: outcome=success, elapsed=6281ms
+[PASS] Target success finalized upon load completion: outcome=success, elapsed=4125ms
 [PASS] Raw TLX live calculation verified: Raw TLX Summary: 23.3 / 100 (expected 23.3)
 
 --- STEP 5: Sequence 4 Period 2 (Condition A / Pack Y) & Timeout ---
