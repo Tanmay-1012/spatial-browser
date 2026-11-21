@@ -1,7 +1,7 @@
-# Spatial Browser History — Release Notes v2.0.0
+# Spatial Browser History — Release Notes v2.1.0
 
-**Release Version:** `2.0.0`  
-**Date:** 2026-11-16  
+**Release Version:** `2.1.0`  
+**Date:** 2026-11-21  
 **Manifest Format:** Manifest V3 (Cross-browser for Google Chrome & Mozilla Firefox)  
 **License:** Private / Academic Project  
 
@@ -11,20 +11,20 @@
 
 | Browser | Minimum Version Declared | Runtime Verification Target | Status |
 | :--- | :--- | :--- | :--- |
-| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome `157.0.8103.78` | **Verified (0 errors, 0 warnings)** |
-| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox `160.0` (and `115.0` ESR) | **Verified (0 errors, 0 warnings)** |
+| **Google Chrome** | **109.0+** (`minimum_chrome_version: "109"`) | Chrome `157.0.8103.80` | **Verified (0 errors, 0 warnings)** |
+| **Mozilla Firefox** | **115.0+** (`strict_min_version: "115.0"`) | Firefox `160.0.1` (and `115.0` ESR) | **Verified (0 errors, 0 warnings)** |
 
 ---
 
 ## 2. Release Deliverables & SHA-256 Checksums
 
-All distribution packages are generated deterministically with zero external dependencies and verified byte-for-byte against their unpacked source directories. Checksums are written to `outputs/SHA256SUMS` on build and published with GitHub Release assets.
+All distribution packages are generated deterministically with zero external dependencies and verified byte-for-byte against their unpacked source directories. Checksums are written to `outputs/SHA256SUMS` on build and published alongside GitHub Release assets.
 
 | Deliverable | Path | Size | SHA-256 Hash |
 | :--- | :--- | :--- | :--- |
-| **Chrome Release Archive** | `outputs/chrome/spatial-browser-history-extension.zip` | Build output | See `outputs/SHA256SUMS` |
-| **Firefox Release Archive** | `outputs/firefox/spatial-browser-history-firefox.zip` | Build output | See `outputs/SHA256SUMS` |
-| **Firefox Add-on Package** | `outputs/firefox/spatial-browser-history-firefox.xpi` | Build output | See `outputs/SHA256SUMS` |
+| **Chrome Release Archive** | `outputs/chrome/spatial-browser-history-extension.zip` | 61,111 bytes | `28c32cffbf5be42e47615f8c612e6c9d88826daebdc663d506b0edaa577da8ea` |
+| **Firefox Release Archive** | `outputs/firefox/spatial-browser-history-firefox.zip` | 61,073 bytes | `876071f2c4c3687d327abb614471387bc6b848baa0dd42b27ddc1330659f65f9` |
+| **Firefox Add-on Package** | `outputs/firefox/spatial-browser-history-firefox.xpi` | 61,073 bytes | `876071f2c4c3687d327abb614471387bc6b848baa0dd42b27ddc1330659f65f9` |
 | **Chrome Unpacked Build** | `outputs/chrome/unpacked/` | Directory | Matches zip contents byte-for-byte |
 | **Firefox Unpacked Build** | `outputs/firefox/unpacked/` | Directory | Matches zip/xpi contents byte-for-byte |
 
@@ -44,7 +44,7 @@ All distribution packages are generated deterministically with zero external dep
 5. In the file picker, select:
    `D:\Projects\HCI Project\outputs\chrome\unpacked`
    *(Alternatively, extract `outputs/chrome/spatial-browser-history-extension.zip` into a directory and select that folder).*
-6. Confirm that **Spatial Browser History** appears in the extensions list with version `2.0.0` and no errors.
+6. Confirm that **Spatial Browser History** appears in the extensions list with version `2.1.0` and no errors.
 7. Click the toolbar action icon to launch the history map. Click it again from another tab to verify single-tab focus behavior.
 
 ---
@@ -76,26 +76,25 @@ All distribution packages are generated deterministically with zero external dep
 ## 4. Key Capabilities & Architectural Highlights
 
 - **Single-Tab Toolbar Behavior:** Clicking the browser toolbar action opens `index.html` in a new tab if absent, or immediately focuses the existing tab and its containing window if already open, eliminating duplicate map tabs.
-- **Robust Navigation Capture:**
+- **Robust Navigation Capture & Branch-Aware Engine:**
   - Tracks top-level navigation, same-tab sequences, HTTP 302/301 redirects, and `history.pushState` SPA route updates.
-  - De-duplicates reloads and updates node titles dynamically on `tabs.onUpdated`.
+  - Same-tab Back/Forward traversal branches subsequent navigations as siblings (`Wikipedia → Source A → Back → Source B`).
+  - Symmetrical duplicate traversal invalidation severs cycles to clean root checkpoints.
   - Links child tabs to opener tabs via `tab.openerTabId` and `webNavigation.onCreatedNavigationTarget`.
-  - Safely falls back to root checkpoints (`parentNodeId: null`, `isCheckpoint: true`) when openers are closed or untracked (`about:blank`), preventing dangling pointers.
-- **Interactive Spatial Map & Retrieval UI:**
-  - Dynamic hierarchical forest layout with cubic bezier connectors and arrowheads.
-  - Title and URL search with 150ms debounce and responsive matching count badge.
-  - Granular time filters: All History, Past Hour, Past 24 Hours, and Past 7 Days.
-  - Visit details drawer with ancestor/descendant jump pills.
-  - Safe URL reopening: Strictly validates `http:` and `https:` schemes before creating tabs.
-  - Full keyboard accessibility: Arrow keys pan, `+`/`-`/`0` zoom/fit, Tab/Enter navigates and activates nodes.
-  - Accessible clear-map confirmation dialog with Tab/Shift+Tab focus trapping.
-- **Local-First Storage, Schema V2 & Download Provenance (Milestone 11):**
-  - Schema V2 stored entirely in `chrome.storage.local` / `browser.storage.local` with stable `treeId`, reciprocal parent/child links, download nodes, and `downloadNodeMap`.
-  - Crash-safe V1 migration with raw backup `spatial_browser_history_data_v1_backup` and passive 24-hour expiration on wake.
-  - Same-tab Back/Forward traversal branches subsequent navigations as siblings.
-  - Startup barrier with `storage.session` marker gate and fail-closed storage protection.
-  - Completed download capture via `downloads` permission, recording only non-sensitive basename, originating domain derived from unique source page/referrer ($|M|=1$), completion time, and deduplication index; missing or ambiguous referrers set to `"Source unavailable"`.
-  - Least-privilege permissions: Only `tabs`, `storage`, `webNavigation`, and `downloads` are requested. Zero content scripts, zero remote telemetry, zero `innerHTML`.
+  - Safely falls back to root checkpoints (`parentNodeId: null`, `isCheckpoint: true`) when openers are closed or untracked.
+- **Visual Sibling Branching & Reflow Layout Engine (v2.1.0 Enhancement):**
+  - Layout engine dynamically renders true sibling fan geometry in the detail view: siblings share the same horizontal depth level and are positioned with distinct, non-overlapping vertical offsets.
+  - Indented-column reflow layout for narrow screens (`<= 900px`) maintains bounded indents and readable node labels.
+- **Title Preservation Guard (v2.1.0 Enhancement):**
+  - Title updates strictly require a matching HTTP/HTTPS web URL. Extension pages (`chrome-extension://`, `moz-extension://`) and browser URLs (`about:`, `chrome://`) never overwrite the title of the last visited web page.
+- **Opt-in User Study Controller & Private Export Engine (v2.1.0 Feature):**
+  - Built-in local study controller for Within-Subject Design (WSD) usability studies.
+  - Balanced $2 \times 2$ Latin Square order enforcement (Condition A Chrome History vs. Condition B Spatial History map; Topic Pack X Solar Energy vs. Topic Pack Y Olympic Games).
+  - 6-dimension NASA-TLX cognitive workload assessment with step-5 increments and automated score computation.
+  - Zero-URL privacy boundary: CSV and JSON export strips/hashes all raw URLs, queries, fragments, and numeric tab IDs.
+  - Server HTTP 302 redirect destination capture, meta-refresh redirect collapsing, and signal-level rapid-open deduplication.
+- **Download Provenance Attribution:** Completed downloads resolve to initiating source pages strictly via referrer matching ($|M|=1$), recording only non-sensitive filename and originating domain (`originDomain`).
+- **Local-First Storage & Schema V2:** Stored entirely in `chrome.storage.local` / `browser.storage.local` with stable `treeId`, node types, and serialized read-modify-write storage queue. Zero remote telemetry, zero `innerHTML`.
 
 ---
 
@@ -103,21 +102,18 @@ All distribution packages are generated deterministically with zero external dep
 
 ### Automated Test Suite
 Run command: `npm test`  
-Result: **61 passed, 0 failed** (Task 12 main branch; `v0.1.0` tagged at 55/55)
+Result: **80 passed, 0 failed**
 - Build, Manifest, CSP, Parity, and Archive Integrity: **12 tests passed**
 - Navigation Tracker, Sibling Branching, Session Safety & Storage V2: **35 tests passed**
 - Research Tree Explorer UI, Reflow Layout, Contrast, and Security: **14 tests passed**
+- Branching Layout & Reflow Geometry: **4 tests passed**
+- User Study Controller, Latin Square, NASA-TLX & Privacy Boundaries: **15 tests passed**
 
 ### Cross-Browser End-to-End Test Records
-Detailed test records and methodologies are documented in [`docs/TEST_PLAN.md`](TEST_PLAN.md), Section 56–57 of [`task output overview/task-11-output.md`](../task%20output%20overview/task-11-output.md) (Task 11 accepted), and Sections 7–11 of [`task output overview/task-12-output.md`](../task%20output%20overview/task-12-output.md) (Task 12 narrow detail-map legibility & navigability verified with responsive reflow layout and submitted for final lead acceptance).
-
-- **Google Chrome `157.0.8103.78` (x64 Windows; declared floor `Chrome 109+`):**
-  - Consecutive Full E2E Logs: [`docs/test-results/chrome-e2e-run1.log`](test-results/chrome-e2e-run1.log) & [`docs/test-results/chrome-e2e.log`](test-results/chrome-e2e.log) ([`chrome-e2e-run2.log`](test-results/chrome-e2e-run2.log))
-  - Run 1 Audits: [`chrome-errors-pre-restart-run1.json`](test-results/chrome-errors-pre-restart-run1.json) (`266` CDP records: **0 errors, 0 warnings**), [`chrome-errors-post-restart-run1.json`](test-results/chrome-errors-post-restart-run1.json) (`18` CDP records: **0 errors, 0 warnings**)
-  - Run 2 Audits: [`docs/test-results/chrome-errors-pre-restart.json`](test-results/chrome-errors-pre-restart.json) (`271` CDP records: **0 errors, 0 warnings**), [`docs/test-results/chrome-errors-post-restart.json`](test-results/chrome-errors-post-restart.json) (`18` CDP records: **0 errors, 0 warnings**)
-  - Responsive Viewport Captures (`1280x800` & `420x800`): [`chrome-overview-desktop.png`](test-results/chrome-overview-desktop.png), [`chrome-overview-narrow.png`](test-results/chrome-overview-narrow.png), [`chrome-detail-desktop.png`](test-results/chrome-detail-desktop.png), [`chrome-detail-narrow.png`](test-results/chrome-detail-narrow.png), [`chrome-detail-narrow-map.png`](test-results/chrome-detail-narrow-map.png)
-- **Mozilla Firefox `160.0` (x64 Windows; declared floor `Firefox 115.0+`):**
-  - Full E2E Execution Log: [`docs/test-results/firefox-e2e.log`](test-results/firefox-e2e.log)
-  - Pre-Restart Console Audit: [`docs/test-results/firefox-errors-pre-restart.json`](test-results/firefox-errors-pre-restart.json) — **0 errors, 0 warnings** (`6` Gecko records)
-  - Post-Restart Console Audit: [`docs/test-results/firefox-errors-post-restart.json`](test-results/firefox-errors-post-restart.json) — **0 errors, 0 warnings** (`24` Gecko records)
-  - Responsive Viewport Captures (`1280x800` & `500x800` Windows min): [`firefox-overview-desktop.png`](test-results/firefox-overview-desktop.png), [`firefox-overview-narrow.png`](test-results/firefox-overview-narrow.png), [`firefox-detail-desktop.png`](test-results/firefox-detail-desktop.png), [`firefox-detail-narrow.png`](test-results/firefox-detail-narrow.png), [`firefox-detail-narrow-map.png`](test-results/firefox-detail-narrow-map.png)
+Verified via automated runtime harness in isolated profiles:
+- **Google Chrome `157.0.8103.80`:**
+  - Automated run log: [`docs/test-results/chrome-task18-e2e.log`](docs/test-results/chrome-task18-e2e.log) — **0 errors, 0 warnings**
+  - Detail Branch Screenshots: [`chrome-branch-desktop.png`](docs/test-results/chrome-branch-desktop.png) (`1280x800`), [`chrome-branch-reflow.png`](docs/test-results/chrome-branch-reflow.png) (`480x800`)
+- **Mozilla Firefox `160.0.1`:**
+  - Automated run log: [`docs/test-results/firefox-task18-e2e.log`](docs/test-results/firefox-task18-e2e.log) — **0 errors, 0 warnings**
+  - Detail Branch Screenshots: [`firefox-branch-desktop.png`](docs/test-results/firefox-branch-desktop.png), [`firefox-branch-reflow.png`](docs/test-results/firefox-branch-reflow.png)

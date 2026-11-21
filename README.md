@@ -2,15 +2,15 @@
 
 A local-first browser extension for Google Chrome and Mozilla Firefox that helps students and researchers retrace a best-effort path through pages they visited and reopen useful URLs.
 
-> **Current Stable Release:** [`v2.0.0`](https://github.com/TanmayTejaswi/spatial-browser/releases/tag/v2.0.0) — Cross-browser Manifest V3 release verified in Google Chrome 157 and Mozilla Firefox 160 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
-> **Current Follow-up:** Task 18 study-readiness implementation is accepted after lead re-review on 2026-11-21. The build and 80 automated tests pass; Chrome 157 and Firefox 160 runtime checks verify redirects, privacy, in-flight target completion, and actual branch detail maps. See the [follow-up review](task%20output%20overview/tasks/task-18-review-followup.md) and [Task 18 report](task%20output%20overview/task-18-output.md). The stable v2.0.0 release remains available. Human recruitment/pilot execution still requires supervisor/institution approval and explicit owner authorization.
+> **Current Stable Release:** [`v2.1.0`](https://github.com/TanmayTejaswi/spatial-browser/releases/tag/v2.1.0) — Cross-browser Manifest V3 release verified in Google Chrome 157 and Mozilla Firefox 160 ([Release Notes](RELEASE_NOTES.md) · [Changelog](CHANGELOG.md))  
+> **Study Readiness:** Opt-in user study controller, visible branching layout repair, title preservation guard, and privacy-preserving CSV/JSON export are implemented and verified across 80 automated tests and isolated Chrome/Firefox runtime checks. See the [Task 18 report](task%20output%20overview/task-18-output.md) and [Study Protocol](docs/STUDY_PROTOCOL.md).
 
 ## Project Status & Completed Deliverables
 
-- **Stable Release (`v2.0.0` — Tagged & Published):**
-  - Cross-browser MV3 packages declare Chrome 109+ and Firefox 115.0+ (`61 passed, 0 failed`; isolated-profile runtime E2E suites passed on Google Chrome 157.0.8103.78 and Mozilla Firefox 160.0). Task 14 verified Firefox 115.0 ESR. Branded Chrome 109 remains unverified after the Task 17 environment-limited attempt.
-  - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v2.0.0`)](https://github.com/TanmayTejaswi/spatial-browser/releases/tag/v2.0.0).
-- **Completed Milestones & Features (`v2.0.0`):**
+- **Stable Release (`v2.1.0` — Tagged & Published):**
+  - Cross-browser MV3 packages declare Chrome 109+ and Firefox 115.0+ (`80 passed, 0 failed`; isolated-profile runtime E2E suites passed on Google Chrome 157.0.8103.80 and Mozilla Firefox 160.0.1). Task 14 verified Firefox 115.0 ESR. Branded Chrome 109 remains unverified after the Task 17 environment-limited attempt.
+  - Prebuilt `.zip` / `.xpi` archives and `SHA256SUMS` checksums are published under [GitHub Releases (`v2.1.0`)](https://github.com/TanmayTejaswi/spatial-browser/releases/tag/v2.1.0).
+- **Completed Milestones & Features (`v2.1.0`):**
   - **Accepted Milestone (Milestone 11 / Task 11):** Schema V2, crash-safe migration, sibling branching, startup safety, and distinct-host download provenance are accepted after the Section 56 Chrome/Firefox checks and Section 57 lead review.
   - **Accepted Narrow-Map Legibility (Milestone 12 / Task 12):** Build, 61 automated checks (`12` build, `35` tracker, `14` UI), and Chrome/Firefox E2E pass with responsive reflow layout (`fitScale = 1.05`, `effectiveTitleFontSize = 13.7px`, `renderedTitleHeight >= 10px`), `12 -> 12` node restart persistence, and 0 errors/warnings. See [task-12.md](task%20output%20overview/tasks/task-12.md) and [Task 12 acceptance](task%20output%20overview/task-12-output.md#12-lead-acceptance--task-12-complete-task-13-assigned-2026-11-13).
   - **Accepted Milestone (Milestone 13 / Task 13):** Release-candidate package, checksum, privacy-boundary, and current-browser runtime audit accepted in Section 7 of the [Task 13 report](task%20output%20overview/task-13-output.md).
@@ -81,7 +81,7 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │   ├── DEVELOPMENT.md         # Architecture notes, layout algorithms, schema, and rules
 │   ├── TEST_PLAN.md           # Cross-browser verification checklist and test records
 │   ├── TASK_10.md             # Pointer to the canonical assignment folder
-│   ├── RELEASE_NOTES.md       # Version 2.0.0 release notes, compatibility, and evidence
+│   ├── RELEASE_NOTES.md       # Version 2.1.0 release notes, compatibility, and evidence
 │   └── test-results/          # Real browser E2E execution logs and console error audits
 ├── outputs/                   # Generated build deliverables (do not edit manually)
 │   ├── chrome/
@@ -96,7 +96,7 @@ To adhere strictly to least-privilege principles, permissions are limited to the
 │   ├── tasks/                  # Canonical developer assignments (Task 10 onward)
 │   ├── task-1-output.md        # Completed task reports and verification evidence
 │   └── README.md               # Assignment/report index and review status
-├── CHANGELOG.md               # Release history (v0.1.0 through v2.0.0)
+├── CHANGELOG.md               # Release history (v0.1.0 through v2.1.0)
 ├── RELEASE_NOTES.md           # Root release notes, deliverables, and verification summary
 └── README.md
 ```

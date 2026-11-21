@@ -6,6 +6,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.1.0] — 2026-11-21
+
+Feature and stabilization release repairing visible branching geometry, securing web-page titles against internal extension updates, expanding the automated test suite to 80 tests, and adding an opt-in privacy-preserving user study controller.
+
+### Added & Enhanced
+- **Visual Sibling Branching Layout Engine:**
+  - Repaired desktop and narrow reflow detail-view layout so sibling nodes (e.g. `Wikipedia → Source A → Back → Source B`) render as distinct parallel branches with matching horizontal levels and distinct vertical coordinates, avoiding flat linear appearances.
+  - Narrow responsive reflow (`<= 900px`) maintains bounded indents and valid edge routing across multi-branch deep trees.
+- **Tab Title Preservation Guard:**
+  - Fixed tab title updates to require matching trackable HTTP/HTTPS URLs. Extension-internal pages (`chrome-extension://`, `moz-extension://`) and browser URLs (`chrome://`, `about:`) are prevented from renaming previous web visit nodes.
+- **Opt-in User Study Controller & Privacy Export Engine:**
+  - Integrated local study mode for Within-Subject Design (WSD) usability evaluations.
+  - Enforces counterbalanced $2 \times 2$ Latin Square cell assignments across evaluation conditions (Condition A Chrome History vs. Condition B Spatial History map) and matched static corpus packs (Pack X Solar Energy / Pack Y Olympic Games).
+  - 6-dimension NASA-TLX workload evaluation with discrete step-5 validation and automatic raw TLX score calculation.
+  - Zero-URL privacy boundary: CSV and JSON exports redact raw URLs, queries, fragments, and numeric tab IDs.
+  - Verified server HTTP 302 redirect destination counting, meta-refresh client redirect collapsing, and signal-level rapid-open deduplication.
+- **Automated Verification:**
+  - Test suite expanded to **80 passed, 0 failed** across `verify-builds.mjs`, `test-tracker.mjs`, `test-ui.mjs`, `test-branch.mjs`, and `test-study.mjs`.
+  - Browser E2E runtime verified in **Google Chrome 157.0.8103.80** and **Mozilla Firefox 160.0.1** with 0 console errors.
+
+---
+
 ## [2.0.0] — 2026-11-16
 
 Final major release delivering the **Research Tree Explorer**, **Branch-Aware Navigation Engine**, **Download Provenance Attribution**, and **Automated CI Quality Gate** across Chrome and Firefox.
